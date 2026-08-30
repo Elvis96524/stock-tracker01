@@ -2,9 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#4f46e5">
+<meta name="color-scheme" content="light">
 <title>Inventory & Stock Movement</title>
+
+<!-- ===== PWA / Native App Meta Tags ===== -->
+<!-- iOS Safari standalone app support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Inventory">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<meta name="msapplication-tap-highlight" content="no">
+<!-- apple-touch-icon and manifest are injected dynamically via JS below (data URLs, no external files needed) -->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/3.4.3/tailwind.min.js"></script>
@@ -22,12 +34,44 @@
   }
 </script>
 <style>
-  * { -webkit-tap-highlight-color: transparent; }
-  body { font-family: 'Inter', system-ui, sans-serif; background: #f4f5fa; }
+  /* ===== Native App Feel: base resets ===== */
+  html, body {
+    height: 100%;
+    overscroll-behavior-y: none;      /* kill pull-to-refresh / rubber-band bounce */
+    overscroll-behavior-x: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;       /* disable iOS long-press callout menu */
+  }
+  html {
+    touch-action: manipulation;        /* disable double-tap-to-zoom */
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #f4f5fa;
+    min-height: 100vh;
+    min-height: 100dvh;                /* dynamic viewport height for mobile browser chrome */
+    -webkit-user-select: none;
+    user-select: none;                 /* no accidental text-selection highlighting like a native app */
+    overflow-x: hidden;                /* main app view never scrolls sideways */
+    position: relative;
+  }
+  /* re-enable selection where users actually need to type/copy */
+  input, textarea, select, [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
   ::-webkit-scrollbar { height: 6px; width: 6px; }
   ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-  .app-header { background: linear-gradient(135deg,#4f46e5 0%,#6366f1 45%,#818cf8 100%); }
+  /* Safe-area aware app header (notch / Dynamic Island support) */
+  .app-header {
+    background: linear-gradient(135deg,#4f46e5 0%,#6366f1 45%,#818cf8 100%);
+    padding-top: env(safe-area-inset-top);
+  }
+
   .segmented { background: rgba(255,255,255,0.16); }
   .segmented button.active { background: white; color: #4338ca; }
   .segmented button { color: rgba(255,255,255,0.85); }
@@ -61,6 +105,44 @@
 
   #contentArea { padding-bottom: 96px; }
   @media (min-width: 768px) { #contentArea { padding-bottom: 40px; } .bottom-nav{ display:none; } .fab-mobile-only{ display:none; } }
+
+  /* ===== Touch-friendly targets & native-style press feedback ===== */
+  button, .chip, a[role="button"], input[type="checkbox"].chk, select, .rowChkM,
+  input[type="text"], input[type="number"], input[type="date"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* small inline icon/chip buttons keep their compact size but still get a real tap target via padding */
+  button.chip, .type-toggle-btn, #clearSearchBtn, .fab-small {
+    min-height: 40px;
+  }
+  input[type="checkbox"].chk { min-height: 18px; min-width: 18px; }
+  th, td { min-height: unset; }
+
+  button, .chip, [onclick] {
+    transition: transform .12s ease, opacity .12s ease, background-color .12s ease;
+  }
+  button:active, .chip:active, [role="button"]:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  .fab:active { transform: scale(0.92); }
+
+  /* Horizontal touch-scroll containers (tables / card rows) — the page body itself never scrolls sideways */
+  .overflow-x-auto, .touch-scroll-x {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+  }
+
+  /* Bottom nav / FAB / selection bar respect the home-indicator safe area */
+  .fab { margin-bottom: env(safe-area-inset-bottom); }
+  #selectionBar { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+
+  /* Standalone (installed) mode gets a touch more top padding since there's no browser chrome at all */
+  @media (display-mode: standalone) {
+    .app-header { padding-top: calc(env(safe-area-inset-top) + 6px); }
+  }
 </style>
 </head>
 <body class="min-h-screen text-slate-800 antialiased">
@@ -95,6 +177,19 @@
       <button id="tabBtnLog" class="flex-1 py-2 rounded-xl text-sm font-semibold transition active" onclick="switchTab('log')">📋 Log</button>
       <button id="tabBtnBalance" class="flex-1 py-2 rounded-xl text-sm font-semibold transition" onclick="switchTab('balance')">📊 Balance</button>
     </div>
+  </div>
+</div>
+
+<!-- ===================== INSTALL APP BANNER ===================== -->
+<div id="installBanner" class="hidden max-w-5xl mx-auto px-4 pt-3">
+  <div class="card flex items-center gap-3 p-3 border border-brand-100 fade-in">
+    <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-xl flex-shrink-0">📦</div>
+    <div class="min-w-0 flex-1">
+      <p class="text-sm font-semibold text-slate-800">Install Inventory app</p>
+      <p class="text-xs text-slate-500">Add to your home screen for full-screen, offline-ready access.</p>
+    </div>
+    <button onclick="triggerInstall()" class="px-3 py-2 text-xs font-semibold rounded-full bg-brand-600 text-white hover:bg-brand-700 flex-shrink-0">Install</button>
+    <button onclick="dismissInstallBanner()" class="w-8 h-8 flex-shrink-0 rounded-full text-slate-400 hover:bg-slate-100 flex items-center justify-center">✕</button>
   </div>
 </div>
 
@@ -948,6 +1043,151 @@ function importCSV(event) {
   };
   reader.readAsText(file);
 }
+
+/* ============================================================
+   PWA SETUP — injected dynamically, no external files required
+   (manifest, icons, service worker, install prompt)
+   ============================================================ */
+
+/* ---- 1. Build an app icon (SVG data URL) at any size, reused
+   for apple-touch-icon, favicon, and the manifest icons ---- */
+function buildIconDataUrl(size) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 192 192">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#4f46e5"/>
+          <stop offset="45%" stop-color="#6366f1"/>
+          <stop offset="100%" stop-color="#818cf8"/>
+        </linearGradient>
+      </defs>
+      <rect width="192" height="192" rx="40" fill="url(#g)"/>
+      <text x="96" y="122" font-size="96" text-anchor="middle" font-family="Arial, sans-serif">📦</text>
+    </svg>`.trim();
+  return 'data:image/svg+xml;base64,' + btoa(svg);
+}
+
+/* ---- 2. Inject favicon + iOS home-screen icon links ---- */
+(function injectIcons() {
+  const icon192 = buildIconDataUrl(192);
+  const icon512 = buildIconDataUrl(512);
+
+  const favicon = document.createElement('link');
+  favicon.rel = 'icon';
+  favicon.type = 'image/svg+xml';
+  favicon.href = icon192;
+  document.head.appendChild(favicon);
+
+  const appleIcon = document.createElement('link');
+  appleIcon.rel = 'apple-touch-icon';
+  appleIcon.href = icon192;
+  document.head.appendChild(appleIcon);
+
+  window.__pwaIcon192 = icon192;
+  window.__pwaIcon512 = icon512;
+})();
+
+/* ---- 3. Build the Web App Manifest in-memory as a Blob and
+   inject it via <link rel="manifest"> — display: standalone
+   hides the browser address bar / nav chrome once installed ---- */
+(function injectManifest() {
+  const manifest = {
+    name: 'Inventory & Stock Movement',
+    short_name: 'Inventory',
+    description: 'Track stock in/out, adjustments, and live inventory balances.',
+    start_url: '.',
+    scope: '.',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#f4f5fa',
+    theme_color: '#4f46e5',
+    icons: [
+      { src: window.__pwaIcon192, sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
+      { src: window.__pwaIcon192, sizes: '192x192', type: 'image/svg+xml', purpose: 'maskable' },
+      { src: window.__pwaIcon512, sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
+      { src: window.__pwaIcon512, sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' }
+    ]
+  };
+  const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  const manifestUrl = URL.createObjectURL(manifestBlob);
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = manifestUrl;
+  document.head.appendChild(link);
+})();
+
+/* ---- 4. Register a lightweight inline service worker (built
+   from a Blob, so no separate .js file is needed) so the app
+   shell can be installed and reopened without a network hit ---- */
+(function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  const swSource = `
+    const CACHE_NAME = 'inventory-app-shell-v1';
+    self.addEventListener('install', (event) => {
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', (event) => {
+      event.waitUntil(self.clients.claim());
+    });
+    self.addEventListener('fetch', (event) => {
+      if (event.request.method !== 'GET') return;
+      event.respondWith(
+        caches.open(CACHE_NAME).then(async (cache) => {
+          const cached = await cache.match(event.request);
+          const network = fetch(event.request).then((res) => {
+            if (res && res.status === 200) cache.put(event.request, res.clone());
+            return res;
+          }).catch(() => cached);
+          return cached || network;
+        })
+      );
+    });
+  `;
+  try {
+    const swBlob = new Blob([swSource], { type: 'text/javascript' });
+    const swUrl = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swUrl).catch(() => { /* offline caching is a bonus, never block the app */ });
+  } catch (err) { /* no-op: some browsers restrict blob: service workers — app still works fully online */ }
+})();
+
+/* ---- 5. Native-style "Add to Home Screen" prompt ---- */
+let deferredInstallPrompt = null;
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+function showInstallBanner() {
+  if (isStandalone() || sessionStorage.getItem('installBannerDismissed')) return;
+  document.getElementById('installBanner').classList.remove('hidden');
+}
+function dismissInstallBanner() {
+  sessionStorage.setItem('installBannerDismissed', '1');
+  document.getElementById('installBanner').classList.add('hidden');
+}
+async function triggerInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    dismissInstallBanner();
+  } else if (isIOS()) {
+    showToast('📲 Tap the Share icon, then "Add to Home Screen"');
+  }
+}
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  showInstallBanner();
+});
+window.addEventListener('appinstalled', () => {
+  dismissInstallBanner();
+  showToast('✅ Installed! Launch it from your home screen.');
+});
+document.addEventListener('DOMContentLoaded', () => {
+  if (isIOS() && !isStandalone()) showInstallBanner();
+});
 
 /* ============ INIT ============ */
 selectMoveType('Stock In');
