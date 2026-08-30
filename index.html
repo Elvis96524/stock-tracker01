@@ -37,6 +37,11 @@
 
   * { box-sizing: border-box; }
 
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     margin: 0;
     background: var(--bg);
@@ -68,6 +73,16 @@
   header .sub {
     color: var(--muted);
     font-size: 13px;
+  }
+
+  .lang-switch select {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
   }
 
   .panel {
@@ -365,33 +380,41 @@
       width: 100%;
     }
     tr.item-row {
-      padding: 14px 4px;
+      padding: 12px 4px;
       border-bottom: 1px solid var(--border);
     }
     tr.item-row td {
       border: none;
-      padding: 4px 0;
+      padding: 5px 0;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     tr.item-row td::before {
       content: attr(data-label);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
-      font-weight: 500;
-      margin-right: 12px;
-      flex-shrink: 0;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
     tr.item-row td.name-cell {
       font-size: 15px;
       font-weight: 600;
-      justify-content: flex-start;
-      padding-bottom: 8px;
     }
     tr.item-row td.name-cell::before { content: none; }
-    .detail-row td { display: block; width: 100%; padding: 0; }
-    .detail-wrap { padding: 6px 4px 16px 4px; }
+    .cell-value {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      max-width: 100%;
+    }
+    .detail-row td { display: block; width: 100%; padding: 0; max-width: 100%; }
+    .detail-wrap { padding: 6px 4px 16px 4px; max-width: 100%; }
 
     .detail-table thead { display: none; }
     .detail-table, .detail-table tbody, .detail-table tr, .detail-table td {
@@ -404,23 +427,38 @@
     }
     .detail-table td {
       border: none;
-      padding: 3px 0;
+      padding: 4px 0;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .detail-table td::before {
       content: attr(data-label);
       font-size: 11px;
       color: var(--muted);
-      font-weight: 500;
-      margin-right: 12px;
-      flex-shrink: 0;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
+    .detail-table td[data-label=""]::before { content: none; }
 
     .toolbar { flex-direction: column; align-items: stretch; }
     .toolbar .field { min-width: 0; }
     .toolbar input[type="text"] { min-width: 0; }
+    .toolbar select, .toolbar input { max-width: 100%; }
+
+    .import-row { flex-direction: column; align-items: stretch; }
+    .import-row .field { min-width: 0; }
+    .import-row .type-toggle { width: 100% !important; }
+
+    form#manualForm { grid-template-columns: 1fr !important; }
+    form#manualForm .add-btn { grid-column: span 1 !important; }
+
+    .pill, .badge, .expiry-tag { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
   }
 </style>
 </head>
@@ -429,128 +467,350 @@
 
   <header>
     <div>
-      <h1>货物进出记录</h1>
-      <div class="sub">按货物显示总库存 — 点击列表可查看该货物的进出明细</div>
+      <h1 data-i18n="appTitle">货物进出记录</h1>
+      <div class="sub" data-i18n="appSubtitle">按货物显示总库存 — 点击列表可查看该货物的进出明细</div>
+    </div>
+    <div class="lang-switch">
+      <select id="langSelect">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+        <option value="ms">Bahasa Melayu</option>
+      </select>
     </div>
   </header>
 
   <div class="panel">
-    <h2>从 Excel 导入</h2>
+    <h2 data-i18n="importPanelTitle">从 Excel 导入</h2>
     <div class="import-row">
       <div class="field">
-        <label for="importType">导入类型</label>
+        <label for="importType" data-i18n="importTypeLabel">导入类型</label>
         <div class="type-toggle" style="width:140px;">
-          <button type="button" id="importBtnIn" class="active in">入库</button>
-          <button type="button" id="importBtnOut" class="out">出库</button>
+          <button type="button" id="importBtnIn" class="active in" data-i18n="typeIn">入库</button>
+          <button type="button" id="importBtnOut" class="out" data-i18n="typeOut">出库</button>
         </div>
       </div>
       <div class="field">
-        <label for="importDate">日期</label>
+        <label for="importDate" data-i18n="dateLabel">日期</label>
         <input type="date" id="importDate">
       </div>
       <div class="field">
-        <label for="excelFile">Excel 文件 (.xlsx/.csv)</label>
+        <label for="excelFile" data-i18n="excelFileLabel">Excel 文件 (.xlsx/.csv)</label>
         <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" class="file-btn">
       </div>
-      <button type="button" id="importBtn" class="import-btn">导入 Excel</button>
+      <button type="button" id="importBtn" class="import-btn" data-i18n="importBtnText">导入 Excel</button>
       <span class="import-status" id="importStatus"></span>
     </div>
   </div>
 
   <div class="panel">
-    <h2>手动新增进出记录</h2>
+    <h2 data-i18n="manualPanelTitle">手动新增进出记录</h2>
     <form id="manualForm">
       <div class="field">
-        <label for="manName">货物名称</label>
-        <input type="text" id="manName" placeholder="例如：钢螺栓 M6" required autocomplete="off" list="itemNameList">
+        <label for="manName" data-i18n="itemNameLabel">货物名称</label>
+        <input type="text" id="manName" placeholder="例如：钢螺栓 M6" data-i18n-ph="itemNamePlaceholder" required autocomplete="off" list="itemNameList">
         <datalist id="itemNameList"></datalist>
       </div>
       <div class="field">
-        <label for="manCode">货物编号</label>
-        <input type="text" id="manCode" placeholder="选填" autocomplete="off">
+        <label for="manCode" data-i18n="itemCodeLabel">货物编号</label>
+        <input type="text" id="manCode" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off">
       </div>
       <div class="field">
-        <label for="manQty">数量</label>
+        <label for="manQty" data-i18n="qtyLabel">数量</label>
         <input type="number" id="manQty" min="1" step="1" placeholder="0" required>
       </div>
       <div class="field">
-        <label for="manUom">UOM</label>
-        <input type="text" id="manUom" placeholder="例如：pcs, box, kg">
+        <label for="manUom" data-i18n="uomLabel">UOM</label>
+        <input type="text" id="manUom" placeholder="例如：pcs, box, kg" data-i18n-ph="uomPlaceholder">
       </div>
       <div class="field">
-        <label>类型</label>
+        <label data-i18n="typeLabel">类型</label>
         <div class="type-toggle">
-          <button type="button" id="manTypeIn" class="active in">入库</button>
-          <button type="button" id="manTypeOut" class="out">出库</button>
+          <button type="button" id="manTypeIn" class="active in" data-i18n="typeIn">入库</button>
+          <button type="button" id="manTypeOut" class="out" data-i18n="typeOut">出库</button>
         </div>
       </div>
       <div class="field">
-        <label for="manDate">日期</label>
+        <label for="manDate" data-i18n="dateLabel">日期</label>
         <input type="date" id="manDate" required>
       </div>
       <div class="field">
-        <label for="manPlatform">Platform/Vessel</label>
-        <input type="text" id="manPlatform" placeholder="选填" autocomplete="off" list="platformList">
+        <label for="manPlatform" data-i18n="platformLabel">Platform/Vessel</label>
+        <input type="text" id="manPlatform" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off" list="platformList">
         <datalist id="platformList"></datalist>
       </div>
       <div class="field">
-        <label for="manExpiry">过期日期</label>
+        <label for="manExpiry" data-i18n="expiryDateLabel">过期日期</label>
         <input type="date" id="manExpiry">
       </div>
-      <button type="submit" class="add-btn">新增记录</button>
+      <button type="submit" class="add-btn" data-i18n="addRecordBtn">新增记录</button>
     </form>
   </div>
 
   <div class="panel">
-    <h2>货物库存总览</h2>
+    <h2 data-i18n="overviewPanelTitle">货物库存总览</h2>
     <div class="toolbar">
-      <input type="text" id="search" placeholder="搜索货物名称或编号..." autocomplete="off" list="searchSuggestList">
+      <input type="text" id="search" placeholder="搜索货物名称或编号..." data-i18n-ph="searchPlaceholder" autocomplete="off" list="searchSuggestList">
       <datalist id="searchSuggestList"></datalist>
       <div class="field">
-        <label for="filterPlatform">Platform / Vessel</label>
+        <label for="filterPlatform" data-i18n="platformLabel">Platform / Vessel</label>
         <select id="filterPlatform">
-          <option value="all">全部平台/船只</option>
+          <option value="all" data-i18n="allPlatforms">全部平台/船只</option>
         </select>
       </div>
       <div class="field">
-        <label for="filterExpiry">过期状态</label>
+        <label for="filterExpiry" data-i18n="expiryStatusLabel">过期状态</label>
         <select id="filterExpiry">
-          <option value="all">全部</option>
-          <option value="expired">已过期</option>
-          <option value="soon">30天内到期</option>
-          <option value="ok">尚未临近到期</option>
-          <option value="none">无过期日期</option>
+          <option value="all" data-i18n="expiryAll">全部</option>
+          <option value="expired" data-i18n="expiryExpired">已过期</option>
+          <option value="soon" data-i18n="expirySoon">30天内到期</option>
+          <option value="ok" data-i18n="expiryOk">尚未临近到期</option>
+          <option value="none" data-i18n="expiryNone">无过期日期</option>
         </select>
       </div>
       <div class="field">
-        <label for="sortBy">排序方式</label>
+        <label for="sortBy" data-i18n="sortByLabel">排序方式</label>
         <select id="sortBy">
-          <option value="item">货物名称</option>
-          <option value="expiry">最近过期日期</option>
-          <option value="balance">库存数量</option>
+          <option value="item" data-i18n="sortItem">货物名称</option>
+          <option value="expiry" data-i18n="sortExpiry">最近过期日期</option>
+          <option value="balance" data-i18n="sortBalance">库存数量</option>
         </select>
       </div>
-      <button class="export-btn" id="exportBtn">导出 CSV</button>
+      <button class="export-btn" id="exportBtn" data-i18n="exportBtnText">导出 CSV</button>
     </div>
     <table>
       <thead>
         <tr>
-          <th>编号</th>
-          <th>货物名称</th>
-          <th>UOM</th>
-          <th>库存总数</th>
-          <th>Platform/Vessel</th>
-          <th>最近过期日期</th>
+          <th data-i18n="colCode">编号</th>
+          <th data-i18n="colItem">货物名称</th>
+          <th data-i18n="colUom">UOM</th>
+          <th data-i18n="colBalance">库存总数</th>
+          <th data-i18n="colPlatform">Platform/Vessel</th>
+          <th data-i18n="colExpiry">最近过期日期</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
     </table>
-    <div class="empty" id="emptyState" style="display:none;">暂无记录，请先在上方导入 Excel 文件。</div>
+    <div class="empty" id="emptyState" style="display:none;" data-i18n="emptyStateText">暂无记录，请先在上方导入 Excel 文件。</div>
   </div>
 
 </div>
 
 <script>
+  // ================= 多语言 / Language / Bahasa =================
+  const translations = {
+    zh: {
+      appTitle: '货物进出记录',
+      appSubtitle: '按货物显示总库存 — 点击列表可查看该货物的进出明细',
+      importPanelTitle: '从 Excel 导入',
+      importTypeLabel: '导入类型',
+      typeIn: '入库',
+      typeOut: '出库',
+      dateLabel: '日期',
+      excelFileLabel: 'Excel 文件 (.xlsx/.csv)',
+      importBtnText: '导入 Excel',
+      manualPanelTitle: '手动新增进出记录',
+      itemNameLabel: '货物名称',
+      itemNamePlaceholder: '例如：钢螺栓 M6',
+      optionalPlaceholder: '选填',
+      itemCodeLabel: '货物编号',
+      qtyLabel: '数量',
+      uomLabel: 'UOM',
+      uomPlaceholder: '例如：pcs, box, kg',
+      typeLabel: '类型',
+      platformLabel: 'Platform/Vessel',
+      expiryDateLabel: '过期日期',
+      addRecordBtn: '新增记录',
+      overviewPanelTitle: '货物库存总览',
+      searchPlaceholder: '搜索货物名称或编号...',
+      allPlatforms: '全部平台/船只',
+      expiryStatusLabel: '过期状态',
+      expiryAll: '全部',
+      expiryExpired: '已过期',
+      expirySoon: '30天内到期',
+      expiryOk: '尚未临近到期',
+      expiryNone: '无过期日期',
+      sortByLabel: '排序方式',
+      sortItem: '货物名称',
+      sortExpiry: '最近过期日期',
+      sortBalance: '库存数量',
+      exportBtnText: '导出 CSV',
+      colCode: '编号',
+      colItem: '货物名称',
+      colUom: 'UOM',
+      colBalance: '库存总数',
+      colPlatform: 'Platform/Vessel',
+      colExpiry: '最近过期日期',
+      colDate: '日期',
+      colType: '类型',
+      colQty: '数量',
+      emptyStateText: '暂无记录，请先在上方导入 Excel 文件。',
+      deleteBtn: '删除',
+      deleteRecordTitle: '删除此条记录',
+      deleteConfirm: '确定要删除这条记录吗？此操作不可撤销。',
+      expiredSuffix: '已过期',
+      expiringSoonSuffix: '即将到期',
+      chooseFileFirst: '请先选择文件。',
+      xlsxLibFailed: 'Excel 解析库加载失败，请检查网络连接。',
+      noRowsFound: '文件中未找到数据行。',
+      importedOk: '已导入 {count} 条记录（类型：{type}）。',
+      importedPartial: '已导入 {count} 条记录，跳过 {skipped} 条（缺少货物名称或数量）。',
+      noValidRows: '未找到有效数据行，请检查列是否包含货物名称与数量。',
+      fileReadError: '无法读取该文件，请确认是有效的 .xlsx、.xls 或 .csv 文件。'
+    },
+    en: {
+      appTitle: 'Stock In/Out Record',
+      appSubtitle: 'Total balance by item — click a row to view its transaction history',
+      importPanelTitle: 'Import from Excel',
+      importTypeLabel: 'Import as',
+      typeIn: 'IN',
+      typeOut: 'OUT',
+      dateLabel: 'Date',
+      excelFileLabel: 'Excel file (.xlsx/.csv)',
+      importBtnText: 'Import Excel',
+      manualPanelTitle: 'Add Record Manually',
+      itemNameLabel: 'Item Name',
+      itemNamePlaceholder: 'e.g. Steel Bolt M6',
+      optionalPlaceholder: 'Optional',
+      itemCodeLabel: 'Item Code',
+      qtyLabel: 'Quantity',
+      uomLabel: 'UOM',
+      uomPlaceholder: 'e.g. pcs, box, kg',
+      typeLabel: 'Type',
+      platformLabel: 'Platform/Vessel',
+      expiryDateLabel: 'Expiry Date',
+      addRecordBtn: 'Add Record',
+      overviewPanelTitle: 'Item Stock Overview',
+      searchPlaceholder: 'Search item name or code...',
+      allPlatforms: 'All platforms',
+      expiryStatusLabel: 'Expiry Status',
+      expiryAll: 'All',
+      expiryExpired: 'Expired',
+      expirySoon: 'Expiring within 30 days',
+      expiryOk: 'Not expiring soon',
+      expiryNone: 'No expiry date',
+      sortByLabel: 'Sort by',
+      sortItem: 'Item name',
+      sortExpiry: 'Nearest expiry',
+      sortBalance: 'Balance',
+      exportBtnText: 'Export CSV',
+      colCode: 'Code',
+      colItem: 'Item',
+      colUom: 'UOM',
+      colBalance: 'Balance',
+      colPlatform: 'Platform/Vessel',
+      colExpiry: 'Nearest Expiry',
+      colDate: 'Date',
+      colType: 'Type',
+      colQty: 'Quantity',
+      emptyStateText: 'No records yet. Import an Excel file above.',
+      deleteBtn: 'Delete',
+      deleteRecordTitle: 'Delete this record',
+      deleteConfirm: 'Are you sure you want to delete this record? This cannot be undone.',
+      expiredSuffix: 'expired',
+      expiringSoonSuffix: 'expiring soon',
+      chooseFileFirst: 'Please choose a file first.',
+      xlsxLibFailed: 'Excel parser failed to load — check your internet connection.',
+      noRowsFound: 'No rows found in the file.',
+      importedOk: 'Imported {count} record(s) as {type}.',
+      importedPartial: 'Imported {count} record(s), skipped {skipped} (missing item name or quantity).',
+      noValidRows: 'No valid rows found. Check that columns include item name and quantity.',
+      fileReadError: 'Could not read that file. Make sure it is a valid .xlsx, .xls, or .csv.'
+    },
+    ms: {
+      appTitle: 'Rekod Keluar Masuk Stok',
+      appSubtitle: 'Baki jumlah mengikut barang — klik baris untuk lihat sejarah transaksi',
+      importPanelTitle: 'Import dari Excel',
+      importTypeLabel: 'Import sebagai',
+      typeIn: 'MASUK',
+      typeOut: 'KELUAR',
+      dateLabel: 'Tarikh',
+      excelFileLabel: 'Fail Excel (.xlsx/.csv)',
+      importBtnText: 'Import Excel',
+      manualPanelTitle: 'Tambah Rekod Secara Manual',
+      itemNameLabel: 'Nama Barang',
+      itemNamePlaceholder: 'contoh: Bolt Keluli M6',
+      optionalPlaceholder: 'Pilihan',
+      itemCodeLabel: 'Kod Barang',
+      qtyLabel: 'Kuantiti',
+      uomLabel: 'UOM',
+      uomPlaceholder: 'contoh: pcs, box, kg',
+      typeLabel: 'Jenis',
+      platformLabel: 'Platform/Vessel',
+      expiryDateLabel: 'Tarikh Luput',
+      addRecordBtn: 'Tambah Rekod',
+      overviewPanelTitle: 'Gambaran Stok Barang',
+      searchPlaceholder: 'Cari nama atau kod barang...',
+      allPlatforms: 'Semua platform',
+      expiryStatusLabel: 'Status Luput',
+      expiryAll: 'Semua',
+      expiryExpired: 'Telah Luput',
+      expirySoon: 'Luput dalam 30 hari',
+      expiryOk: 'Belum hampir luput',
+      expiryNone: 'Tiada tarikh luput',
+      sortByLabel: 'Susun ikut',
+      sortItem: 'Nama barang',
+      sortExpiry: 'Tarikh luput terdekat',
+      sortBalance: 'Baki stok',
+      exportBtnText: 'Eksport CSV',
+      colCode: 'Kod',
+      colItem: 'Barang',
+      colUom: 'UOM',
+      colBalance: 'Baki',
+      colPlatform: 'Platform/Vessel',
+      colExpiry: 'Luput Terdekat',
+      colDate: 'Tarikh',
+      colType: 'Jenis',
+      colQty: 'Kuantiti',
+      emptyStateText: 'Belum ada rekod. Sila import fail Excel di atas.',
+      deleteBtn: 'Padam',
+      deleteRecordTitle: 'Padam rekod ini',
+      deleteConfirm: 'Anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.',
+      expiredSuffix: 'telah luput',
+      expiringSoonSuffix: 'hampir luput',
+      chooseFileFirst: 'Sila pilih fail dahulu.',
+      xlsxLibFailed: 'Gagal memuatkan pustaka Excel — sila semak sambungan internet anda.',
+      noRowsFound: 'Tiada baris data dijumpai dalam fail.',
+      importedOk: '{count} rekod telah diimport (jenis: {type}).',
+      importedPartial: '{count} rekod diimport, {skipped} dilangkau (nama/kuantiti tiada).',
+      noValidRows: 'Tiada baris sah dijumpai. Sila semak lajur nama barang dan kuantiti.',
+      fileReadError: 'Tidak dapat membaca fail ini. Pastikan ia fail .xlsx, .xls, atau .csv yang sah.'
+    }
+  };
+
+  let currentLang = localStorage.getItem('stockAppLang') || 'en';
+  if (!translations[currentLang]) currentLang = 'en';
+
+  function t(key, params) {
+    let str = (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+    if (params) {
+      Object.keys(params).forEach(k => {
+        str = str.replace(`{${k}}`, params[k]);
+      });
+    }
+    return str;
+  }
+
+  function applyStaticTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph')));
+    });
+    document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : currentLang === 'ms' ? 'ms' : 'en';
+  }
+
+  const langSelect = document.getElementById('langSelect');
+  langSelect.value = currentLang;
+  applyStaticTranslations();
+
+  langSelect.addEventListener('change', () => {
+    currentLang = langSelect.value;
+    localStorage.setItem('stockAppLang', currentLang);
+    applyStaticTranslations();
+    render();
+  });
+
   const STORAGE_KEY = 'stockRecords_v1';
   let records = [];
   let expanded = new Set(); // groupKeys currently expanded
@@ -657,6 +917,29 @@
     platformList.innerHTML = Array.from(platforms).sort().map(p => `<option value="${escapeHtml(p)}">`).join('');
   }
 
+  // 货物名称 -> 货物编号 映射（取该货物最近使用过的编号）
+  function getNameToCodeMap() {
+    const map = {};
+    records.forEach(r => {
+      if (r.item && r.itemCode) {
+        map[r.item.trim().toLowerCase()] = r.itemCode;
+      }
+    });
+    return map;
+  }
+
+  // 当输入或选中的货物名称与已有记录完全匹配时，自动带出对应的货物编号
+  function tryAutofillCode() {
+    const map = getNameToCodeMap();
+    const match = map[manName.value.trim().toLowerCase()];
+    if (match) {
+      manCode.value = match;
+    }
+  }
+
+  manName.addEventListener('input', tryAutofillCode);
+  manName.addEventListener('change', tryAutofillCode);
+
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   }
@@ -722,8 +1005,8 @@
   function expiryLabel(dateStr) {
     const status = expiryStatus(dateStr);
     if (status === 'none') return '<span class="expiry-tag none">—</span>';
-    if (status === 'expired') return `<span class="expiry-tag expired">${dateStr} · 已过期</span>`;
-    if (status === 'soon') return `<span class="expiry-tag soon">${dateStr} · 即将到期</span>`;
+    if (status === 'expired') return `<span class="expiry-tag expired">${dateStr} · ${t('expiredSuffix')}</span>`;
+    if (status === 'soon') return `<span class="expiry-tag soon">${dateStr} · ${t('expiringSoonSuffix')}</span>`;
     return `<span class="expiry-tag ok">${dateStr}</span>`;
   }
 
@@ -733,7 +1016,7 @@
     groups.forEach(g => g.platforms.forEach(p => platforms.add(p)));
     const sortedPlatforms = Array.from(platforms).sort();
 
-    filterPlatform.innerHTML = '<option value="all">All platforms</option>' +
+    filterPlatform.innerHTML = `<option value="all">${t('allPlatforms')}</option>` +
       sortedPlatforms.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
 
     if (sortedPlatforms.includes(current)) filterPlatform.value = current;
@@ -780,12 +1063,12 @@
       const row = document.createElement('tr');
       row.className = 'item-row' + (isExpanded ? ' expanded' : '');
       row.innerHTML = `
-        <td data-label="编号">${escapeHtml(g.itemCode)}</td>
+        <td data-label="${t('colCode')}">${escapeHtml(g.itemCode)}</td>
         <td class="name-cell"><span class="chevron">▶</span>${escapeHtml(g.item)}</td>
-        <td data-label="UOM">${escapeHtml(g.uom)}</td>
-        <td data-label="库存总数" class="balance-cell">${g.balance}</td>
-        <td data-label="Platform/Vessel">${platformPills}</td>
-        <td data-label="最近过期">${expiryLabel(g.nearestExpiry)}</td>
+        <td data-label="${t('colUom')}">${escapeHtml(g.uom)}</td>
+        <td data-label="${t('colBalance')}" class="balance-cell">${g.balance}</td>
+        <td data-label="${t('colPlatform')}"><span class="cell-value">${platformPills}</span></td>
+        <td data-label="${t('colExpiry')}">${expiryLabel(g.nearestExpiry)}</td>
       `;
       row.addEventListener('click', () => {
         if (expanded.has(g.key)) expanded.delete(g.key);
@@ -797,15 +1080,15 @@
       if (isExpanded) {
         const detailRow = document.createElement('tr');
         detailRow.className = 'detail-row';
-        const txRows = g.transactions.map(t => `
+        const txRows = g.transactions.map(t2 => `
           <tr>
-            <td data-label="日期">${t.date}</td>
-            <td data-label="类型"><span class="badge ${t.type === 'IN' ? 'in' : 'out'}">${t.type === 'IN' ? '入库' : '出库'}</span></td>
-            <td data-label="数量" class="qty">${t.type === 'IN' ? '+' : '-'}${t.qty}</td>
-            <td data-label="Platform/Vessel">${escapeHtml(t.platform || '—')}</td>
-            <td data-label="过期日期">${expiryLabel(t.expiryDate)}</td>
-            <td data-label="库存结余" class="qty">${t.runningBalance}</td>
-            <td data-label=""><button class="del-btn" data-id="${t.id}" title="删除此条记录">✕ 删除</button></td>
+            <td data-label="${t('colDate')}">${t2.date}</td>
+            <td data-label="${t('colType')}"><span class="badge ${t2.type === 'IN' ? 'in' : 'out'}">${t2.type === 'IN' ? t('typeIn') : t('typeOut')}</span></td>
+            <td data-label="${t('colQty')}" class="qty">${t2.type === 'IN' ? '+' : '-'}${t2.qty}</td>
+            <td data-label="${t('colPlatform')}"><span class="cell-value">${escapeHtml(t2.platform || '—')}</span></td>
+            <td data-label="${t('colExpiry')}">${expiryLabel(t2.expiryDate)}</td>
+            <td data-label="${t('colBalance')}" class="qty">${t2.runningBalance}</td>
+            <td data-label=""><button class="del-btn" data-id="${t2.id}" title="${t('deleteRecordTitle')}">✕ ${t('deleteBtn')}</button></td>
           </tr>
         `).join('');
 
@@ -815,12 +1098,12 @@
               <table class="detail-table">
                 <thead>
                   <tr>
-                    <th>日期</th>
-                    <th>类型</th>
-                    <th>数量</th>
-                    <th>Platform/Vessel</th>
-                    <th>过期日期</th>
-                    <th>库存结余</th>
+                    <th>${t('colDate')}</th>
+                    <th>${t('colType')}</th>
+                    <th>${t('colQty')}</th>
+                    <th>${t('colPlatform')}</th>
+                    <th>${t('colExpiry')}</th>
+                    <th>${t('colBalance')}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -834,7 +1117,7 @@
         detailRow.querySelectorAll('.del-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (!confirm('确定要删除这条记录吗？此操作不可撤销。')) return;
+            if (!confirm(t('deleteConfirm'))) return;
             records = records.filter(r => r.id !== btn.dataset.id);
             save();
             render();
@@ -921,11 +1204,11 @@
     const date = document.getElementById('importDate').value || new Date().toISOString().slice(0, 10);
 
     if (!file) {
-      setImportStatus('请先选择文件。', 'err');
+      setImportStatus(t('chooseFileFirst'), 'err');
       return;
     }
     if (typeof XLSX === 'undefined') {
-      setImportStatus('Excel 解析库加载失败，请检查网络连接。', 'err');
+      setImportStatus(t('xlsxLibFailed'), 'err');
       return;
     }
 
@@ -938,7 +1221,7 @@
         const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
 
         if (!rows.length) {
-          setImportStatus('文件中未找到数据行。', 'err');
+          setImportStatus(t('noRowsFound'), 'err');
           return;
         }
 
@@ -989,17 +1272,17 @@
         render();
 
         if (added && !skipped) {
-          setImportStatus(`已导入 ${added} 条记录（类型：${importType === 'IN' ? '入库' : '出库'}）。`, 'ok');
+          setImportStatus(t('importedOk', { count: added, type: importType === 'IN' ? t('typeIn') : t('typeOut') }), 'ok');
         } else if (added && skipped) {
-          setImportStatus(`已导入 ${added} 条记录，跳过 ${skipped} 条（缺少货物名称或数量）。`, 'ok');
+          setImportStatus(t('importedPartial', { count: added, skipped }), 'ok');
         } else {
-          setImportStatus('未找到有效数据行，请检查列是否包含货物名称与数量。', 'err');
+          setImportStatus(t('noValidRows'), 'err');
         }
 
         fileInput.value = '';
       } catch (err) {
         console.error(err);
-        setImportStatus('无法读取该文件，请确认是有效的 .xlsx、.xls 或 .csv 文件。', 'err');
+        setImportStatus(t('fileReadError'), 'err');
       }
     };
     reader.readAsArrayBuffer(file);
