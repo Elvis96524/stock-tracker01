@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<title>Inventory & Stock Movement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/3.4.3/tailwind.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter','system-ui','sans-serif'] },
+        colors: {
+          brand: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' }
+        },
+        boxShadow: { soft: '0 4px 24px -4px rgba(30,41,59,0.08), 0 2px 8px -2px rgba(30,41,59,0.06)' }
+      }
+    }
+  }
+</script>
+<style>
+  * { -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #f4f5fa; }
+  ::-webkit-scrollbar { height: 6px; width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+  .app-header { background: linear-gradient(135deg,#4f46e5 0%,#6366f1 45%,#818cf8 100%); }
+  .segmented { background: rgba(255,255,255,0.16); }
+  .segmented button.active { background: white; color: #4338ca; }
+  .segmented button { color: rgba(255,255,255,0.85); }
+
+  .card { background: white; border-radius: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 1px 12px rgba(15,23,42,0.04); }
+
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { background: #eef2ff; }
+  .sort-arrow { font-size: 0.65rem; opacity: 0.55; margin-left: 3px; }
+
+  .modal-backdrop { background: rgba(15,23,42,0.5); backdrop-filter: blur(2px); }
+  .sheet-handle { width: 40px; height: 4px; border-radius: 999px; background: #e2e8f0; margin: 0 auto; }
+
+  .fab { box-shadow: 0 10px 25px -5px rgba(79,70,229,0.5), 0 8px 10px -6px rgba(79,70,229,0.35); }
+  .bottom-nav { box-shadow: 0 -4px 20px rgba(15,23,42,0.06); padding-bottom: env(safe-area-inset-bottom); }
+  .type-in { background:#ecfdf5; color:#059669; }
+  .type-out { background:#fef2f2; color:#e11d48; }
+  .type-adj { background:#fffbeb; color:#b45309; }
+
+  .chip { white-space: nowrap; }
+  .fade-in { animation: fadeIn .18s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+  .slide-up { animation: slideUp .22s cubic-bezier(.22,1,.36,1); }
+  @keyframes slideUp { from { transform: translateY(24px); opacity:.6; } to { transform:none; opacity:1; } }
+
+  input[type="checkbox"].chk { width: 18px; height: 18px; accent-color: #4f46e5; }
+  input, select { font-family: inherit; }
+
+  .progress-track { background: #eef0f6; border-radius: 999px; height: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 999px; transition: width .3s ease; }
+
+  #contentArea { padding-bottom: 96px; }
+  @media (min-width: 768px) { #contentArea { padding-bottom: 40px; } .bottom-nav{ display:none; } .fab-mobile-only{ display:none; } }
+</style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased">
+
+<!-- ===================== APP HEADER ===================== -->
+<div class="app-header sticky top-0 z-30 pb-4">
+  <div class="max-w-5xl mx-auto px-4 pt-4 md:pt-6">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-lg">📦</div>
+        <div>
+          <h1 class="text-white font-bold text-base md:text-lg leading-tight">Inventory Manager</h1>
+          <p class="text-indigo-100 text-[11px] md:text-xs leading-tight">Stock movements & balances</p>
+        </div>
+      </div>
+      <button onclick="openFilterSheet()" class="relative w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 transition flex items-center justify-center text-white text-lg">
+        ⚙️
+        <span id="filterDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-300"></span>
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="relative mb-3">
+      <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+      <input id="searchInput" type="text" placeholder="Search item code or name..."
+        class="w-full pl-10 pr-9 py-2.5 rounded-2xl border-0 shadow-soft text-sm focus:outline-none focus:ring-2 focus:ring-white/70">
+      <button id="clearSearchBtn" onclick="clearSearchOnly()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">✕</button>
+    </div>
+
+    <!-- Segmented tabs -->
+    <div class="segmented flex rounded-2xl p-1 gap-1">
+      <button id="tabBtnLog" class="flex-1 py-2 rounded-xl text-sm font-semibold transition active" onclick="switchTab('log')">📋 Log</button>
+      <button id="tabBtnBalance" class="flex-1 py-2 rounded-xl text-sm font-semibold transition" onclick="switchTab('balance')">📊 Balance</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CONTENT ===================== -->
+<div id="contentArea" class="max-w-5xl mx-auto px-4 pt-4">
+
+  <!-- ===== TAB: LOG ===== -->
+  <div id="tabLog">
+
+    <!-- Active filter chips -->
+    <div id="activeFilterChips" class="hidden flex flex-wrap gap-2 mb-3"></div>
+
+    <!-- Toolbar -->
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-xs text-slate-500"><span id="logCount">0</span> transaction(s)</p>
+      <div class="flex items-center gap-2">
+        <button onclick="document.getElementById('csvFileInput').click()" class="chip text-xs font-medium px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 active:scale-95 transition">⬆ Import</button>
+        <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="importCSV(event)">
+        <button onclick="exportCSV()" class="chip text-xs font-medium px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 active:scale-95 transition">⬇ Export</button>
+        <button id="selectModeBtn" onclick="toggleSelectMode()" class="chip text-xs font-medium px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 active:scale-95 transition">☑ Select</button>
+      </div>
+    </div>
+
+    <!-- Mobile card list -->
+    <div id="logCards" class="space-y-3 md:hidden"></div>
+    <div id="logEmptyMsgMobile" class="hidden text-center text-slate-400 py-16 md:hidden">
+      <div class="text-4xl mb-2">🗃️</div>
+      <p class="text-sm">No transactions found.</p>
+    </div>
+
+    <!-- Desktop table -->
+    <div class="hidden md:block card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="px-4 py-3"><input type="checkbox" id="selectAllChk" class="chk" onchange="toggleSelectAll(this)"></th>
+              <th class="px-4 py-3 text-left sortable" onclick="setSort('code')">Item Code<span class="sort-arrow" id="arrow-code"></span></th>
+              <th class="px-4 py-3 text-left sortable" onclick="setSort('name')">Item Name<span class="sort-arrow" id="arrow-name"></span></th>
+              <th class="px-4 py-3 text-left sortable" onclick="setSort('uom')">UOM<span class="sort-arrow" id="arrow-uom"></span></th>
+              <th class="px-4 py-3 text-left sortable" onclick="setSort('type')">Type<span class="sort-arrow" id="arrow-type"></span></th>
+              <th class="px-4 py-3 text-right sortable" onclick="setSort('qty')">Qty<span class="sort-arrow" id="arrow-qty"></span></th>
+              <th class="px-4 py-3 text-left sortable" onclick="setSort('expiry')">Expiry<span class="sort-arrow" id="arrow-expiry"></span></th>
+              <th class="px-4 py-3 text-left">Remarks</th>
+              <th class="px-4 py-3 text-left sortable" onclick="setSort('timestamp')">Timestamp<span class="sort-arrow" id="arrow-timestamp"></span></th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody"></tbody>
+        </table>
+        <p id="logEmptyMsg" class="hidden text-center text-slate-400 py-10">No transactions found.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: BALANCE ===== -->
+  <div id="tabBalance" class="hidden">
+
+    <!-- Stat cards -->
+    <div class="grid grid-cols-3 gap-2.5 mb-4">
+      <div class="card p-3 text-center">
+        <p class="text-lg md:text-xl font-extrabold text-indigo-600" id="statTotalItems">0</p>
+        <p class="text-[10px] md:text-xs text-slate-500 mt-0.5">Items</p>
+      </div>
+      <div class="card p-3 text-center">
+        <p class="text-lg md:text-xl font-extrabold text-amber-500" id="statLowStock">0</p>
+        <p class="text-[10px] md:text-xs text-slate-500 mt-0.5">Low Stock</p>
+      </div>
+      <div class="card p-3 text-center">
+        <p class="text-lg md:text-xl font-extrabold text-rose-500" id="statExpired">0</p>
+        <p class="text-[10px] md:text-xs text-slate-500 mt-0.5">Expired</p>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between mb-3 gap-2">
+      <div class="flex items-center gap-2">
+        <label class="text-xs font-medium text-slate-500">Low-stock threshold</label>
+        <input id="lowStockThreshold" type="number" value="10" min="0" onchange="renderAll()" class="w-16 px-2 py-1 rounded-lg border border-slate-200 text-sm">
+      </div>
+      <button onclick="exportBalanceCSV()" class="chip text-xs font-medium px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 active:scale-95 transition">⬇ Export</button>
+    </div>
+
+    <!-- Mobile card list -->
+    <div id="balanceCards" class="space-y-3 md:hidden"></div>
+    <div id="balEmptyMsgMobile" class="hidden text-center text-slate-400 py-16 md:hidden">
+      <div class="text-4xl mb-2">📦</div>
+      <p class="text-sm">No inventory data yet.</p>
+    </div>
+
+    <!-- Desktop table -->
+    <div class="hidden md:block card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="px-4 py-3 text-left sortable" onclick="setBalSort('code')">Item Code<span class="sort-arrow" id="barrow-code"></span></th>
+              <th class="px-4 py-3 text-left sortable" onclick="setBalSort('name')">Item Name<span class="sort-arrow" id="barrow-name"></span></th>
+              <th class="px-4 py-3 text-left sortable" onclick="setBalSort('uom')">UOM<span class="sort-arrow" id="barrow-uom"></span></th>
+              <th class="px-4 py-3 text-right sortable" onclick="setBalSort('in')">In<span class="sort-arrow" id="barrow-in"></span></th>
+              <th class="px-4 py-3 text-right sortable" onclick="setBalSort('out')">Out<span class="sort-arrow" id="barrow-out"></span></th>
+              <th class="px-4 py-3 text-right sortable" onclick="setBalSort('adj')">Adj<span class="sort-arrow" id="barrow-adj"></span></th>
+              <th class="px-4 py-3 text-right sortable" onclick="setBalSort('balance')">Balance<span class="sort-arrow" id="barrow-balance"></span></th>
+              <th class="px-4 py-3 text-left sortable" onclick="setBalSort('expiry')">Nearest Expiry<span class="sort-arrow" id="barrow-expiry"></span></th>
+              <th class="px-4 py-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody id="balanceTableBody"></tbody>
+        </table>
+        <p id="balEmptyMsg" class="hidden text-center text-slate-400 py-10">No inventory data yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-[11px] text-slate-400 mt-6 text-center pb-2">Data is stored only in this browser's local storage.</p>
+</div>
+
+<!-- ===================== FAB ===================== -->
+<button onclick="openEntryModal()" class="fab fixed z-30 right-5 bottom-24 md:bottom-8 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 active:scale-95 transition text-white text-2xl flex items-center justify-center">
+  ＋
+</button>
+
+<!-- ===================== BOTTOM NAV (mobile) ===================== -->
+<div class="bottom-nav fixed bottom-0 left-0 right-0 bg-white z-30 flex items-stretch">
+  <button onclick="switchTab('log')" id="navBtnLog" class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-slate-400">
+    <span class="text-lg">📋</span><span class="text-[11px] font-medium">Log</span>
+  </button>
+  <button onclick="switchTab('balance')" id="navBtnBalance" class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-slate-400">
+    <span class="text-lg">📊</span><span class="text-[11px] font-medium">Balance</span>
+  </button>
+</div>
+
+<!-- ===================== SELECTION ACTION BAR ===================== -->
+<div id="selectionBar" class="hidden fixed left-0 right-0 bottom-0 md:bottom-6 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] md:pb-0">
+  <div class="max-w-5xl mx-auto card slide-up flex items-center justify-between px-4 py-3 shadow-soft border border-slate-100 mb-2 md:mb-0">
+    <p class="text-sm font-medium"><span id="selCount">0</span> selected</p>
+    <div class="flex gap-2">
+      <button onclick="exitSelectMode()" class="px-3 py-1.5 text-sm rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50">Cancel</button>
+      <button id="deleteSelectedBtn" onclick="confirmDeleteSelected()" disabled class="px-4 py-1.5 text-sm rounded-full bg-rose-500 text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-rose-600">🗑 Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ENTRY MODAL ===================== -->
+<div id="entryModalWrap" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center modal-backdrop">
+  <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-h-[92vh] overflow-y-auto slide-up">
+    <div class="sheet-handle mb-4 sm:hidden"></div>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-bold text-slate-800">➕ Record Stock Movement</h3>
+      <button onclick="closeEntryModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+
+    <form id="entryForm" class="space-y-3.5">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-1">
+          <label class="text-xs font-semibold text-slate-500">Item Code*</label>
+          <input required id="f_code" type="text" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="ITM-001">
+        </div>
+        <div class="col-span-1">
+          <label class="text-xs font-semibold text-slate-500">UOM*</label>
+          <input required id="f_uom" type="text" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="pcs">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-500">Item Name*</label>
+        <input required id="f_name" type="text" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="Widget A">
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-500 block mb-1.5">Movement Type*</label>
+        <div class="grid grid-cols-3 gap-2" id="typeToggle">
+          <button type="button" data-val="Stock In" onclick="selectMoveType('Stock In')" class="type-toggle-btn py-2 rounded-xl text-sm font-semibold border-2 transition">Stock In</button>
+          <button type="button" data-val="Stock Out" onclick="selectMoveType('Stock Out')" class="type-toggle-btn py-2 rounded-xl text-sm font-semibold border-2 transition">Stock Out</button>
+          <button type="button" data-val="Adjustment" onclick="selectMoveType('Adjustment')" class="type-toggle-btn py-2 rounded-xl text-sm font-semibold border-2 transition">Adjust</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Quantity*</label>
+          <input required id="f_qty" type="number" step="any" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="0">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Expiry Date</label>
+          <input id="f_expiry" type="date" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-500">Remarks</label>
+        <input id="f_remarks" type="text" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="Optional">
+      </div>
+
+      <div class="flex gap-2 pt-2 pb-1">
+        <button type="button" onclick="resetForm()" class="flex-1 py-2.5 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">Clear</button>
+        <button type="submit" class="flex-1 py-2.5 text-sm rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700">Save Movement</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== FILTER SHEET ===================== -->
+<div id="filterModalWrap" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center modal-backdrop">
+  <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-h-[85vh] overflow-y-auto slide-up">
+    <div class="sheet-handle mb-4 sm:hidden"></div>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-bold text-slate-800">⚙️ Filter & Sort</h3>
+      <button onclick="closeFilterSheet()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    <div class="space-y-3.5">
+      <div>
+        <label class="text-xs font-semibold text-slate-500">Movement Type</label>
+        <select id="filterType" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm">
+          <option value="">All Types</option>
+          <option value="Stock In">Stock In</option>
+          <option value="Stock Out">Stock Out</option>
+          <option value="Adjustment">Adjustment</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-500">UOM</label>
+          <select id="filterUom" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm"><option value="">All</option></select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Item Code</label>
+          <select id="filterCode" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm"><option value="">All</option></select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Expiry From</label>
+          <input id="filterExpFrom" type="date" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Expiry To</label>
+          <input id="filterExpTo" type="date" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm">
+        </div>
+      </div>
+      <div class="md:hidden">
+        <label class="text-xs font-semibold text-slate-500">Sort By</label>
+        <select id="mobileSortField" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm">
+          <option value="timestamp">Timestamp</option>
+          <option value="code">Item Code</option>
+          <option value="name">Item Name</option>
+          <option value="qty">Quantity</option>
+          <option value="expiry">Expiry Date</option>
+          <option value="type">Movement Type</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2 pt-2 pb-1">
+        <button type="button" onclick="clearFilters()" class="flex-1 py-2.5 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">Reset</button>
+        <button type="button" onclick="applyFilters()" class="flex-1 py-2.5 text-sm rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DELETE CONFIRM MODAL ===================== -->
+<div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+  <div class="bg-white rounded-3xl shadow-xl p-6 w-[85%] max-w-xs text-center slide-up">
+    <div class="text-3xl mb-2">⚠️</div>
+    <h3 class="font-bold text-base mb-1">Confirm Deletion</h3>
+    <p id="deleteModalMsg" class="text-sm text-slate-500 mb-5">Are you sure you want to delete this record?</p>
+    <div class="flex gap-2">
+      <button onclick="closeModal()" class="flex-1 py-2.5 text-sm rounded-xl border border-slate-200 hover:bg-slate-50">Cancel</button>
+      <button onclick="executeDelete()" class="flex-1 py-2.5 text-sm rounded-xl bg-rose-500 text-white font-semibold hover:bg-rose-600">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-2.5 rounded-full shadow-lg text-sm opacity-0 pointer-events-none transition-opacity duration-300 z-50 whitespace-nowrap"></div>
+
+<script>
+/* ============ STATE ============ */
+const STORAGE_KEY = 'inv_transactions_v1';
+let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let sortState = { field: 'timestamp', dir: 'desc' };
+let balSortState = { field: 'code', dir: 'asc' };
+let pendingDelete = null;
+let selectedIds = new Set();
+let selectMode = false;
+let currentTab = 'log';
+let currentMoveType = 'Stock In';
+
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions)); }
+function uid() { return 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+}
+
+/* ============ TABS ============ */
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabLog').classList.toggle('hidden', tab !== 'log');
+  document.getElementById('tabBalance').classList.toggle('hidden', tab !== 'balance');
+  document.getElementById('tabBtnLog').classList.toggle('active', tab === 'log');
+  document.getElementById('tabBtnBalance').classList.toggle('active', tab === 'balance');
+  document.getElementById('navBtnLog').classList.toggle('text-brand-600', tab === 'log');
+  document.getElementById('navBtnLog').classList.toggle('text-slate-400', tab !== 'log');
+  document.getElementById('navBtnBalance').classList.toggle('text-brand-600', tab === 'balance');
+  document.getElementById('navBtnBalance').classList.toggle('text-slate-400', tab !== 'balance');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  renderAll();
+}
+
+/* ============ ENTRY MODAL ============ */
+function openEntryModal() {
+  const wrap = document.getElementById('entryModalWrap');
+  wrap.classList.remove('hidden');
+  wrap.classList.add('flex');
+  document.getElementById('f_code').focus();
+}
+function closeEntryModal() {
+  const wrap = document.getElementById('entryModalWrap');
+  wrap.classList.add('hidden');
+  wrap.classList.remove('flex');
+}
+function selectMoveType(val) {
+  currentMoveType = val;
+  document.querySelectorAll('.type-toggle-btn').forEach(btn => {
+    const active = btn.dataset.val === val;
+    btn.classList.toggle('bg-brand-50', active);
+    btn.classList.toggle('border-brand-500', active);
+    btn.classList.toggle('text-brand-700', active);
+    btn.classList.toggle('border-slate-200', !active);
+    btn.classList.toggle('text-slate-500', !active);
+  });
+}
+
+document.getElementById('entryForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const code = document.getElementById('f_code').value.trim();
+  const name = document.getElementById('f_name').value.trim();
+  const uom = document.getElementById('f_uom').value.trim();
+  const type = currentMoveType;
+  const qty = parseFloat(document.getElementById('f_qty').value);
+  const expiry = document.getElementById('f_expiry').value;
+  const remarks = document.getElementById('f_remarks').value.trim();
+
+  if (!code || !name || !uom || isNaN(qty)) { showToast('⚠ Please fill all required fields.'); return; }
+  if (qty < 0 && type !== 'Adjustment') { showToast('⚠ Quantity must be positive for Stock In / Stock Out.'); return; }
+
+  transactions.push({ id: uid(), code, name, uom, type, qty, expiry: expiry || '', remarks, timestamp: new Date().toISOString() });
+  saveData();
+  resetForm();
+  closeEntryModal();
+  renderAll();
+  showToast('✅ Movement recorded.');
+});
+
+function resetForm() {
+  document.getElementById('entryForm').reset();
+  selectMoveType('Stock In');
+}
+
+/* ============ FILTER SHEET ============ */
+function openFilterSheet() {
+  populateFilterOptions();
+  const wrap = document.getElementById('filterModalWrap');
+  wrap.classList.remove('hidden');
+  wrap.classList.add('flex');
+}
+function closeFilterSheet() {
+  const wrap = document.getElementById('filterModalWrap');
+  wrap.classList.add('hidden');
+  wrap.classList.remove('flex');
+}
+function applyFilters() {
+  const mf = document.getElementById('mobileSortField').value;
+  sortState.field = mf;
+  sortState.dir = mf === 'timestamp' ? 'desc' : 'asc';
+  closeFilterSheet();
+  renderAll();
+}
+function clearFilters() {
+  document.getElementById('filterType').value = '';
+  document.getElementById('filterUom').value = '';
+  document.getElementById('filterCode').value = '';
+  document.getElementById('filterExpFrom').value = '';
+  document.getElementById('filterExpTo').value = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearSearchBtn').classList.add('hidden');
+  renderAll();
+  closeFilterSheet();
+}
+
+function populateFilterOptions() {
+  const uoms = [...new Set(transactions.map(t => t.uom).filter(Boolean))].sort();
+  const codes = [...new Set(transactions.map(t => t.code).filter(Boolean))].sort();
+  const uomSel = document.getElementById('filterUom');
+  const codeSel = document.getElementById('filterCode');
+  const curUom = uomSel.value, curCode = codeSel.value;
+  uomSel.innerHTML = '<option value="">All</option>' + uoms.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+  codeSel.innerHTML = '<option value="">All</option>' + codes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  uomSel.value = uoms.includes(curUom) ? curUom : '';
+  codeSel.value = codes.includes(curCode) ? curCode : '';
+}
+
+function renderActiveChips() {
+  const chipsWrap = document.getElementById('activeFilterChips');
+  const active = [];
+  const type = document.getElementById('filterType').value;
+  const uom = document.getElementById('filterUom').value;
+  const code = document.getElementById('filterCode').value;
+  const expFrom = document.getElementById('filterExpFrom').value;
+  const expTo = document.getElementById('filterExpTo').value;
+  if (type) active.push(['Type: ' + type, () => { document.getElementById('filterType').value=''; renderAll(); }]);
+  if (uom) active.push(['UOM: ' + uom, () => { document.getElementById('filterUom').value=''; renderAll(); }]);
+  if (code) active.push(['Code: ' + code, () => { document.getElementById('filterCode').value=''; renderAll(); }]);
+  if (expFrom || expTo) active.push(['Expiry: ' + (expFrom||'…') + ' → ' + (expTo||'…'), () => { document.getElementById('filterExpFrom').value=''; document.getElementById('filterExpTo').value=''; renderAll(); }]);
+
+  document.getElementById('filterDot').classList.toggle('hidden', active.length === 0);
+
+  if (active.length === 0) { chipsWrap.classList.add('hidden'); chipsWrap.innerHTML=''; return; }
+  chipsWrap.classList.remove('hidden');
+  chipsWrap.innerHTML = active.map((a, i) => `
+    <button data-idx="${i}" class="chip flex items-center gap-1 text-xs font-medium pl-3 pr-2 py-1.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100">
+      ${escapeHtml(a[0])} <span class="ml-0.5">✕</span>
+    </button>`).join('');
+  chipsWrap.querySelectorAll('button').forEach((btn, i) => btn.addEventListener('click', active[i][1]));
+}
+
+/* ============ SEARCH ============ */
+document.getElementById('searchInput').addEventListener('input', function () {
+  document.getElementById('clearSearchBtn').classList.toggle('hidden', this.value.length === 0);
+  renderAll();
+});
+function clearSearchOnly() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearSearchBtn').classList.add('hidden');
+  renderAll();
+}
+function getSearchTerm() { return document.getElementById('searchInput').value.trim().toLowerCase(); }
+
+/* ============ SELECT MODE ============ */
+function toggleSelectMode() {
+  selectMode = !selectMode;
+  if (!selectMode) selectedIds.clear();
+  document.getElementById('selectModeBtn').classList.toggle('bg-brand-600', selectMode);
+  document.getElementById('selectModeBtn').classList.toggle('text-white', selectMode);
+  document.getElementById('selectModeBtn').classList.toggle('border-brand-600', selectMode);
+  renderAll();
+}
+function exitSelectMode() {
+  selectMode = false;
+  selectedIds.clear();
+  document.getElementById('selectModeBtn').classList.remove('bg-brand-600','text-white','border-brand-600');
+  renderAll();
+}
+
+/* ============ FILTER + SORT LOGIC ============ */
+function getFilteredTransactions() {
+  const term = getSearchTerm();
+  const type = document.getElementById('filterType').value;
+  const uom = document.getElementById('filterUom').value;
+  const code = document.getElementById('filterCode').value;
+  const expFrom = document.getElementById('filterExpFrom').value;
+  const expTo = document.getElementById('filterExpTo').value;
+
+  let list = transactions.filter(t => {
+    if (term && !(t.code.toLowerCase().includes(term) || t.name.toLowerCase().includes(term))) return false;
+    if (type && t.type !== type) return false;
+    if (uom && t.uom !== uom) return false;
+    if (code && t.code !== code) return false;
+    if (expFrom && (!t.expiry || t.expiry < expFrom)) return false;
+    if (expTo && (!t.expiry || t.expiry > expTo)) return false;
+    return true;
+  });
+
+  const { field, dir } = sortState;
+  list.sort((a, b) => {
+    let va = a[field], vb = b[field];
+    if (field === 'qty') { va = parseFloat(va); vb = parseFloat(vb); }
+    if (va === '' || va === undefined || va === null) va = dir === 'asc' ? '\uffff' : '';
+    if (vb === '' || vb === undefined || vb === null) vb = dir === 'asc' ? '\uffff' : '';
+    if (va < vb) return dir === 'asc' ? -1 : 1;
+    if (va > vb) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  return list;
+}
+
+function setSort(field) {
+  if (sortState.field === field) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+  else { sortState.field = field; sortState.dir = 'asc'; }
+  renderAll();
+}
+function setBalSort(field) {
+  if (balSortState.field === field) balSortState.dir = balSortState.dir === 'asc' ? 'desc' : 'asc';
+  else { balSortState.field = field; balSortState.dir = 'asc'; }
+  renderAll();
+}
+function updateSortArrows() {
+  ['code','name','uom','type','qty','expiry','timestamp'].forEach(f => {
+    const el = document.getElementById('arrow-' + f);
+    if (el) el.textContent = sortState.field === f ? (sortState.dir === 'asc' ? '▲' : '▼') : '';
+  });
+  ['code','name','uom','in','out','adj','balance','expiry'].forEach(f => {
+    const el = document.getElementById('barrow-' + f);
+    if (el) el.textContent = balSortState.field === f ? (balSortState.dir === 'asc' ? '▲' : '▼') : '';
+  });
+}
+
+/* ============ BALANCE CALC ============ */
+function computeBalances() {
+  const term = getSearchTerm();
+  const map = {};
+  transactions.forEach(t => {
+    const key = t.code + '||' + t.uom;
+    if (!map[key]) map[key] = { code: t.code, name: t.name, uom: t.uom, in: 0, out: 0, adj: 0, balance: 0, expiry: '' };
+    const entry = map[key];
+    entry.name = t.name;
+    if (t.type === 'Stock In') { entry.in += t.qty; entry.balance += t.qty; }
+    else if (t.type === 'Stock Out') { entry.out += t.qty; entry.balance -= t.qty; }
+    else if (t.type === 'Adjustment') { entry.adj += t.qty; entry.balance += t.qty; }
+    if (t.expiry) { if (!entry.expiry || t.expiry < entry.expiry) entry.expiry = t.expiry; }
+  });
+  let list = Object.values(map);
+  if (term) list = list.filter(e => e.code.toLowerCase().includes(term) || e.name.toLowerCase().includes(term));
+  const { field, dir } = balSortState;
+  list.sort((a, b) => {
+    let va = a[field], vb = b[field];
+    if (['in','out','adj','balance'].includes(field)) { va = parseFloat(va); vb = parseFloat(vb); }
+    if (va === '' || va === undefined) va = dir === 'asc' ? '\uffff' : '';
+    if (vb === '' || vb === undefined) vb = dir === 'asc' ? '\uffff' : '';
+    if (va < vb) return dir === 'asc' ? -1 : 1;
+    if (va > vb) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  return list;
+}
+
+/* ============ HELPERS ============ */
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function typeClass(type) { return type === 'Stock In' ? 'type-in' : type === 'Stock Out' ? 'type-out' : 'type-adj'; }
+function typeBadge(type) { return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${typeClass(type)}">${type}</span>`; }
+function isExpiringSoon(expiry) { if (!expiry) return false; const d = (new Date(expiry) - new Date()) / 86400000; return d >= 0 && d <= 30; }
+function isExpired(expiry) { if (!expiry) return false; return new Date(expiry) < new Date(new Date().toDateString()); }
+
+/* ============ RENDER: LOG ============ */
+function renderLog() {
+  const list = getFilteredTransactions();
+  document.getElementById('logCount').textContent = list.length;
+
+  // Desktop table
+  const tbody = document.getElementById('logTableBody');
+  tbody.innerHTML = '';
+  document.getElementById('logEmptyMsg').classList.toggle('hidden', list.length > 0);
+  list.forEach(t => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t border-slate-100 hover:bg-slate-50 fade-in';
+    const expClass = isExpired(t.expiry) ? 'text-rose-600 font-semibold' : (isExpiringSoon(t.expiry) ? 'text-amber-600 font-medium' : '');
+    tr.innerHTML = `
+      <td class="px-4 py-3"><input type="checkbox" class="rowChk chk" data-id="${t.id}" ${selectedIds.has(t.id) ? 'checked' : ''}></td>
+      <td class="px-4 py-3 font-semibold">${escapeHtml(t.code)}</td>
+      <td class="px-4 py-3">${escapeHtml(t.name)}</td>
+      <td class="px-4 py-3 text-slate-500">${escapeHtml(t.uom)}</td>
+      <td class="px-4 py-3">${typeBadge(t.type)}</td>
+      <td class="px-4 py-3 text-right font-medium">${t.qty}</td>
+      <td class="px-4 py-3 ${expClass}">${t.expiry || '—'}${isExpired(t.expiry) ? ' ⛔' : (isExpiringSoon(t.expiry) ? ' ⏳' : '')}</td>
+      <td class="px-4 py-3 text-slate-500">${escapeHtml(t.remarks) || '—'}</td>
+      <td class="px-4 py-3 text-slate-400 text-xs">${new Date(t.timestamp).toLocaleString()}</td>
+      <td class="px-4 py-3 text-center"><button onclick="confirmDeleteSingle('${t.id}')" class="text-rose-400 hover:text-rose-600" title="Delete">🗑</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.rowChk').forEach(chk => {
+    chk.addEventListener('change', () => {
+      if (chk.checked) selectedIds.add(chk.dataset.id); else selectedIds.delete(chk.dataset.id);
+      updateSelectionUI();
+    });
+  });
+
+  // Mobile cards
+  const cardsWrap = document.getElementById('logCards');
+  cardsWrap.innerHTML = '';
+  document.getElementById('logEmptyMsgMobile').classList.toggle('hidden', list.length > 0);
+  list.forEach(t => {
+    const borderColor = t.type === 'Stock In' ? '#10b981' : t.type === 'Stock Out' ? '#f43f5e' : '#f59e0b';
+    const expFlag = isExpired(t.expiry) ? '<span class="text-rose-500 font-medium">⛔ Expired</span>' : (isExpiringSoon(t.expiry) ? '<span class="text-amber-500 font-medium">⏳ Expiring soon</span>' : '');
+    const div = document.createElement('div');
+    div.className = 'card p-3.5 fade-in relative';
+    div.style.borderLeft = `4px solid ${borderColor}`;
+    div.innerHTML = `
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-start gap-2.5 min-w-0">
+          ${selectMode ? `<input type="checkbox" class="rowChkM chk mt-1 flex-shrink-0" data-id="${t.id}" ${selectedIds.has(t.id) ? 'checked' : ''}>` : ''}
+          <div class="min-w-0">
+            <p class="font-semibold text-sm truncate">${escapeHtml(t.name)}</p>
+            <p class="text-xs text-slate-400">${escapeHtml(t.code)} · ${escapeHtml(t.uom)}</p>
+          </div>
+        </div>
+        ${typeBadge(t.type)}
+      </div>
+      <div class="flex items-end justify-between mt-2.5">
+        <div>
+          <p class="text-xl font-extrabold ${t.type==='Stock Out' ? 'text-rose-600' : t.type==='Stock In' ? 'text-emerald-600' : 'text-amber-600'}">${t.type==='Stock Out' ? '-' : t.type==='Stock In' ? '+' : ''}${t.qty}</p>
+          ${t.remarks ? `<p class="text-xs text-slate-400 mt-0.5">${escapeHtml(t.remarks)}</p>` : ''}
+        </div>
+        <div class="text-right">
+          <p class="text-[11px] text-slate-400">${new Date(t.timestamp).toLocaleString([], {dateStyle:'medium', timeStyle:'short'})}</p>
+          ${t.expiry ? `<p class="text-[11px] mt-0.5">${expFlag || ('Exp: ' + t.expiry)}</p>` : ''}
+        </div>
+      </div>
+      ${!selectMode ? `<button onclick="confirmDeleteSingle('${t.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 text-sm" style="right: 3.2rem;">🗑</button>` : ''}
+    `;
+    cardsWrap.appendChild(div);
+  });
+  cardsWrap.querySelectorAll('.rowChkM').forEach(chk => {
+    chk.addEventListener('change', () => {
+      if (chk.checked) selectedIds.add(chk.dataset.id); else selectedIds.delete(chk.dataset.id);
+      updateSelectionUI();
+    });
+  });
+
+  updateSelectionUI();
+}
+
+function updateSelectionUI() {
+  const bar = document.getElementById('selectionBar');
+  const show = selectMode && currentTab === 'log';
+  bar.classList.toggle('hidden', !show);
+  document.getElementById('selCount').textContent = selectedIds.size;
+  document.getElementById('deleteSelectedBtn').disabled = selectedIds.size === 0;
+  const selectAllChk = document.getElementById('selectAllChk');
+  if (selectAllChk) {
+    const visibleIds = Array.from(document.querySelectorAll('.rowChk')).map(c => c.dataset.id);
+    selectAllChk.checked = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
+  }
+}
+function toggleSelectAll(cb) {
+  if (cb.checked) selectMode = true;
+  document.querySelectorAll('.rowChk').forEach(r => { r.checked = cb.checked; if (cb.checked) selectedIds.add(r.dataset.id); else selectedIds.delete(r.dataset.id); });
+  renderAll();
+}
+
+/* ============ RENDER: BALANCE ============ */
+function renderBalance() {
+  const list = computeBalances();
+  const threshold = parseFloat(document.getElementById('lowStockThreshold').value) || 0;
+
+  const totalItems = list.length;
+  const lowStock = list.filter(e => e.balance > 0 && e.balance <= threshold).length;
+  const expiredCount = list.filter(e => isExpired(e.expiry)).length;
+  document.getElementById('statTotalItems').textContent = totalItems;
+  document.getElementById('statLowStock').textContent = lowStock;
+  document.getElementById('statExpired').textContent = expiredCount;
+
+  // Desktop table
+  const tbody = document.getElementById('balanceTableBody');
+  tbody.innerHTML = '';
+  document.getElementById('balEmptyMsg').classList.toggle('hidden', list.length > 0);
+  list.forEach(e => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t border-slate-100 hover:bg-slate-50 fade-in';
+    tr.innerHTML = `
+      <td class="px-4 py-3 font-semibold">${escapeHtml(e.code)}</td>
+      <td class="px-4 py-3">${escapeHtml(e.name)}</td>
+      <td class="px-4 py-3 text-slate-500">${escapeHtml(e.uom)}</td>
+      <td class="px-4 py-3 text-right text-emerald-600">${e.in}</td>
+      <td class="px-4 py-3 text-right text-rose-600">${e.out}</td>
+      <td class="px-4 py-3 text-right text-amber-600">${e.adj}</td>
+      <td class="px-4 py-3 text-right font-bold ${e.balance <= threshold ? 'text-rose-600' : 'text-slate-800'}">${e.balance}</td>
+      <td class="px-4 py-3">${e.expiry || '—'}</td>
+      <td class="px-4 py-3 text-center">${statusBadges(e, threshold)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Mobile cards
+  const cardsWrap = document.getElementById('balanceCards');
+  cardsWrap.innerHTML = '';
+  document.getElementById('balEmptyMsgMobile').classList.toggle('hidden', list.length > 0);
+  const maxBalance = Math.max(...list.map(e => Math.abs(e.balance)), 1);
+  list.forEach(e => {
+    const pct = Math.max(4, Math.min(100, (Math.max(e.balance,0) / (threshold * 2 || maxBalance)) * 100));
+    const barColor = e.balance <= 0 ? '#f43f5e' : e.balance <= threshold ? '#f59e0b' : '#10b981';
+    const div = document.createElement('div');
+    div.className = 'card p-3.5 fade-in';
+    div.innerHTML = `
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <div class="min-w-0">
+          <p class="font-semibold text-sm truncate">${escapeHtml(e.name)}</p>
+          <p class="text-xs text-slate-400">${escapeHtml(e.code)} · ${escapeHtml(e.uom)}</p>
+        </div>
+        <p class="text-xl font-extrabold flex-shrink-0" style="color:${barColor}">${e.balance}</p>
+      </div>
+      <div class="progress-track mb-2"><div class="progress-fill" style="width:${pct}%; background:${barColor}"></div></div>
+      <div class="flex items-center justify-between text-[11px] text-slate-500">
+        <span>In <b class="text-emerald-600">${e.in}</b> · Out <b class="text-rose-600">${e.out}</b> · Adj <b class="text-amber-600">${e.adj}</b></span>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mt-2">${statusBadges(e, threshold)}</div>
+      ${e.expiry ? `<p class="text-[11px] text-slate-400 mt-1.5">Nearest expiry: ${e.expiry}</p>` : ''}
+    `;
+    cardsWrap.appendChild(div);
+  });
+}
+
+function statusBadges(e, threshold) {
+  let out = '';
+  if (e.balance <= 0) out += '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Out of Stock</span>';
+  else if (e.balance <= threshold) out += '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Low Stock</span>';
+  else out += '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">OK</span>';
+  if (isExpired(e.expiry)) out += ' <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-200 text-rose-800">Expired</span>';
+  else if (isExpiringSoon(e.expiry)) out += ' <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-200 text-amber-800">Expiring Soon</span>';
+  return out;
+}
+
+function renderAll() {
+  populateFilterOptions();
+  renderActiveChips();
+  renderLog();
+  renderBalance();
+  updateSortArrows();
+}
+
+/* ============ DELETE ============ */
+function confirmDeleteSingle(id) {
+  pendingDelete = { type: 'single', id };
+  document.getElementById('deleteModalMsg').textContent = 'Are you sure you want to delete this record? This cannot be undone.';
+  const m = document.getElementById('deleteModal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function confirmDeleteSelected() {
+  if (selectedIds.size === 0) return;
+  pendingDelete = { type: 'batch', ids: Array.from(selectedIds) };
+  document.getElementById('deleteModalMsg').textContent = `Are you sure you want to delete ${selectedIds.size} selected record(s)? This cannot be undone.`;
+  const m = document.getElementById('deleteModal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeModal() {
+  pendingDelete = null;
+  const m = document.getElementById('deleteModal'); m.classList.add('hidden'); m.classList.remove('flex');
+}
+function executeDelete() {
+  if (!pendingDelete) return closeModal();
+  if (pendingDelete.type === 'single') {
+    transactions = transactions.filter(t => t.id !== pendingDelete.id);
+    selectedIds.delete(pendingDelete.id);
+  } else {
+    const idSet = new Set(pendingDelete.ids);
+    transactions = transactions.filter(t => !idSet.has(t.id));
+    pendingDelete.ids.forEach(id => selectedIds.delete(id));
+  }
+  saveData();
+  closeModal();
+  renderAll();
+  showToast('🗑 Record(s) deleted and balances recalculated.');
+}
+
+/* ============ CSV EXPORT ============ */
+function toCSVValue(v) {
+  if (v === null || v === undefined) v = '';
+  v = String(v);
+  if (v.includes(',') || v.includes('"') || v.includes('\n')) v = '"' + v.replace(/"/g, '""') + '"';
+  return v;
+}
+function downloadCSV(filename, rows) {
+  const csv = rows.map(r => r.map(toCSVValue).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function exportCSV() {
+  const header = ['ItemCode','ItemName','UOM','MovementType','Quantity','ExpiryDate','Remarks','Timestamp'];
+  const rows = [header, ...transactions.map(t => [t.code, t.name, t.uom, t.type, t.qty, t.expiry, t.remarks, t.timestamp])];
+  downloadCSV('stock_transactions.csv', rows);
+  showToast('⬇ Transactions exported.');
+}
+function exportBalanceCSV() {
+  const list = computeBalances();
+  const header = ['ItemCode','ItemName','UOM','TotalIn','TotalOut','Adjustments','CurrentBalance','NearestExpiry'];
+  const rows = [header, ...list.map(e => [e.code, e.name, e.uom, e.in, e.out, e.adj, e.balance, e.expiry])];
+  downloadCSV('stock_balance_summary.csv', rows);
+  showToast('⬇ Balance summary exported.');
+}
+
+/* ============ CSV IMPORT ============ */
+function parseCSVLine(line) {
+  const result = []; let cur = '', inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQuotes) {
+      if (c === '"') { if (line[i+1] === '"') { cur += '"'; i++; } else inQuotes = false; }
+      else cur += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { result.push(cur); cur = ''; }
+      else cur += c;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const text = e.target.result.replace(/\r/g, '');
+      const lines = text.split('\n').filter(l => l.trim().length > 0);
+      if (lines.length < 2) { showToast('⚠ CSV has no data rows.'); return; }
+      const header = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+      const colIdx = {
+        code: header.findIndex(h => ['itemcode','code'].includes(h)),
+        name: header.findIndex(h => ['itemname','name'].includes(h)),
+        uom: header.findIndex(h => ['uom'].includes(h)),
+        type: header.findIndex(h => ['movementtype','type'].includes(h)),
+        qty: header.findIndex(h => ['quantity','qty'].includes(h)),
+        expiry: header.findIndex(h => ['expirydate','expiry'].includes(h)),
+        remarks: header.findIndex(h => ['remarks'].includes(h)),
+        timestamp: header.findIndex(h => ['timestamp'].includes(h))
+      };
+      if (colIdx.code === -1 || colIdx.name === -1 || colIdx.qty === -1) { showToast('⚠ CSV missing required columns (ItemCode, ItemName, Quantity).'); return; }
+      let added = 0, skipped = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        const code = (cols[colIdx.code] || '').trim();
+        const name = (cols[colIdx.name] || '').trim();
+        const qty = parseFloat(cols[colIdx.qty]);
+        if (!code || !name || isNaN(qty)) { skipped++; continue; }
+        let type = colIdx.type !== -1 ? (cols[colIdx.type] || '').trim() : 'Stock In';
+        if (!['Stock In','Stock Out','Adjustment'].includes(type)) type = 'Stock In';
+        transactions.push({
+          id: uid(), code, name,
+          uom: colIdx.uom !== -1 ? (cols[colIdx.uom] || '').trim() : '',
+          type, qty,
+          expiry: colIdx.expiry !== -1 ? (cols[colIdx.expiry] || '').trim() : '',
+          remarks: colIdx.remarks !== -1 ? (cols[colIdx.remarks] || '').trim() : '',
+          timestamp: (colIdx.timestamp !== -1 && cols[colIdx.timestamp]) ? cols[colIdx.timestamp] : new Date().toISOString()
+        });
+        added++;
+      }
+      saveData();
+      renderAll();
+      showToast(`✅ Imported ${added} record(s)${skipped ? `, skipped ${skipped} invalid row(s)` : ''}.`);
+    } catch (err) {
+      console.error(err);
+      showToast('⚠ Failed to parse CSV file.');
+    } finally { event.target.value = ''; }
+  };
+  reader.readAsText(file);
+}
+
+/* ============ INIT ============ */
+selectMoveType('Stock In');
+renderAll();
+</script>
+</body>
+</html>
