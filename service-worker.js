@@ -6,7 +6,7 @@ const CACHE_NAME = 'stock-inout-cache-v1';
 
 // 需要预缓存的同源资源（请确保这些文件与 service-worker.js 在同一目录下）
 const LOCAL_ASSETS = [
-  './inout-record.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
