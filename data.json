@@ -13,6 +13,17 @@
       "expiryDate": ""
     },
     {
+      "id": "mtgrokzcj4k5c2",
+      "item": "chicken tail",
+      "itemCode": "r",
+      "qty": 50,
+      "uom": "kg",
+      "type": "IN",
+      "date": "2026-08-31",
+      "platform": "KW",
+      "expiryDate": ""
+    },
+    {
       "id": "mtgrokzcrfu2f3",
       "item": "chicken feet",
       "itemCode": "h",
@@ -50,17 +61,6 @@
       "item": "chicken leg",
       "itemCode": "af",
       "qty": 60,
-      "uom": "kg",
-      "type": "OUT",
-      "date": "2026-08-31",
-      "platform": "",
-      "expiryDate": ""
-    },
-    {
-      "id": "mtgrqwed5ny7t2",
-      "item": "chicken tail",
-      "itemCode": "r",
-      "qty": 50,
       "uom": "kg",
       "type": "OUT",
       "date": "2026-08-31",
