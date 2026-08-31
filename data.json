@@ -2,17 +2,6 @@
   "adminKeyHash": "2f20d1befe201807cb5542c9ecaaeb4646df3139d7daf5d8feaf7f22e36f504d",
   "records": [
     {
-      "id": "mtgrokzcnu5qd1",
-      "item": "chicken leg",
-      "itemCode": "af",
-      "qty": 50,
-      "uom": "kg",
-      "type": "IN",
-      "date": "2026-08-31",
-      "platform": "KW",
-      "expiryDate": ""
-    },
-    {
       "id": "mtgrokzcrfu2f3",
       "item": "chicken feet",
       "itemCode": "h",
