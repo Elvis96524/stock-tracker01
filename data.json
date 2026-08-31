@@ -46,6 +46,17 @@
       "expiryDate": ""
     },
     {
+      "id": "mtgrokzceicn94",
+      "item": "chicken gizzard",
+      "itemCode": "af",
+      "qty": 50,
+      "uom": "kg",
+      "type": "IN",
+      "date": "2026-08-31",
+      "platform": "HIP",
+      "expiryDate": ""
+    },
+    {
       "id": "mtgrokzchd9go5",
       "item": "whole chicken",
       "itemCode": "g",
@@ -105,17 +116,6 @@
       "item": "chicken wing",
       "itemCode": "asd",
       "qty": 200,
-      "uom": "kg",
-      "type": "OUT",
-      "date": "2026-08-31",
-      "platform": "",
-      "expiryDate": ""
-    },
-    {
-      "id": "mtgrqwedewzt81",
-      "item": "chicken leg",
-      "itemCode": "af",
-      "qty": 60,
       "uom": "kg",
       "type": "OUT",
       "date": "2026-08-31",
