@@ -178,6 +178,17 @@
       "expiryDate": ""
     },
     {
+      "id": "mtgrqwedj43zi7",
+      "item": "beef striploin",
+      "itemCode": "ar",
+      "qty": 3,
+      "uom": "kg",
+      "type": "OUT",
+      "date": "2026-08-31",
+      "platform": "",
+      "expiryDate": ""
+    },
+    {
       "id": "mtgrqwednntxy8",
       "item": "beef tenderloin",
       "itemCode": "fg",
@@ -281,17 +292,6 @@
       "item": "beef striploin",
       "itemCode": "ar",
       "qty": 3,
-      "uom": "kg",
-      "type": "OUT",
-      "date": "2026-08-31",
-      "platform": "",
-      "expiryDate": ""
-    },
-    {
-      "id": "mtgrrsbtfvi3w8",
-      "item": "beef tenderloin",
-      "itemCode": "fg",
-      "qty": 2,
       "uom": "kg",
       "type": "OUT",
       "date": "2026-08-31",
