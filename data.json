@@ -57,6 +57,17 @@
       "expiryDate": ""
     },
     {
+      "id": "mtgrokzchd9go5",
+      "item": "whole chicken",
+      "itemCode": "g",
+      "qty": 50,
+      "uom": "kg",
+      "type": "IN",
+      "date": "2026-08-31",
+      "platform": "HIP",
+      "expiryDate": ""
+    },
+    {
       "id": "mtgrokzcfz6h56",
       "item": "beef topside",
       "itemCode": "et",
@@ -149,17 +160,6 @@
       "item": "chicken gizzard",
       "itemCode": "af",
       "qty": 8,
-      "uom": "kg",
-      "type": "OUT",
-      "date": "2026-08-31",
-      "platform": "",
-      "expiryDate": ""
-    },
-    {
-      "id": "mtgrqwed1e9yj5",
-      "item": "whole chicken",
-      "itemCode": "g",
-      "qty": 52,
       "uom": "kg",
       "type": "OUT",
       "date": "2026-08-31",
