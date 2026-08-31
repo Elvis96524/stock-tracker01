@@ -112,17 +112,6 @@
       "expiryDate": ""
     },
     {
-      "id": "mtgrqwedactm40",
-      "item": "chicken wing",
-      "itemCode": "asd",
-      "qty": 200,
-      "uom": "kg",
-      "type": "OUT",
-      "date": "2026-08-31",
-      "platform": "",
-      "expiryDate": ""
-    },
-    {
       "id": "mtgrqwedewzt81",
       "item": "chicken leg",
       "itemCode": "af",
@@ -215,6 +204,17 @@
       "item": "beef tripe",
       "itemCode": "vdh",
       "qty": 3,
+      "uom": "kg",
+      "type": "OUT",
+      "date": "2026-08-31",
+      "platform": "",
+      "expiryDate": ""
+    },
+    {
+      "id": "mtgrrsbt7ctyp0",
+      "item": "chicken wing",
+      "itemCode": "asd",
+      "qty": 200,
       "uom": "kg",
       "type": "OUT",
       "date": "2026-08-31",
