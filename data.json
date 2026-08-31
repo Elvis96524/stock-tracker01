@@ -2,6 +2,17 @@
   "adminKeyHash": "2f20d1befe201807cb5542c9ecaaeb4646df3139d7daf5d8feaf7f22e36f504d",
   "records": [
     {
+      "id": "mtgrokzcksgdi0",
+      "item": "chicken wing",
+      "itemCode": "asd",
+      "qty": 50,
+      "uom": "kg",
+      "type": "IN",
+      "date": "2026-08-31",
+      "platform": "KW",
+      "expiryDate": ""
+    },
+    {
       "id": "mtgrokzcnu5qd1",
       "item": "chicken leg",
       "itemCode": "af",
@@ -98,17 +109,6 @@
       "type": "IN",
       "date": "2026-08-31",
       "platform": "SK",
-      "expiryDate": ""
-    },
-    {
-      "id": "mtgrqwedactm40",
-      "item": "chicken wing",
-      "itemCode": "asd",
-      "qty": 200,
-      "uom": "kg",
-      "type": "OUT",
-      "date": "2026-08-31",
-      "platform": "",
       "expiryDate": ""
     },
     {
