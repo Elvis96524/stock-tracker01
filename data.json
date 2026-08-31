@@ -2,17 +2,6 @@
   "adminKeyHash": "2f20d1befe201807cb5542c9ecaaeb4646df3139d7daf5d8feaf7f22e36f504d",
   "records": [
     {
-      "id": "mtgrqwedj9o1m9",
-      "item": "beef tripe",
-      "itemCode": "vdh",
-      "qty": 3,
-      "uom": "kg",
-      "type": "OUT",
-      "date": "2026-08-31",
-      "platform": "",
-      "expiryDate": ""
-    },
-    {
       "id": "mtgrrsbtgzsa89",
       "item": "beef tripe",
       "itemCode": "vdh",
