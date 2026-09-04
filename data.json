@@ -14,6 +14,20 @@
       "sourcePackingList": "PL2026001",
       "sourcePackingListId": "pl_mtmlcezp16vb",
       "sourcePackingListItemId": "pli_mtmlcezpm4f8"
+    },
+    {
+      "id": "mtmlddssz9hf1",
+      "item": "MINERAL WATER 500MLX24'S",
+      "itemCode": "MW001",
+      "qty": 20,
+      "uom": "",
+      "type": "OUT",
+      "date": "2026-09-04",
+      "platform": "SK PURPOSE - DRINKING WATER",
+      "expiryDate": "",
+      "sourcePackingList": "PL2026001",
+      "sourcePackingListId": "pl_mtmlcezp16vb",
+      "sourcePackingListItemId": "pli_mtmlcezpek9i"
     }
   ],
   "packingLists": [
@@ -30,9 +44,9 @@
           "itemCode": "MW001",
           "uom": "",
           "qtyRequested": 30,
-          "done": false,
-          "qtyTaken": null,
-          "completedAt": null
+          "done": true,
+          "qtyTaken": 20,
+          "completedAt": "2026-09-04T06:47:30.619Z"
         },
         {
           "id": "pli_mtmlcezpm4f8",
