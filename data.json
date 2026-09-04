@@ -15,9 +15,9 @@
           "itemCode": "RA001",
           "uom": "CTN",
           "qtyRequested": 1,
-          "done": true,
-          "qtyTaken": 1,
-          "completedAt": "2026-09-04T03:41:31.850Z"
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
         }
       ]
     }
