@@ -4909,25 +4909,5 @@
       "sourcePackingList": "PL-2026"
     }
   ],
-  "packingLists": [
-    {
-      "id": "pl_mtmelp9d52u9",
-      "title": "PL-2026",
-      "platform": "SK PURPOSE",
-      "date": "2026-09-04",
-      "createdAt": "2026-09-04T03:38:00.865Z",
-      "items": [
-        {
-          "id": "pli_mtmelp9czsw4",
-          "item": "RED APPLE",
-          "itemCode": "RA001",
-          "uom": "CTN",
-          "qtyRequested": 1,
-          "done": true,
-          "qtyTaken": 1,
-          "completedAt": "2026-09-04T03:38:31.626Z"
-        }
-      ]
-    }
-  ]
+  "packingLists": []
 }
