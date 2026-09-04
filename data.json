@@ -42,6 +42,17 @@
       "sourcePackingList": "PL2026001",
       "sourcePackingListId": "pl_mtmlcezp16vb",
       "sourcePackingListItemId": "pli_mtmlcezppuoy"
+    },
+    {
+      "id": "mtmls1ta1tfw7",
+      "item": "DRINKING WATER 19LT",
+      "itemCode": "DW001",
+      "qty": 1100,
+      "uom": "ctn",
+      "type": "IN",
+      "date": "2026-09-04",
+      "platform": "",
+      "expiryDate": ""
     }
   ],
   "packingLists": [
