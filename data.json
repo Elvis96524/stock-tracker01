@@ -3632,17 +3632,6 @@
       "expiryDate": ""
     },
     {
-      "id": "mtlad3tumao6l33",
-      "item": "AUST.CELERY",
-      "itemCode": "AC001",
-      "qty": 2,
-      "uom": "KG",
-      "type": "IN",
-      "date": "2026-09-03",
-      "platform": "SK PURPOSE",
-      "expiryDate": ""
-    },
-    {
       "id": "mtlad3tuv7qls34",
       "item": "CHAI SIM",
       "itemCode": "CS001",
@@ -4907,5 +4896,6 @@
       "platform": "SK PURPOSE",
       "expiryDate": "2027-10-01"
     }
-  ]
+  ],
+  "packingLists": []
 }
