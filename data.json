@@ -4897,5 +4897,25 @@
       "expiryDate": "2027-10-01"
     }
   ],
-  "packingLists": []
+  "packingLists": [
+    {
+      "id": "pl_mtmepl9spij7",
+      "title": "PL-2026",
+      "platform": "SK PURPOSE",
+      "date": "2026-09-04",
+      "createdAt": "2026-09-04T03:41:02.320Z",
+      "items": [
+        {
+          "id": "pli_mtmepl9s0cif",
+          "item": "RED APPLE",
+          "itemCode": "RA001",
+          "uom": "CTN",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        }
+      ]
+    }
+  ]
 }
