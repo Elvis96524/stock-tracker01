@@ -4895,6 +4895,18 @@
       "date": "2026-09-03",
       "platform": "SK PURPOSE",
       "expiryDate": "2027-10-01"
+    },
+    {
+      "id": "mtmeq822fuvb0",
+      "item": "RED APPLE",
+      "itemCode": "RA001",
+      "qty": 1,
+      "uom": "CTN",
+      "type": "OUT",
+      "date": "2026-09-04",
+      "platform": "SK PURPOSE",
+      "expiryDate": "",
+      "sourcePackingList": "PL-2026"
     }
   ],
   "packingLists": [
@@ -4911,9 +4923,9 @@
           "itemCode": "RA001",
           "uom": "CTN",
           "qtyRequested": 1,
-          "done": false,
-          "qtyTaken": null,
-          "completedAt": null
+          "done": true,
+          "qtyTaken": 1,
+          "completedAt": "2026-09-04T03:41:31.850Z"
         }
       ]
     }
