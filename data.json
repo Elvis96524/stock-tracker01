@@ -4895,18 +4895,6 @@
       "date": "2026-09-03",
       "platform": "SK PURPOSE",
       "expiryDate": "2027-10-01"
-    },
-    {
-      "id": "mtmemczu9cf6o",
-      "item": "RED APPLE",
-      "itemCode": "RA001",
-      "qty": 1,
-      "uom": "CTN",
-      "type": "OUT",
-      "date": "2026-09-04",
-      "platform": "SK PURPOSE",
-      "expiryDate": "",
-      "sourcePackingList": "PL-2026"
     }
   ],
   "packingLists": []
