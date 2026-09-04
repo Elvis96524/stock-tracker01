@@ -28,6 +28,20 @@
       "sourcePackingList": "PL2026001",
       "sourcePackingListId": "pl_mtmlcezp16vb",
       "sourcePackingListItemId": "pli_mtmlcezpek9i"
+    },
+    {
+      "id": "mtmldi9g58u4o",
+      "item": "DRINKING WATER 19LT",
+      "itemCode": "DW001",
+      "qty": 10,
+      "uom": "",
+      "type": "OUT",
+      "date": "2026-09-04",
+      "platform": "SK PURPOSE - DRINKING WATER",
+      "expiryDate": "",
+      "sourcePackingList": "PL2026001",
+      "sourcePackingListId": "pl_mtmlcezp16vb",
+      "sourcePackingListItemId": "pli_mtmlcezppuoy"
     }
   ],
   "packingLists": [
@@ -64,9 +78,9 @@
           "itemCode": "DW001",
           "uom": "",
           "qtyRequested": 20,
-          "done": false,
-          "qtyTaken": null,
-          "completedAt": null
+          "done": true,
+          "qtyTaken": 10,
+          "completedAt": "2026-09-04T06:47:36.838Z"
         }
       ]
     }
