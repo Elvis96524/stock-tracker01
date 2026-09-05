@@ -39,6 +39,20 @@
       "date": "2026-09-04",
       "platform": "",
       "expiryDate": ""
+    },
+    {
+      "id": "mtnmqu6hm14ap",
+      "item": "MINERAL WATER 1.5LX12'S",
+      "itemCode": "MW001",
+      "qty": 30,
+      "uom": "",
+      "type": "OUT",
+      "date": "2026-09-05",
+      "platform": "SK PURPOSE - DRINKING WATER",
+      "expiryDate": "",
+      "sourcePackingList": "PL2026001",
+      "sourcePackingListId": "pl_mtmlcezp16vb",
+      "sourcePackingListItemId": "pli_mtmlcezpm4f8"
     }
   ],
   "packingLists": [
@@ -65,10 +79,10 @@
           "itemCode": "MW001",
           "uom": "",
           "qtyRequested": 30,
-          "done": false,
-          "qtyTaken": null,
-          "completedAt": null,
-          "status": null
+          "done": true,
+          "qtyTaken": 30,
+          "completedAt": "2026-09-05T00:13:44.622Z",
+          "status": "complete"
         },
         {
           "id": "pli_mtmlcezppuoy",
