@@ -1,6 +1,18 @@
 {
   "adminKeyHash": "2f20d1befe201807cb5542c9ecaaeb4646df3139d7daf5d8feaf7f22e36f504d",
-  "records": [],
+  "records": [
+    {
+      "id": "mtnzl0zorzqzs",
+      "item": "DUCKLING HALAL",
+      "itemCode": "DH001",
+      "qty": 675,
+      "uom": "KG",
+      "type": "IN",
+      "date": "2026-09-05",
+      "platform": "CCK",
+      "expiryDate": "2028-05-30"
+    }
+  ],
   "packingLists": [
     {
       "id": "pl_mtmlcezp16vb",
