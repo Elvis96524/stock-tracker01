@@ -11,6 +11,17 @@
       "date": "2026-09-05",
       "platform": "CCK",
       "expiryDate": "2028-05-30"
+    },
+    {
+      "id": "mto02t9pqg4bj",
+      "item": "DUCKLING HALAL",
+      "itemCode": "DH001",
+      "qty": 621,
+      "uom": "KG",
+      "type": "IN",
+      "date": "2028-06-13",
+      "platform": "",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
