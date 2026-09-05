@@ -1,0 +1,3309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SRS</title>
+
+<!-- PWA 配置 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f5df0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SRS">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --ink: #1e2330;
+    --muted: #6b7280;
+    --border: #e3e5ea;
+    --in: #1f9d63;
+    --in-bg: #e7f7ef;
+    --out: #d64545;
+    --out-bg: #fceaea;
+    --warn: #b8860b;
+    --warn-bg: #fdf3d9;
+    --accent: #2f5df0;
+    --accent-hover: #2649c4;
+    --row-hover: #f7f8fa;
+    --sub-bg: #fafbfc;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding: 32px 16px;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  h1 {
+    font-size: 24px;
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+
+  header .sub {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .lang-switch select {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .panel h2 {
+    font-size: 15px;
+    margin: 0 0 16px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  input, select {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    background: #fff;
+    color: var(--ink);
+    font-family: inherit;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .type-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .type-toggle button {
+    flex: 1;
+    border: none;
+    padding: 10px 0;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--muted);
+  }
+
+  .type-toggle button.active.in { background: var(--in-bg); color: var(--in); }
+  .type-toggle button.active.out { background: var(--out-bg); color: var(--out); }
+
+  .import-row {
+    display: flex;
+    gap: 10px;
+    align-items: end;
+    flex-wrap: wrap;
+  }
+
+  .import-row .field { min-width: 140px; }
+
+  form#manualForm {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 0.9fr 0.9fr 1fr 1.2fr 1.4fr 1.2fr auto;
+    gap: 10px;
+    align-items: end;
+  }
+
+  .add-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    height: 42px;
+  }
+  .add-btn:hover { background: var(--accent-hover); }
+
+  @media (max-width: 1000px) {
+    form#manualForm { grid-template-columns: 1fr 1fr; }
+    form#manualForm .add-btn { grid-column: span 2; }
+  }
+
+  .file-btn {
+    background: #fff;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .file-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .import-btn {
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    height: 42px;
+  }
+  .import-btn:hover { opacity: 0.85; }
+
+  .import-status {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .import-status.ok { color: var(--in); }
+  .import-status.err { color: var(--out); }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+
+  .toolbar .field { min-width: 150px; }
+
+  .toolbar input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .export-btn {
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    height: 42px;
+  }
+  .export-btn:hover { background: var(--bg); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  th {
+    text-align: left;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 8px;
+  }
+
+  td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr.item-row { cursor: pointer; }
+  tr.item-row:hover { background: var(--row-hover); }
+  tr.item-row.expanded { background: var(--row-hover); }
+  tr:last-child td { border-bottom: none; }
+
+  .chevron {
+    display: inline-block;
+    transition: transform 0.15s ease;
+    color: var(--muted);
+    margin-right: 6px;
+    font-size: 11px;
+  }
+  tr.item-row.expanded .chevron { transform: rotate(90deg); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge.in { background: var(--in-bg); color: var(--in); }
+  .badge.out { background: var(--out-bg); color: var(--out); }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    background: #eef0f4;
+    color: var(--ink);
+    margin: 2px 3px 2px 0;
+  }
+
+  .expiry-tag {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .expiry-tag.ok { color: var(--muted); background: #eef0f4; }
+  .expiry-tag.soon { color: var(--warn); background: var(--warn-bg); }
+  .expiry-tag.expired { color: var(--out); background: var(--out-bg); }
+  .expiry-tag.none { color: var(--muted); }
+
+  .qty { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  .del-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .del-btn:hover { background: var(--out-bg); color: var(--out); }
+  .balance-cell { font-size: 16px; font-weight: 700; }
+
+  .detail-row td {
+    background: var(--sub-bg);
+    padding: 0;
+  }
+
+  .detail-wrap {
+    padding: 6px 16px 16px 40px;
+  }
+
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .detail-table th {
+    background: #f1f2f5;
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+
+  .detail-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-table tr:last-child td { border-bottom: none; }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px 0;
+    font-size: 14px;
+  }
+
+  @media (max-width: 800px) {
+    .detail-wrap { padding: 6px 8px 16px 16px; }
+  }
+
+  /* ---------- 移动端：表格转卡片布局 ---------- */
+  @media (max-width: 700px) {
+    body { padding: 16px 10px; }
+    .wrap { max-width: 100%; }
+    .panel { padding: 16px; }
+
+    table:not(.detail-table) thead { display: none; }
+    table:not(.detail-table),
+    table:not(.detail-table) tbody,
+    table:not(.detail-table) tr,
+    table:not(.detail-table) td {
+      display: block;
+      width: 100%;
+    }
+    tr.item-row {
+      padding: 12px 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    tr.item-row td {
+      border: none;
+      padding: 5px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    tr.item-row td::before {
+      content: attr(data-label);
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    tr.item-row td.name-cell {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    tr.item-row td.name-cell::before { content: none; }
+    .cell-value {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      max-width: 100%;
+    }
+    .detail-row td { display: block; width: 100%; padding: 0; max-width: 100%; }
+    .detail-wrap { padding: 6px 4px 16px 4px; max-width: 100%; }
+
+    .detail-table thead { display: none; }
+    .detail-table, .detail-table tbody, .detail-table tr, .detail-table td {
+      display: block;
+      width: 100%;
+    }
+    .detail-table tr {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-table td {
+      border: none;
+      padding: 4px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .detail-table td::before {
+      content: attr(data-label);
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .detail-table td[data-label=""]::before { content: none; }
+
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .toolbar .field { min-width: 0; }
+    .toolbar input[type="text"] { min-width: 0; }
+    .toolbar select, .toolbar input { max-width: 100%; }
+
+    .import-row { flex-direction: column; align-items: stretch; }
+    .import-row .field { min-width: 0; }
+    .import-row .type-toggle { width: 100% !important; }
+
+    form#manualForm { grid-template-columns: 1fr !important; }
+    form#manualForm .add-btn { grid-column: span 1 !important; }
+
+    .pill, .badge, .expiry-tag { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  }
+
+  /* ---------- 设备锁屏 / 管理员登录 ---------- */
+  #lockScreen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #lockScreen.open { display: flex; }
+
+  .lock-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 32px 26px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+  }
+
+  .lock-card .lock-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 16px;
+  }
+
+  .lock-card h2 {
+    font-size: 18px;
+    text-align: center;
+    margin: 0 0 6px;
+  }
+
+  .lock-card .lock-sub {
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 22px;
+  }
+
+  .pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .pin-dots .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: #fff;
+    transition: background 0.1s ease, border-color 0.1s ease;
+  }
+  .pin-dots .dot.filled { background: var(--accent); border-color: var(--accent); }
+
+  .pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .pin-keypad button {
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .pin-keypad button:active { background: var(--bg); }
+  .pin-keypad button.wide { grid-column: span 1; font-size: 13px; color: var(--muted); }
+
+  .lock-error {
+    color: var(--out);
+    font-size: 13px;
+    text-align: center;
+    min-height: 18px;
+    margin-bottom: 10px;
+  }
+
+  .lock-alt-link {
+    display: block;
+    text-align: center;
+    font-size: 13px;
+    color: var(--accent);
+    cursor: pointer;
+    margin-top: 6px;
+    background: none;
+    border: none;
+    width: 100%;
+  }
+  .lock-alt-link.muted { color: var(--muted); }
+
+  .fingerprint-btn {
+    width: 100%;
+    border: 1.5px solid var(--accent);
+    background: #fff;
+    color: var(--accent);
+    border-radius: 12px;
+    padding: 14px 0;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .fingerprint-btn:hover { background: #eef1fe; }
+
+  .setup-choice {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .setup-choice button {
+    border: 1.5px solid var(--border);
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    color: var(--ink);
+  }
+  .setup-choice button:hover { border-color: var(--accent); }
+  .setup-choice button .desc {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ---------- 顶部按钮 ---------- */
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .admin-btn {
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .admin-btn.active { background: var(--in-bg); color: var(--in); border-color: var(--in); }
+  .refresh-btn {
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .refresh-btn.spinning svg, .refresh-btn.spinning { animation: srsSpin 0.8s linear infinite; }
+  @keyframes srsSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .sync-status {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+    margin: -14px 0 16px;
+  }
+  .sync-status.err { color: var(--out); }
+
+  .admin-notice {
+    background: var(--warn-bg);
+    color: #92670c;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+  }
+
+  /* ---------- 管理员登录 / 设置 弹窗 ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 22, 28, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal-card {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 26px 24px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  }
+  .modal-card h2 { font-size: 17px; margin: 0 0 6px; }
+  .modal-card .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .modal-card input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    margin-bottom: 12px;
+    background: #fafbfc;
+  }
+  .modal-card input:focus { outline: none; border-color: var(--accent); background: #fff; }
+  .modal-btn-row { display: flex; gap: 10px; }
+  .modal-btn-row button {
+    flex: 1;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modal-btn-row .btn-primary { background: var(--accent); color: #fff; }
+  .modal-btn-row .btn-primary:hover { background: var(--accent-hover); }
+  .modal-btn-row .btn-secondary { background: #eef0f4; color: var(--ink); }
+  .modal-btn-row .btn-secondary:hover { background: #e3e5ea; }
+  .modal-error { color: var(--out); font-size: 13px; margin: -4px 0 12px; min-height: 16px; }
+  .modal-status { font-size: 13px; margin-top: 10px; text-align: center; }
+  .modal-status.ok { color: var(--in); }
+  .modal-status.err { color: var(--out); }
+
+  .settings-toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 6px;
+  }
+  .settings-toggle-row .chev { color: var(--muted); transition: transform 0.15s ease; font-size: 12px; }
+  .settings-toggle-row.open .chev { transform: rotate(90deg); }
+  .settings-body { display: none; margin-top: 14px; }
+  .settings-body.open { display: block; }
+  .warn-box {
+    background: var(--warn-bg);
+    color: #92670c;
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+  }
+
+  [data-admin-only] { display: none; }
+  body.is-admin [data-admin-only] { display: block; }
+
+  /* ---------- 选择页 ---------- */
+  .choice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .choice-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  .choice-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .choice-icon { font-size: 40px; margin-bottom: 12px; }
+  .choice-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .choice-desc { font-size: 13px; color: var(--muted); }
+
+  /* ---------- Packing List ---------- */
+  .pl-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+  }
+  .pl-card:hover { border-color: var(--accent); }
+  .pl-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .pl-card-title { font-weight: 700; font-size: 15px; }
+  .pl-card-meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .pl-progress-bar {
+    height: 8px;
+    background: #eef0f4;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .pl-progress-fill { height: 100%; background: var(--in); border-radius: 999px; }
+  .pl-progress-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .pl-status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .pl-status-badge.open { background: var(--warn-bg); color: var(--warn); }
+  .pl-status-badge.completed { background: var(--in-bg); color: var(--in); }
+  .pl-status-badge.incomplete { background: var(--out-bg); color: var(--out); }
+
+  .export-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .pl-item-row {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .pl-item-row.done { background: var(--in-bg); border-color: var(--in); }
+  .pl-item-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .pl-item-name { font-weight: 600; font-size: 14px; }
+  .pl-item-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .pl-item-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .pl-item-actions input {
+    width: 90px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  .pl-done-btn {
+    background: var(--in);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .pl-done-btn:hover { opacity: 0.9; }
+  .pl-done-check { color: var(--in); font-weight: 700; font-size: 13px; }
+
+  .pl-new-item-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .pl-new-item-row input {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 13px;
+    width: 100%;
+  }
+  .pl-remove-item-btn {
+    border: none;
+    background: transparent;
+    color: var(--out);
+    cursor: pointer;
+    font-size: 16px;
+  }
+  @media (max-width: 600px) {
+    .pl-new-item-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  .pl-import-row { margin-bottom: 4px; }
+  .pl-import-label {
+    display: inline-block;
+    border: 1px dashed var(--border);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .pl-import-label:hover { border-color: var(--accent); background: #eef1fe; }
+
+  .pl-undo-btn {
+    border: 1px solid var(--out);
+    background: #fff;
+    color: var(--out);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 8px;
+  }
+  .pl-undo-btn:hover { background: var(--out-bg); }
+
+  .danger-btn {
+    border: 1px solid var(--out);
+    background: #fff;
+    color: var(--out);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .danger-btn:hover { background: var(--out-bg); }
+</style>
+</head>
+<body>
+
+<!-- 设备解锁屏（PIN / 指纹） -->
+<div id="lockScreen">
+  <div class="lock-card" id="lockCard"></div>
+</div>
+
+<!-- 管理员登录弹窗 -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal-card">
+    <h2 id="adminModalTitle" data-i18n="adminLoginTitle">管理员登录</h2>
+    <div class="sub" id="adminModalSub" data-i18n="adminLoginSub">请输入管理员密钥以新增或删除记录</div>
+    <input type="password" id="adminKeyInput" autocomplete="off">
+    <div class="modal-error" id="adminModalError"></div>
+    <div class="modal-btn-row">
+      <button class="btn-secondary" id="adminModalCancel" data-i18n="cancelBtn">取消</button>
+      <button class="btn-primary" id="adminModalConfirm" data-i18n="confirmBtn">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 同步 Token 设置（任何需要写入的设备都要配置，与管理员密钥各自独立） -->
+<div class="modal-overlay" id="syncSettingsModal">
+  <div class="modal-card">
+    <h2 data-i18n="ghSettingsTitle">GitHub 同步设置</h2>
+    <div class="sub" data-i18n="ghSettingsSub">此设备要新增/勾选完成/删除数据时，需要在本机保存一个有写入权限的 Token</div>
+    <div class="warn-box" data-i18n="ghSettingsWarn">⚠️ Token 会以明文保存在本设备浏览器中，请使用仅限此仓库、仅勾选 Contents 读写权限的 Fine-grained Token。</div>
+    <input type="password" id="ghToken" data-i18n-ph="ghTokenLabel" autocomplete="off">
+    <div class="modal-status" id="ghSettingsStatus"></div>
+    <div class="modal-btn-row">
+      <button class="btn-secondary" id="syncSettingsCancel" data-i18n="cancelBtn">取消</button>
+      <button class="btn-primary" id="saveGhSettingsBtn" data-i18n="saveGhSettingsBtn">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1 data-i18n="appTitle">SRS</h1>
+      <div class="sub" data-i18n="appSubtitle">按货物显示总库存 — 点击列表可查看该货物的进出明细</div>
+    </div>
+    <div class="header-actions">
+      <div class="lang-switch">
+        <select id="langSelect">
+          <option value="zh">中文</option>
+          <option value="en">English</option>
+          <option value="ms">Bahasa Melayu</option>
+        </select>
+      </div>
+      <button class="refresh-btn" id="refreshBtn" title="Refresh">⟳</button>
+      <button class="admin-btn" id="syncSettingsBtn" title="Sync Settings">⚙</button>
+      <button class="admin-btn" id="homeBtn" title="Home" style="display:none;">🏠</button>
+      <button class="admin-btn" id="adminToggleBtn"><span id="adminBtnLabel" data-i18n="adminLoginBtn">🔑 管理员</span></button>
+    </div>
+  </header>
+
+  <div class="sync-status" id="syncStatus"></div>
+
+  <!-- 选择页：Packing List / Stock Balance -->
+  <div id="choiceView">
+    <div class="choice-grid">
+      <button class="choice-card" id="gotoPackingBtn">
+        <div class="choice-icon">📋</div>
+        <div class="choice-title" data-i18n="choicePackingTitle">Packing List</div>
+        <div class="choice-desc" data-i18n="choicePackingDesc">领料清单，勾选后自动扣减库存</div>
+      </button>
+      <button class="choice-card" id="gotoStockBtn">
+        <div class="choice-icon">📦</div>
+        <div class="choice-title" data-i18n="choiceStockTitle">Stock Balance</div>
+        <div class="choice-desc" data-i18n="choiceStockDesc">查看库存总览与进出记录</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Packing List 列表页 -->
+  <div id="packingListView" style="display:none;">
+    <div class="panel">
+      <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0;">
+        <h2 style="margin:0;" data-i18n="packingListPanelTitle">Packing Lists</h2>
+        <button class="admin-btn" id="newPackingListBtn" data-admin-only data-i18n="newPackingListBtn">+ New</button>
+      </div>
+      <div id="packingListsContainer"></div>
+      <div class="empty" id="packingListEmpty" style="display:none;" data-i18n="packingListEmptyText">暂无 Packing List。</div>
+    </div>
+  </div>
+
+  <!-- 新建 Packing List 表单（管理员） -->
+  <div class="modal-overlay" id="newPackingListModal">
+    <div class="modal-card" style="max-width:520px;">
+      <h2 data-i18n="newPackingListTitle">新建 Packing List</h2>
+      <input type="text" id="plTitle" data-i18n-ph="packingListTitlePh" autocomplete="off">
+      <input type="text" id="plPlatform" data-i18n-ph="platformLabel" autocomplete="off">
+      <input type="date" id="plDate">
+
+      <div class="pl-import-row">
+        <label for="plExcelFile" class="pl-import-label" data-i18n="plImportExcelBtn">📄 从 Excel 导入货物</label>
+        <input type="file" id="plExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">
+      </div>
+      <div class="modal-status" id="plImportStatus" style="text-align:left; margin-bottom:10px;"></div>
+
+      <div id="plItemsContainer"></div>
+      <button type="button" class="lock-alt-link" id="plAddItemBtn" style="margin-bottom:12px;" data-i18n="addItemBtn">+ Add item</button>
+      <div class="modal-error" id="plError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="plCancelBtn" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="plSaveBtn" data-i18n="saveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 清空全部库存数据确认（管理员，需重新输入密码） -->
+  <div class="modal-overlay" id="clearAllModal">
+    <div class="modal-card">
+      <h2 data-i18n="clearAllTitle">清空全部库存记录</h2>
+      <div class="warn-box" data-i18n="clearAllWarning">⚠️ 此操作会永久删除所有进出货记录（不影响 Packing List），且无法撤销。请再次输入管理员密钥以确认。</div>
+      <input type="password" id="clearAllPasswordInput" data-i18n-ph="adminKeyPlaceholder" autocomplete="off">
+      <div class="modal-error" id="clearAllError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="clearAllCancel" data-i18n="cancelBtn">取消</button>
+        <button class="danger-btn" id="clearAllConfirm" style="flex:1;" data-i18n="clearAllConfirmBtn">确认清空</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Packing List 详情 / 领取清单页 -->
+  <div id="packingDetailView" style="display:none;">
+    <div class="panel">
+      <button class="lock-alt-link muted" id="backToPackingListBtn" style="text-align:left; margin-bottom:10px;" data-i18n="backToListBtn">← Back</button>
+      <div id="packingDetailHeader"></div>
+      <div class="export-btn-row">
+        <button class="admin-btn" id="exportDoPdfBtn" data-i18n="exportDoPdfBtn">📄 Export DO (PDF)</button>
+        <button class="admin-btn" id="exportDoExcelBtn" data-i18n="exportDoExcelBtn">📊 Export DO (Excel)</button>
+      </div>
+      <div id="packingDetailItems"></div>
+      <button class="admin-btn" id="deletePackingListBtn" data-admin-only style="margin-top:16px; color:var(--out); border-color:var(--out);" data-i18n="deletePackingListBtn">🗑 Delete this packing list</button>
+    </div>
+  </div>
+
+  <!-- 库存页 -->
+  <div id="stockView" style="display:none;">
+
+  <div class="admin-notice" id="adminNotice" data-i18n="adminRequiredNotice">仅管理员可新增或删除记录。点击右上角"管理员"登录以进行操作。</div>
+
+  <div class="panel" data-admin-only>
+
+    <h2 data-i18n="importPanelTitle">从 Excel 导入</h2>
+    <div class="import-row">
+      <div class="field">
+        <label for="importType" data-i18n="importTypeLabel">导入类型</label>
+        <div class="type-toggle" style="width:140px;">
+          <button type="button" id="importBtnIn" class="active in" data-i18n="typeIn">入库</button>
+          <button type="button" id="importBtnOut" class="out" data-i18n="typeOut">出库</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="importDate" data-i18n="dateLabel">日期</label>
+        <input type="date" id="importDate">
+      </div>
+      <div class="field">
+        <label for="excelFile" data-i18n="excelFileLabel">Excel 文件 (.xlsx/.csv)</label>
+        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" class="file-btn">
+      </div>
+      <button type="button" id="importBtn" class="import-btn" data-i18n="importBtnText">导入 Excel</button>
+      <span class="import-status" id="importStatus"></span>
+    </div>
+  </div>
+
+  <div class="panel" data-admin-only>
+    <h2 data-i18n="manualPanelTitle">手动新增进出记录</h2>
+    <form id="manualForm">
+      <div class="field">
+        <label for="manName" data-i18n="itemNameLabel">货物名称</label>
+        <input type="text" id="manName" placeholder="例如：钢螺栓 M6" data-i18n-ph="itemNamePlaceholder" required autocomplete="off" list="itemNameList">
+        <datalist id="itemNameList"></datalist>
+      </div>
+      <div class="field">
+        <label for="manCode" data-i18n="itemCodeLabel">货物编号</label>
+        <input type="text" id="manCode" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="manQty" data-i18n="qtyLabel">数量</label>
+        <input type="number" id="manQty" min="1" step="1" placeholder="0" required>
+      </div>
+      <div class="field">
+        <label for="manUom" data-i18n="uomLabel">UOM</label>
+        <input type="text" id="manUom" placeholder="例如：pcs, box, kg" data-i18n-ph="uomPlaceholder">
+      </div>
+      <div class="field">
+        <label data-i18n="typeLabel">类型</label>
+        <div class="type-toggle">
+          <button type="button" id="manTypeIn" class="active in" data-i18n="typeIn">入库</button>
+          <button type="button" id="manTypeOut" class="out" data-i18n="typeOut">出库</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="manDate" data-i18n="dateLabel">日期</label>
+        <input type="date" id="manDate" required>
+      </div>
+      <div class="field">
+        <label for="manPlatform" data-i18n="platformLabel">Platform/Vessel</label>
+        <input type="text" id="manPlatform" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off" list="platformList">
+        <datalist id="platformList"></datalist>
+      </div>
+      <div class="field">
+        <label for="manExpiry" data-i18n="expiryDateLabel">过期日期</label>
+        <input type="date" id="manExpiry">
+      </div>
+      <button type="submit" class="add-btn" data-i18n="addRecordBtn">新增记录</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0;">
+      <h2 style="margin:0;" data-i18n="overviewPanelTitle">货物库存总览</h2>
+      <button class="danger-btn" id="clearAllStockBtn" data-admin-only data-i18n="clearAllStockBtn">🗑️ Clear All</button>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="搜索货物名称或编号..." data-i18n-ph="searchPlaceholder" autocomplete="off" list="searchSuggestList">
+      <datalist id="searchSuggestList"></datalist>
+      <div class="field">
+        <label for="filterPlatform" data-i18n="platformLabel">Platform / Vessel</label>
+        <select id="filterPlatform">
+          <option value="all" data-i18n="allPlatforms">全部平台/船只</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filterExpiry" data-i18n="expiryStatusLabel">过期状态</label>
+        <select id="filterExpiry">
+          <option value="all" data-i18n="expiryAll">全部</option>
+          <option value="expired" data-i18n="expiryExpired">已过期</option>
+          <option value="soon" data-i18n="expirySoon">30天内到期</option>
+          <option value="ok" data-i18n="expiryOk">尚未临近到期</option>
+          <option value="none" data-i18n="expiryNone">无过期日期</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sortBy" data-i18n="sortByLabel">排序方式</label>
+        <select id="sortBy">
+          <option value="item" data-i18n="sortItem">货物名称</option>
+          <option value="expiry" data-i18n="sortExpiry">最近过期日期</option>
+          <option value="balance" data-i18n="sortBalance">库存数量</option>
+        </select>
+      </div>
+      <button class="export-btn" id="exportBtn" data-i18n="exportBtnText">导出 CSV</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="colCode">编号</th>
+          <th data-i18n="colItem">货物名称</th>
+          <th data-i18n="colBalance">库存总数</th>
+          <th data-i18n="colUom">UOM</th>
+          <th data-i18n="colPlatform">Platform/Vessel</th>
+          <th data-i18n="colExpiry">最近过期日期</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty" id="emptyState" style="display:none;" data-i18n="emptyStateText">暂无记录，请先在上方导入 Excel 文件。</div>
+  </div>
+
+  </div>
+
+</div>
+
+<script>
+  // ================= 多语言 / Language / Bahasa =================
+  const translations = {
+    zh: {
+      appTitle: 'SRS',
+      appSubtitle: '按货物显示总库存 — 点击列表可查看该货物的进出明细',
+      importPanelTitle: '从 Excel 导入',
+      importTypeLabel: '导入类型',
+      typeIn: '入库',
+      typeOut: '出库',
+      dateLabel: '日期',
+      excelFileLabel: 'Excel 文件 (.xlsx/.csv)',
+      importBtnText: '导入 Excel',
+      manualPanelTitle: '手动新增进出记录',
+      itemNameLabel: '货物名称',
+      itemNamePlaceholder: '例如：钢螺栓 M6',
+      optionalPlaceholder: '选填',
+      itemCodeLabel: '货物编号',
+      qtyLabel: '数量',
+      uomLabel: 'UOM',
+      uomPlaceholder: '例如：pcs, box, kg',
+      typeLabel: '类型',
+      platformLabel: 'Platform/Vessel',
+      expiryDateLabel: '过期日期',
+      addRecordBtn: '新增记录',
+      overviewPanelTitle: '货物库存总览',
+      searchPlaceholder: '搜索货物名称或编号...',
+      allPlatforms: '全部平台/船只',
+      expiryStatusLabel: '过期状态',
+      expiryAll: '全部',
+      expiryExpired: '已过期',
+      expirySoon: '30天内到期',
+      expiryOk: '尚未临近到期',
+      expiryNone: '无过期日期',
+      sortByLabel: '排序方式',
+      sortItem: '货物名称',
+      sortExpiry: '最近过期日期',
+      sortBalance: '库存数量',
+      exportBtnText: '导出 CSV',
+      colCode: '编号',
+      colItem: '货物名称',
+      colUom: 'UOM',
+      colBalance: '库存总数',
+      colPlatform: 'Platform/Vessel',
+      colExpiry: '最近过期日期',
+      colDate: '日期',
+      colType: '类型',
+      colQty: '数量',
+      emptyStateText: '暂无记录，请先在上方导入 Excel 文件。',
+      deleteBtn: '删除',
+      deleteRecordTitle: '删除此条记录',
+      deleteConfirm: '确定要删除这条记录吗？此操作不可撤销。',
+      expiredSuffix: '已过期',
+      expiringSoonSuffix: '即将到期',
+      chooseFileFirst: '请先选择文件。',
+      xlsxLibFailed: 'Excel 解析库加载失败，请检查网络连接。',
+      noRowsFound: '文件中未找到数据行。',
+      importedOk: '已导入 {count} 条记录（类型：{type}）。',
+      importedPartial: '已导入 {count} 条记录，跳过 {skipped} 条（缺少货物名称或数量）。',
+      noValidRows: '未找到有效数据行，请检查列是否包含货物名称与数量。',
+      fileReadError: '无法读取该文件，请确认是有效的 .xlsx、.xls 或 .csv 文件。',
+      adminLoginBtn: '🔑 管理员',
+      adminLoginTitle: '管理员登录',
+      adminLoginSub: '请输入管理员密钥以新增或删除记录',
+      adminSetupTitle: '设置管理员密钥',
+      adminSetupSub: '尚未设置管理员密钥，请创建一个（至少 6 位），仅你自己知道',
+      adminKeyTooShort: '密钥至少需要 6 位',
+      adminKeyWrong: '管理员密钥错误',
+      cancelBtn: '取消',
+      confirmBtn: '确认',
+      logoutAdminBtn: '退出管理员',
+      adminRequiredNotice: '仅管理员可新增或删除记录。点击右上角"管理员"登录以进行操作。',
+      ghSettingsTitle: 'GitHub 同步设置',
+      ghSettingsWarn: '⚠️ Token 会以明文保存在本设备浏览器中，请使用仅限此仓库、仅勾选 Contents 读写权限的 Fine-grained Token。',
+      ghOwnerLabel: 'GitHub 用户名/组织',
+      ghRepoLabel: '仓库名',
+      ghTokenLabel: 'Personal Access Token',
+      saveGhSettingsBtn: '保存设置',
+      ghSettingsSaved: '设置已保存',
+      ghSettingsIncomplete: '请完整填写用户名、仓库名和 Token',
+      ghConfigMissing: '请先在管理员设置中配置 GitHub 同步信息',
+      syncing: '同步中...',
+      syncedAt: '已同步 · {time}',
+      syncFailed: '同步失败',
+      offlineUsingCache: '网络异常，正在显示本机缓存数据',
+      fetchFailed: '无法连接，请检查网络',
+      deviceLockSetupTitle: '设置本机解锁方式',
+      deviceLockSetupSub: '首次使用本设备，请设置解锁方式以保护数据',
+      setupPinOption: '使用 6 位数字 PIN',
+      setupPinOptionDesc: '每次打开时输入密码解锁',
+      setupFingerprintOption: '使用指纹 / 面容 ID',
+      setupFingerprintOptionDesc: '使用本机生物识别快速解锁',
+      pinNotAvailable: '此设备不支持生物识别，请改用 PIN',
+      enterNewPin: '设置一个 6 位 PIN',
+      confirmNewPin: '请再次输入以确认',
+      pinMismatch: '两次输入不一致，请重试',
+      unlockTitle: '解锁 SRS',
+      enterPinToUnlock: '请输入 PIN 解锁',
+      wrongPin: 'PIN 错误',
+      useFingerprintInstead: '改用指纹/面容解锁',
+      usePinInstead: '改用 PIN 解锁',
+      forgotPinLink: '忘记 PIN？重置本机锁定',
+      forgotPinConfirm: '这将清除本机的解锁设置（不影响云端库存数据），需要重新设置。确定继续吗？',
+      fingerprintPromptFailed: '指纹验证失败或已取消，请重试',
+      fingerprintSetupFailed: '指纹注册失败，请改用 PIN',
+      tapToUnlock: '点击使用指纹/面容解锁',
+      choicePackingTitle: 'Packing List',
+      choicePackingDesc: '领料清单，勾选后自动扣减库存',
+      choiceStockTitle: 'Stock Balance',
+      choiceStockDesc: '查看库存总览与进出记录',
+      packingListPanelTitle: 'Packing Lists',
+      newPackingListBtn: '+ 新建',
+      packingListEmptyText: '暂无 Packing List。',
+      newPackingListTitle: '新建 Packing List',
+      packingListTitlePh: '清单标题，例如 PL-2026-001',
+      addItemBtn: '+ 添加货物',
+      saveBtn: '保存',
+      backToListBtn: '← 返回列表',
+      deletePackingListBtn: '🗑 删除此 Packing List',
+      plStatusOpen: '进行中',
+      plStatusCompleted: '已完成',
+      plItemsDoneLabel: '项已完成',
+      plTitleDateRequired: '请填写标题和日期',
+      plNeedAtLeastOneItem: '请至少添加一项有效货物（名称+数量）',
+      plMarkDoneBtn: '✓ 完成领取',
+      plDoneLabel: '已领取 {qty}',
+      deletePackingListConfirm: '确定删除这个 Packing List 吗？已完成领取的项目不会撤回库存扣减。',
+      ghSettingsSub: '此设备要新增/勾选完成/删除数据时，需要在本机保存一个有写入权限的 Token',
+      plCompleteLabel: '已完成',
+      plIncompleteLabel: '数量不符',
+      plPendingLabel: '待处理',
+      exportDoPdfBtn: '📄 导出送货单 (PDF)',
+      exportDoExcelBtn: '📊 导出送货单 (Excel)',
+      plImportExcelBtn: '📄 从 Excel 导入货物',
+      plImportedOk: '已从 Excel 导入 {count} 项货物',
+      undoBtn: '↺ 撤销',
+      undoConfirm: '确定撤销这一项吗？会把它改回未完成，并删除对应的库存扣减记录。',
+      clearAllStockBtn: '🗑️ 清空全部',
+      clearAllTitle: '清空全部库存记录',
+      clearAllWarning: '⚠️ 此操作会永久删除所有进出货记录（不影响 Packing List），且无法撤销。请再次输入管理员密钥以确认。',
+      clearAllConfirmBtn: '确认清空',
+      adminKeyPlaceholder: '管理员密钥'
+    },
+    en: {
+      appTitle: 'SRS',
+      appSubtitle: 'Total balance by item — click a row to view its transaction history',
+      importPanelTitle: 'Import from Excel',
+      importTypeLabel: 'Import as',
+      typeIn: 'IN',
+      typeOut: 'OUT',
+      dateLabel: 'Date',
+      excelFileLabel: 'Excel file (.xlsx/.csv)',
+      importBtnText: 'Import Excel',
+      manualPanelTitle: 'Add Record Manually',
+      itemNameLabel: 'Item Name',
+      itemNamePlaceholder: 'e.g. Steel Bolt M6',
+      optionalPlaceholder: 'Optional',
+      itemCodeLabel: 'Item Code',
+      qtyLabel: 'Quantity',
+      uomLabel: 'UOM',
+      uomPlaceholder: 'e.g. pcs, box, kg',
+      typeLabel: 'Type',
+      platformLabel: 'Platform/Vessel',
+      expiryDateLabel: 'Expiry Date',
+      addRecordBtn: 'Add Record',
+      overviewPanelTitle: 'Item Stock Overview',
+      searchPlaceholder: 'Search item name or code...',
+      allPlatforms: 'All platforms',
+      expiryStatusLabel: 'Expiry Status',
+      expiryAll: 'All',
+      expiryExpired: 'Expired',
+      expirySoon: 'Expiring within 30 days',
+      expiryOk: 'Not expiring soon',
+      expiryNone: 'No expiry date',
+      sortByLabel: 'Sort by',
+      sortItem: 'Item name',
+      sortExpiry: 'Nearest expiry',
+      sortBalance: 'Balance',
+      exportBtnText: 'Export CSV',
+      colCode: 'Code',
+      colItem: 'Item',
+      colUom: 'UOM',
+      colBalance: 'Balance',
+      colPlatform: 'Platform/Vessel',
+      colExpiry: 'Nearest Expiry',
+      colDate: 'Date',
+      colType: 'Type',
+      colQty: 'Quantity',
+      emptyStateText: 'No records yet. Import an Excel file above.',
+      deleteBtn: 'Delete',
+      deleteRecordTitle: 'Delete this record',
+      deleteConfirm: 'Are you sure you want to delete this record? This cannot be undone.',
+      expiredSuffix: 'expired',
+      expiringSoonSuffix: 'expiring soon',
+      chooseFileFirst: 'Please choose a file first.',
+      xlsxLibFailed: 'Excel parser failed to load — check your internet connection.',
+      noRowsFound: 'No rows found in the file.',
+      importedOk: 'Imported {count} record(s) as {type}.',
+      importedPartial: 'Imported {count} record(s), skipped {skipped} (missing item name or quantity).',
+      noValidRows: 'No valid rows found. Check that columns include item name and quantity.',
+      fileReadError: 'Could not read that file. Make sure it is a valid .xlsx, .xls, or .csv.',
+      adminLoginBtn: '🔑 Admin',
+      adminLoginTitle: 'Admin Login',
+      adminLoginSub: 'Enter the admin key to add or delete records',
+      adminSetupTitle: 'Set Up Admin Key',
+      adminSetupSub: 'No admin key set yet — create one (at least 6 characters) known only to you',
+      adminKeyTooShort: 'Key must be at least 6 characters',
+      adminKeyWrong: 'Incorrect admin key',
+      cancelBtn: 'Cancel',
+      confirmBtn: 'Confirm',
+      logoutAdminBtn: 'Log Out Admin',
+      adminRequiredNotice: 'Only admin can add or delete records. Tap "Admin" in the top right to log in.',
+      ghSettingsTitle: 'GitHub Sync Settings',
+      ghSettingsWarn: '⚠️ The token is stored in plain text in this browser. Use a fine-grained token scoped to this repo only, with Contents read/write permission.',
+      ghOwnerLabel: 'GitHub username/org',
+      ghRepoLabel: 'Repository name',
+      ghTokenLabel: 'Personal Access Token',
+      saveGhSettingsBtn: 'Save Settings',
+      ghSettingsSaved: 'Settings saved',
+      ghSettingsIncomplete: 'Please fill in username, repository, and token',
+      ghConfigMissing: 'Please configure GitHub sync settings in the admin panel first',
+      syncing: 'Syncing...',
+      syncedAt: 'Synced · {time}',
+      syncFailed: 'Sync failed',
+      offlineUsingCache: 'Network issue — showing cached data from this device',
+      fetchFailed: 'Could not connect. Please check your network.',
+      deviceLockSetupTitle: 'Set Up Device Unlock',
+      deviceLockSetupSub: 'First time on this device — set up a way to unlock and protect the data',
+      setupPinOption: 'Use a 6-digit PIN',
+      setupPinOptionDesc: 'Enter a PIN each time you open the app',
+      setupFingerprintOption: 'Use Fingerprint / Face ID',
+      setupFingerprintOptionDesc: 'Unlock quickly with this device biometrics',
+      pinNotAvailable: 'Biometrics not available on this device — please use a PIN instead',
+      enterNewPin: 'Set a 6-digit PIN',
+      confirmNewPin: 'Enter it again to confirm',
+      pinMismatch: 'PINs did not match — please try again',
+      unlockTitle: 'Unlock SRS',
+      enterPinToUnlock: 'Enter your PIN to unlock',
+      wrongPin: 'Incorrect PIN',
+      useFingerprintInstead: 'Use fingerprint/Face ID instead',
+      usePinInstead: 'Use PIN instead',
+      forgotPinLink: 'Forgot PIN? Reset lock on this device',
+      forgotPinConfirm: 'This clears the unlock method on this device only (cloud stock data is unaffected). You will need to set it up again. Continue?',
+      fingerprintPromptFailed: 'Biometric verification failed or was cancelled — please try again',
+      fingerprintSetupFailed: 'Could not register biometrics — please use a PIN instead',
+      tapToUnlock: 'Tap to unlock with fingerprint/Face ID',
+      choicePackingTitle: 'Packing List',
+      choicePackingDesc: 'Checklist for labour to pick goods — auto-deducts stock when done',
+      choiceStockTitle: 'Stock Balance',
+      choiceStockDesc: 'View stock overview and in/out records',
+      packingListPanelTitle: 'Packing Lists',
+      newPackingListBtn: '+ New',
+      packingListEmptyText: 'No packing lists yet.',
+      newPackingListTitle: 'New Packing List',
+      packingListTitlePh: 'List title, e.g. PL-2026-001',
+      addItemBtn: '+ Add item',
+      saveBtn: 'Save',
+      backToListBtn: '← Back to list',
+      deletePackingListBtn: '🗑 Delete this packing list',
+      plStatusOpen: 'In progress',
+      plStatusCompleted: 'Completed',
+      plItemsDoneLabel: 'items done',
+      plTitleDateRequired: 'Please fill in title and date',
+      plNeedAtLeastOneItem: 'Please add at least one valid item (name + quantity)',
+      plMarkDoneBtn: '✓ Mark Taken',
+      plDoneLabel: 'Taken {qty}',
+      deletePackingListConfirm: 'Delete this packing list? Items already marked taken will not reverse their stock deduction.',
+      ghSettingsSub: 'This device needs a write-enabled token saved locally to add, check off, or delete data',
+      plCompleteLabel: 'Complete',
+      plIncompleteLabel: 'Qty mismatch',
+      plPendingLabel: 'Pending',
+      exportDoPdfBtn: '📄 Export DO (PDF)',
+      exportDoExcelBtn: '📊 Export DO (Excel)',
+      plImportExcelBtn: '📄 Import items from Excel',
+      plImportedOk: 'Imported {count} item(s) from Excel',
+      undoBtn: '↺ Undo',
+      undoConfirm: 'Undo this item? It will be marked not done again, and the matching stock deduction record will be removed.',
+      clearAllStockBtn: '🗑️ Clear All',
+      clearAllTitle: 'Clear All Stock Records',
+      clearAllWarning: '⚠️ This permanently deletes all in/out stock records (packing lists are not affected) and cannot be undone. Please re-enter the admin key to confirm.',
+      clearAllConfirmBtn: 'Confirm Clear',
+      adminKeyPlaceholder: 'Admin key'
+    },
+    ms: {
+      appTitle: 'SRS',
+      appSubtitle: 'Baki jumlah mengikut barang — klik baris untuk lihat sejarah transaksi',
+      importPanelTitle: 'Import dari Excel',
+      importTypeLabel: 'Import sebagai',
+      typeIn: 'MASUK',
+      typeOut: 'KELUAR',
+      dateLabel: 'Tarikh',
+      excelFileLabel: 'Fail Excel (.xlsx/.csv)',
+      importBtnText: 'Import Excel',
+      manualPanelTitle: 'Tambah Rekod Secara Manual',
+      itemNameLabel: 'Nama Barang',
+      itemNamePlaceholder: 'contoh: Bolt Keluli M6',
+      optionalPlaceholder: 'Pilihan',
+      itemCodeLabel: 'Kod Barang',
+      qtyLabel: 'Kuantiti',
+      uomLabel: 'UOM',
+      uomPlaceholder: 'contoh: pcs, box, kg',
+      typeLabel: 'Jenis',
+      platformLabel: 'Platform/Vessel',
+      expiryDateLabel: 'Tarikh Luput',
+      addRecordBtn: 'Tambah Rekod',
+      overviewPanelTitle: 'Gambaran Stok Barang',
+      searchPlaceholder: 'Cari nama atau kod barang...',
+      allPlatforms: 'Semua platform',
+      expiryStatusLabel: 'Status Luput',
+      expiryAll: 'Semua',
+      expiryExpired: 'Telah Luput',
+      expirySoon: 'Luput dalam 30 hari',
+      expiryOk: 'Belum hampir luput',
+      expiryNone: 'Tiada tarikh luput',
+      sortByLabel: 'Susun ikut',
+      sortItem: 'Nama barang',
+      sortExpiry: 'Tarikh luput terdekat',
+      sortBalance: 'Baki stok',
+      exportBtnText: 'Eksport CSV',
+      colCode: 'Kod',
+      colItem: 'Barang',
+      colUom: 'UOM',
+      colBalance: 'Baki',
+      colPlatform: 'Platform/Vessel',
+      colExpiry: 'Luput Terdekat',
+      colDate: 'Tarikh',
+      colType: 'Jenis',
+      colQty: 'Kuantiti',
+      emptyStateText: 'Belum ada rekod. Sila import fail Excel di atas.',
+      deleteBtn: 'Padam',
+      deleteRecordTitle: 'Padam rekod ini',
+      deleteConfirm: 'Anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.',
+      expiredSuffix: 'telah luput',
+      expiringSoonSuffix: 'hampir luput',
+      chooseFileFirst: 'Sila pilih fail dahulu.',
+      xlsxLibFailed: 'Gagal memuatkan pustaka Excel — sila semak sambungan internet anda.',
+      noRowsFound: 'Tiada baris data dijumpai dalam fail.',
+      importedOk: '{count} rekod telah diimport (jenis: {type}).',
+      importedPartial: '{count} rekod diimport, {skipped} dilangkau (nama/kuantiti tiada).',
+      noValidRows: 'Tiada baris sah dijumpai. Sila semak lajur nama barang dan kuantiti.',
+      fileReadError: 'Tidak dapat membaca fail ini. Pastikan ia fail .xlsx, .xls, atau .csv yang sah.',
+      adminLoginBtn: '🔑 Admin',
+      adminLoginTitle: 'Log Masuk Admin',
+      adminLoginSub: 'Masukkan kunci admin untuk tambah atau padam rekod',
+      adminSetupTitle: 'Sediakan Kunci Admin',
+      adminSetupSub: 'Belum ada kunci admin — cipta satu (sekurang-kurangnya 6 aksara) yang hanya anda tahu',
+      adminKeyTooShort: 'Kunci mesti sekurang-kurangnya 6 aksara',
+      adminKeyWrong: 'Kunci admin salah',
+      cancelBtn: 'Batal',
+      confirmBtn: 'Sahkan',
+      logoutAdminBtn: 'Log Keluar Admin',
+      adminRequiredNotice: 'Hanya admin boleh tambah atau padam rekod. Ketik "Admin" di kanan atas untuk log masuk.',
+      ghSettingsTitle: 'Tetapan Segerak GitHub',
+      ghSettingsWarn: '⚠️ Token disimpan sebagai teks biasa dalam pelayar ini. Gunakan fine-grained token yang khusus untuk repo ini sahaja, dengan kebenaran Contents baca/tulis.',
+      ghOwnerLabel: 'Nama pengguna/organisasi GitHub',
+      ghRepoLabel: 'Nama repositori',
+      ghTokenLabel: 'Personal Access Token',
+      saveGhSettingsBtn: 'Simpan Tetapan',
+      ghSettingsSaved: 'Tetapan disimpan',
+      ghSettingsIncomplete: 'Sila lengkapkan nama pengguna, repositori, dan token',
+      ghConfigMissing: 'Sila konfigurasikan tetapan segerak GitHub dalam panel admin dahulu',
+      syncing: 'Menyegerak...',
+      syncedAt: 'Disegerak · {time}',
+      syncFailed: 'Segerak gagal',
+      offlineUsingCache: 'Isu rangkaian — memaparkan data cache peranti ini',
+      fetchFailed: 'Tidak dapat menyambung. Sila semak rangkaian anda.',
+      deviceLockSetupTitle: 'Sediakan Kunci Peranti',
+      deviceLockSetupSub: 'Kali pertama pada peranti ini — sediakan cara membuka kunci untuk melindungi data',
+      setupPinOption: 'Guna PIN 6 digit',
+      setupPinOptionDesc: 'Masukkan PIN setiap kali membuka aplikasi',
+      setupFingerprintOption: 'Guna Cap Jari / Face ID',
+      setupFingerprintOptionDesc: 'Buka kunci dengan cepat menggunakan biometrik peranti',
+      pinNotAvailable: 'Biometrik tidak tersedia pada peranti ini — sila guna PIN',
+      enterNewPin: 'Tetapkan PIN 6 digit',
+      confirmNewPin: 'Masukkan sekali lagi untuk sahkan',
+      pinMismatch: 'PIN tidak sepadan — sila cuba lagi',
+      unlockTitle: 'Buka Kunci SRS',
+      enterPinToUnlock: 'Masukkan PIN anda untuk buka kunci',
+      wrongPin: 'PIN salah',
+      useFingerprintInstead: 'Guna cap jari/Face ID sebaliknya',
+      usePinInstead: 'Guna PIN sebaliknya',
+      forgotPinLink: 'Lupa PIN? Set semula kunci peranti ini',
+      forgotPinConfirm: 'Ini akan memadam kaedah buka kunci pada peranti ini sahaja (data stok awan tidak terjejas). Anda perlu menyediakannya semula. Teruskan?',
+      fingerprintPromptFailed: 'Pengesahan biometrik gagal atau dibatalkan — sila cuba lagi',
+      fingerprintSetupFailed: 'Gagal mendaftar biometrik — sila guna PIN',
+      tapToUnlock: 'Ketik untuk buka kunci dengan cap jari/Face ID',
+      choicePackingTitle: 'Packing List',
+      choicePackingDesc: 'Senarai semak untuk pekerja ambil barang — stok ditolak automatik selepas selesai',
+      choiceStockTitle: 'Stock Balance',
+      choiceStockDesc: 'Lihat gambaran stok dan rekod keluar masuk',
+      packingListPanelTitle: 'Packing Lists',
+      newPackingListBtn: '+ Baru',
+      packingListEmptyText: 'Belum ada packing list.',
+      newPackingListTitle: 'Packing List Baru',
+      packingListTitlePh: 'Tajuk senarai, cth: PL-2026-001',
+      addItemBtn: '+ Tambah barang',
+      saveBtn: 'Simpan',
+      backToListBtn: '← Kembali ke senarai',
+      deletePackingListBtn: '🗑 Padam packing list ini',
+      plStatusOpen: 'Dalam proses',
+      plStatusCompleted: 'Selesai',
+      plItemsDoneLabel: 'item selesai',
+      plTitleDateRequired: 'Sila isi tajuk dan tarikh',
+      plNeedAtLeastOneItem: 'Sila tambah sekurang-kurangnya satu barang sah (nama + kuantiti)',
+      plMarkDoneBtn: '✓ Tandakan Diambil',
+      plDoneLabel: 'Diambil {qty}',
+      deletePackingListConfirm: 'Padam packing list ini? Item yang sudah ditandakan diambil tidak akan membatalkan potongan stok.',
+      ghSettingsSub: 'Peranti ini memerlukan token dengan kebenaran tulis disimpan secara tempatan untuk menambah, menandakan selesai, atau memadam data',
+      plCompleteLabel: 'Lengkap',
+      plIncompleteLabel: 'Kuantiti tidak sepadan',
+      plPendingLabel: 'Belum selesai',
+      exportDoPdfBtn: '📄 Eksport DO (PDF)',
+      exportDoExcelBtn: '📊 Eksport DO (Excel)',
+      plImportExcelBtn: '📄 Import barang dari Excel',
+      plImportedOk: '{count} barang telah diimport dari Excel',
+      undoBtn: '↺ Buat Asal',
+      undoConfirm: 'Buat asal item ini? Ia akan ditanda belum selesai semula, dan rekod potongan stok berkaitan akan dipadam.',
+      clearAllStockBtn: '🗑️ Kosongkan Semua',
+      clearAllTitle: 'Kosongkan Semua Rekod Stok',
+      clearAllWarning: '⚠️ Tindakan ini akan memadam kekal semua rekod stok keluar masuk (packing list tidak terjejas) dan tidak boleh dibatalkan. Sila masukkan semula kunci admin untuk sahkan.',
+      clearAllConfirmBtn: 'Sahkan Kosongkan',
+      adminKeyPlaceholder: 'Kunci admin'
+    }
+  };
+
+  let currentLang = localStorage.getItem('stockAppLang') || 'en';
+  if (!translations[currentLang]) currentLang = 'en';
+
+  function t(key, params) {
+    let str = (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+    if (params) {
+      Object.keys(params).forEach(k => {
+        str = str.replace(`{${k}}`, params[k]);
+      });
+    }
+    return str;
+  }
+
+  function applyStaticTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph')));
+    });
+    document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : currentLang === 'ms' ? 'ms' : 'en';
+  }
+
+  const langSelect = document.getElementById('langSelect');
+  langSelect.value = currentLang;
+  applyStaticTranslations();
+
+  langSelect.addEventListener('change', () => {
+    currentLang = langSelect.value;
+    localStorage.setItem('stockAppLang', currentLang);
+    applyStaticTranslations();
+    updateAdminUI();
+    renderCurrentView();
+  });
+
+  // ================= 共享数据 / 权限 / 设备锁 =================
+  // 直接写死仓库位置：读取时改用 GitHub API（而非 Pages 静态文件），
+  // 因为 GitHub Pages/CDN 会缓存静态文件数分钟甚至更久，会导致删除/新增后刷新看不到最新数据。
+  // GitHub API（api.github.com）不经过那层 CDN 缓存，能保证读到最新内容。
+  const REPO_OWNER = 'Elvis96524';
+  const REPO_NAME = 'stock-tracker01';
+  const REPO_BRANCH = 'main';
+  const REPO_PATH = 'data.json';
+
+  const LOCAL_CACHE_KEY = 'srsDataCache_v1';
+  const DEVICE_LOCK_KEY = 'srsDeviceLock_v1';
+  const GH_CONFIG_KEY = 'srsGhConfig_v1';
+  const ADMIN_SESSION_KEY = 'srsAdminSession_v1';
+
+  let records = [];
+  let adminKeyHash = '';
+  let packingLists = [];
+  let expanded = new Set(); // groupKeys currently expanded
+  let isAdmin = sessionStorage.getItem(ADMIN_SESSION_KEY) === '1';
+  let currentView = 'choice'; // 'choice' | 'stock' | 'packing' | 'packingDetail'
+  let currentPackingListId = null;
+
+  async function sha256(text) {
+    const enc = new TextEncoder().encode(text);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function getGhConfig() {
+    try {
+      const raw = localStorage.getItem(GH_CONFIG_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function utf8ToBase64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  function base64ToUtf8(b64) {
+    return decodeURIComponent(escape(atob(b64.replace(/\n/g, ''))));
+  }
+
+  // 拉取共享数据：走 GitHub Contents API，绕开 Pages/CDN 缓存，保证读到最新提交的内容。
+  // 未配置管理员 Token 的设备也能匿名读取（公开仓库），但受 GitHub 未登录接口的
+  // 请求频率限制（每小时约 60 次），已登录管理员的 Token 请求额度会高很多。
+  async function fetchSharedData() {
+    const cfg = getGhConfig();
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${REPO_PATH}?ref=${REPO_BRANCH}&t=${Date.now()}`;
+    const headers = { 'Accept': 'application/vnd.github+json' };
+    if (cfg && cfg.token) headers['Authorization'] = `token ${cfg.token}`;
+
+    const res = await fetch(url, { headers, cache: 'no-store' });
+    if (!res.ok) throw new Error('fetch failed: ' + res.status);
+    const json = await res.json();
+    const content = base64ToUtf8(json.content || '');
+    const parsed = JSON.parse(content);
+    return {
+      adminKeyHash: parsed.adminKeyHash || '',
+      records: Array.isArray(parsed.records) ? parsed.records : [],
+      packingLists: Array.isArray(parsed.packingLists) ? parsed.packingLists : []
+    };
+  }
+
+  // 把最新数据写回 GitHub（需要设备本机配置好 Token）
+  async function pushSharedData(newRecords, newAdminKeyHash, newPackingLists) {
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) {
+      throw new Error(t('ghConfigMissing'));
+    }
+    // 读写统一使用写死的仓库位置，避免管理员填写的仓库信息与实际部署位置不一致
+    const apiBase = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${REPO_PATH}`;
+    const getRes = await fetch(`${apiBase}?ref=${REPO_BRANCH}&t=${Date.now()}`, {
+      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' }
+    });
+    let sha;
+    if (getRes.ok) {
+      sha = (await getRes.json()).sha;
+    } else if (getRes.status !== 404) {
+      const err = await getRes.json().catch(() => ({}));
+      throw new Error(err.message || ('GET failed: ' + getRes.status));
+    }
+
+    const fileContent = JSON.stringify({ adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [] }, null, 2);
+    const putRes = await fetch(apiBase, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${cfg.token}`,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: 'SRS: update stock records',
+        content: utf8ToBase64(fileContent),
+        branch: REPO_BRANCH,
+        ...(sha ? { sha } : {})
+      })
+    });
+    if (!putRes.ok) {
+      const err = await putRes.json().catch(() => ({}));
+      throw new Error(err.message || ('PUT failed: ' + putRes.status));
+    }
+  }
+
+  function setSyncStatus(msg, kind) {
+    const el = document.getElementById('syncStatus');
+    el.textContent = msg;
+    el.className = 'sync-status' + (kind ? ' ' + kind : '');
+  }
+
+  // 加载数据：优先联网获取最新共享数据，失败则退回本机缓存
+  async function loadDataAndRender(silent) {
+    const refreshBtn = document.getElementById('refreshBtn');
+    refreshBtn.classList.add('spinning');
+    if (!silent) setSyncStatus(t('syncing'));
+    try {
+      const data = await fetchSharedData();
+      records = data.records;
+      adminKeyHash = data.adminKeyHash;
+      packingLists = data.packingLists;
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(data));
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+    } catch (err) {
+      console.error(err);
+      try {
+        const cached = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY));
+        if (cached) {
+          records = cached.records || [];
+          adminKeyHash = cached.adminKeyHash || '';
+          packingLists = cached.packingLists || [];
+          setSyncStatus(t('offlineUsingCache'), 'err');
+        } else {
+          records = [];
+          adminKeyHash = '';
+          packingLists = [];
+          setSyncStatus(t('fetchFailed'), 'err');
+        }
+      } catch (e2) {
+        records = [];
+        adminKeyHash = '';
+        packingLists = [];
+        setSyncStatus(t('fetchFailed'), 'err');
+      }
+    }
+    refreshBtn.classList.remove('spinning');
+    renderCurrentView();
+  }
+
+  // 新增/导入记录后：重新拉取最新数据，合并，推送回 GitHub
+  async function addRecordsAndSync(newRecords) {
+    setSyncStatus(t('syncing'));
+    try {
+      const latest = await fetchSharedData();
+      const merged = latest.records.concat(newRecords);
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists);
+      records = merged;
+      adminKeyHash = latest.adminKeyHash;
+      packingLists = latest.packingLists;
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      return true;
+    } catch (err) {
+      console.error(err);
+      setSyncStatus(t('syncFailed') + ': ' + err.message, 'err');
+      return false;
+    }
+  }
+
+  async function deleteRecordAndSync(id) {
+    setSyncStatus(t('syncing'));
+    try {
+      const latest = await fetchSharedData();
+      const merged = latest.records.filter(r => r.id !== id);
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists);
+      records = merged;
+      adminKeyHash = latest.adminKeyHash;
+      packingLists = latest.packingLists;
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      renderCurrentView();
+    } catch (err) {
+      console.error(err);
+      setSyncStatus(t('syncFailed') + ': ' + err.message, 'err');
+      alert(t('syncFailed') + ': ' + err.message);
+    }
+  }
+
+  // 通用：拉取最新数据，用回调修改 packingLists（可选同时追加 records），推送回 GitHub
+  async function mutatePackingListsAndSync(mutateFn) {
+    setSyncStatus(t('syncing'));
+    try {
+      const latest = await fetchSharedData();
+      const result = mutateFn(latest.packingLists, latest.records);
+      await pushSharedData(result.records, latest.adminKeyHash, result.packingLists);
+      records = result.records;
+      packingLists = result.packingLists;
+      adminKeyHash = latest.adminKeyHash;
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      return true;
+    } catch (err) {
+      console.error(err);
+      setSyncStatus(t('syncFailed') + ': ' + err.message, 'err');
+      alert(t('syncFailed') + ': ' + err.message);
+      return false;
+    }
+  }
+
+  const tableBody = document.getElementById('tableBody');
+  const emptyState = document.getElementById('emptyState');
+  const searchInput = document.getElementById('search');
+  const filterPlatform = document.getElementById('filterPlatform');
+  const filterExpiry = document.getElementById('filterExpiry');
+  const sortBy = document.getElementById('sortBy');
+
+  document.getElementById('importDate').valueAsDate = new Date();
+
+  let importType = 'IN';
+  const importBtnIn = document.getElementById('importBtnIn');
+  const importBtnOut = document.getElementById('importBtnOut');
+
+  importBtnIn.addEventListener('click', () => setImportType('IN'));
+  importBtnOut.addEventListener('click', () => setImportType('OUT'));
+
+  function setImportType(type) {
+    importType = type;
+    importBtnIn.classList.toggle('active', type === 'IN');
+    importBtnOut.classList.toggle('active', type === 'OUT');
+  }
+
+  // ---- 手动新增记录 ----
+  const manualForm = document.getElementById('manualForm');
+  const manName = document.getElementById('manName');
+  const manCode = document.getElementById('manCode');
+  const manQty = document.getElementById('manQty');
+  const manUom = document.getElementById('manUom');
+  const manDate = document.getElementById('manDate');
+  const manPlatform = document.getElementById('manPlatform');
+  const manExpiry = document.getElementById('manExpiry');
+  const manTypeIn = document.getElementById('manTypeIn');
+  const manTypeOut = document.getElementById('manTypeOut');
+  const itemNameList = document.getElementById('itemNameList');
+  const platformList = document.getElementById('platformList');
+  const searchSuggestList = document.getElementById('searchSuggestList');
+
+  document.getElementById('manDate').valueAsDate = new Date();
+
+  let manualType = 'IN';
+  manTypeIn.addEventListener('click', () => setManualType('IN'));
+  manTypeOut.addEventListener('click', () => setManualType('OUT'));
+
+  function setManualType(type) {
+    manualType = type;
+    manTypeIn.classList.toggle('active', type === 'IN');
+    manTypeOut.classList.toggle('active', type === 'OUT');
+  }
+
+  manualForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!isAdmin) return;
+    const item = manName.value.trim();
+    const itemCode = manCode.value.trim();
+    const qty = parseFloat(manQty.value);
+    const uom = manUom.value.trim();
+    const date = manDate.value;
+    const platform = manPlatform.value.trim();
+    const expiryDate = manExpiry.value;
+
+    if (!item || !qty || qty <= 0 || !date) return;
+
+    const submitBtn = manualForm.querySelector('.add-btn');
+    submitBtn.disabled = true;
+
+    const ok = await addRecordsAndSync([{
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      item,
+      itemCode,
+      qty,
+      uom,
+      type: manualType,
+      date,
+      platform,
+      expiryDate
+    }]);
+
+    submitBtn.disabled = false;
+    if (!ok) return;
+
+    render();
+
+    manualForm.reset();
+    document.getElementById('manDate').valueAsDate = new Date();
+    setManualType('IN');
+    manName.focus();
+  });
+
+  // 根据现有记录自动填充“货物名称”“Platform/Vessel”“搜索”的建议列表
+  function populateSuggestLists() {
+    const names = new Set();
+    const platforms = new Set();
+    records.forEach(r => {
+      if (r.item) names.add(r.item);
+      if (r.platform) platforms.add(r.platform);
+    });
+
+    const nameOptions = Array.from(names).sort().map(n => `<option value="${escapeHtml(n)}">`).join('');
+    itemNameList.innerHTML = nameOptions;
+    searchSuggestList.innerHTML = nameOptions;
+    platformList.innerHTML = Array.from(platforms).sort().map(p => `<option value="${escapeHtml(p)}">`).join('');
+  }
+
+  // 货物名称 -> 货物编号 映射（取该货物最近使用过的编号）
+  function getNameToCodeMap() {
+    const map = {};
+    records.forEach(r => {
+      if (r.item && r.itemCode) {
+        map[r.item.trim().toLowerCase()] = r.itemCode;
+      }
+    });
+    return map;
+  }
+
+  // 当输入或选中的货物名称与已有记录完全匹配时，自动带出对应的货物编号
+  function tryAutofillCode() {
+    const map = getNameToCodeMap();
+    const match = map[manName.value.trim().toLowerCase()];
+    if (match) {
+      manCode.value = match;
+    }
+  }
+
+  manName.addEventListener('input', tryAutofillCode);
+  manName.addEventListener('change', tryAutofillCode);
+
+  function groupKey(r) {
+    // group by item code when present, otherwise by item name
+    return (r.itemCode && r.itemCode.trim()) ? 'code:' + r.itemCode.trim().toLowerCase() : 'name:' + r.item.trim().toLowerCase();
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // Build per-item groups: running balance, transaction list, platforms, nearest expiry
+  function buildGroups() {
+    const sorted = records.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const groups = {};
+
+    sorted.forEach(r => {
+      const key = groupKey(r);
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          item: r.item,
+          itemCode: r.itemCode || '',
+          uom: r.uom || '',
+          balance: 0,
+          platforms: new Set(),
+          transactions: []
+        };
+      }
+      const g = groups[key];
+      g.balance += r.type === 'IN' ? r.qty : -r.qty;
+      if (r.uom) g.uom = r.uom;
+      if (r.platform) g.platforms.add(r.platform);
+      g.transactions.push({ ...r, runningBalance: g.balance });
+    });
+
+    // nearest (soonest) expiry per group, ignoring blanks
+    Object.values(groups).forEach(g => {
+      const dates = g.transactions.map(t => t.expiryDate).filter(Boolean).sort();
+      g.nearestExpiry = dates.length ? dates[0] : '';
+      g.transactions.reverse(); // newest first for display
+    });
+
+    return Object.values(groups);
+  }
+
+  function expiryStatus(dateStr) {
+    if (!dateStr) return 'none';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const exp = new Date(dateStr);
+    if (isNaN(exp.getTime())) return 'none';
+    const diffDays = Math.floor((exp - today) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return 'expired';
+    if (diffDays <= 30) return 'soon';
+    return 'ok';
+  }
+
+  function expiryLabel(dateStr) {
+    const status = expiryStatus(dateStr);
+    if (status === 'none') return '<span class="expiry-tag none">—</span>';
+    if (status === 'expired') return `<span class="expiry-tag expired">${dateStr} · ${t('expiredSuffix')}</span>`;
+    if (status === 'soon') return `<span class="expiry-tag soon">${dateStr} · ${t('expiringSoonSuffix')}</span>`;
+    return `<span class="expiry-tag ok">${dateStr}</span>`;
+  }
+
+  function populatePlatformFilter(groups) {
+    const current = filterPlatform.value;
+    const platforms = new Set();
+    groups.forEach(g => g.platforms.forEach(p => platforms.add(p)));
+    const sortedPlatforms = Array.from(platforms).sort();
+
+    filterPlatform.innerHTML = `<option value="all">${t('allPlatforms')}</option>` +
+      sortedPlatforms.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+
+    if (sortedPlatforms.includes(current)) filterPlatform.value = current;
+  }
+
+  function render() {
+    let groups = buildGroups();
+    populatePlatformFilter(groups);
+    populateSuggestLists();
+
+    const q = searchInput.value.trim().toLowerCase();
+    const platformF = filterPlatform.value;
+    const expiryF = filterExpiry.value;
+    const sortF = sortBy.value;
+
+    groups = groups.filter(g => {
+      const matchesSearch = !q || g.item.toLowerCase().includes(q) || g.itemCode.toLowerCase().includes(q);
+      const matchesPlatform = platformF === 'all' || g.platforms.has(platformF);
+      const matchesExpiry = expiryF === 'all' || expiryStatus(g.nearestExpiry) === expiryF;
+      return matchesSearch && matchesPlatform && matchesExpiry;
+    });
+
+    if (sortF === 'item') {
+      groups.sort((a, b) => a.item.localeCompare(b.item));
+    } else if (sortF === 'expiry') {
+      groups.sort((a, b) => {
+        if (!a.nearestExpiry) return 1;
+        if (!b.nearestExpiry) return -1;
+        return a.nearestExpiry.localeCompare(b.nearestExpiry);
+      });
+    } else if (sortF === 'balance') {
+      groups.sort((a, b) => b.balance - a.balance);
+    }
+
+    tableBody.innerHTML = '';
+    emptyState.style.display = groups.length ? 'none' : 'block';
+
+    groups.forEach(g => {
+      const isExpanded = expanded.has(g.key);
+      const platformPills = g.platforms.size
+        ? Array.from(g.platforms).map(p => `<span class="pill">${escapeHtml(p)}</span>`).join('')
+        : '<span class="expiry-tag none">—</span>';
+
+      const row = document.createElement('tr');
+      row.className = 'item-row' + (isExpanded ? ' expanded' : '');
+      row.innerHTML = `
+        <td data-label="${t('colCode')}">${escapeHtml(g.itemCode)}</td>
+        <td class="name-cell"><span class="chevron">▶</span>${escapeHtml(g.item)}</td>
+        <td data-label="${t('colBalance')}" class="balance-cell">${g.balance}</td>
+        <td data-label="${t('colUom')}">${escapeHtml(g.uom)}</td>
+        <td data-label="${t('colPlatform')}"><span class="cell-value">${platformPills}</span></td>
+        <td data-label="${t('colExpiry')}">${expiryLabel(g.nearestExpiry)}</td>
+      `;
+      row.addEventListener('click', () => {
+        if (expanded.has(g.key)) expanded.delete(g.key);
+        else expanded.add(g.key);
+        render();
+      });
+      tableBody.appendChild(row);
+
+      if (isExpanded) {
+        const detailRow = document.createElement('tr');
+        detailRow.className = 'detail-row';
+        const txRows = g.transactions.map(t2 => `
+          <tr>
+            <td data-label="${t('colDate')}">${t2.date}</td>
+            <td data-label="${t('colType')}"><span class="badge ${t2.type === 'IN' ? 'in' : 'out'}">${t2.type === 'IN' ? t('typeIn') : t('typeOut')}</span></td>
+            <td data-label="${t('colQty')}" class="qty">${t2.type === 'IN' ? '+' : '-'}${t2.qty}</td>
+            <td data-label="${t('colPlatform')}"><span class="cell-value">${escapeHtml(t2.platform || '—')}${t2.sourcePackingList ? ` <span class="pill">📋 ${escapeHtml(t2.sourcePackingList)}</span>` : ''}</span></td>
+            <td data-label="${t('colExpiry')}">${expiryLabel(t2.expiryDate)}</td>
+            <td data-label="${t('colBalance')}" class="qty">${t2.runningBalance}</td>
+            ${isAdmin ? `<td data-label=""><button class="del-btn" data-id="${t2.id}" title="${t('deleteRecordTitle')}">✕ ${t('deleteBtn')}</button></td>` : ''}
+          </tr>
+        `).join('');
+
+        detailRow.innerHTML = `
+          <td colspan="6">
+            <div class="detail-wrap">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>${t('colDate')}</th>
+                    <th>${t('colType')}</th>
+                    <th>${t('colQty')}</th>
+                    <th>${t('colPlatform')}</th>
+                    <th>${t('colExpiry')}</th>
+                    <th>${t('colBalance')}</th>
+                    ${isAdmin ? '<th></th>' : ''}
+                  </tr>
+                </thead>
+                <tbody>${txRows}</tbody>
+              </table>
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(detailRow);
+
+        detailRow.querySelectorAll('.del-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!isAdmin) return;
+            if (!confirm(t('deleteConfirm'))) return;
+            await deleteRecordAndSync(btn.dataset.id);
+          });
+        });
+      }
+    });
+  }
+
+  searchInput.addEventListener('input', render);
+  filterPlatform.addEventListener('change', render);
+  filterExpiry.addEventListener('change', render);
+  sortBy.addEventListener('change', render);
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const header = ['Date', 'Code', 'Item', 'Type', 'Quantity', 'UOM', 'Platform/Vessel', 'Expiry Date', 'Running Balance', 'Packing List'];
+    const groups = buildGroups();
+    const rows = [];
+    groups.forEach(g => {
+      g.transactions.slice().reverse().forEach(t => {
+        rows.push([t.date, g.itemCode, g.item, t.type, t.qty, g.uom, t.platform || '', t.expiryDate || '', t.runningBalance, t.sourcePackingList || '']);
+      });
+    });
+    const csv = [header, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'stock_records.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // --- Excel / CSV import ---
+  const importStatus = document.getElementById('importStatus');
+
+  function setImportStatus(msg, kind) {
+    importStatus.textContent = msg;
+    importStatus.className = 'import-status' + (kind ? ' ' + kind : '');
+  }
+
+  // Matches flexible header names to our fields
+  function findKey(rowObj, candidates) {
+    const keys = Object.keys(rowObj);
+    for (const cand of candidates) {
+      const hit = keys.find(k => k.trim().toLowerCase() === cand);
+      if (hit) return hit;
+    }
+    // fallback: partial match
+    for (const cand of candidates) {
+      const hit = keys.find(k => k.trim().toLowerCase().includes(cand));
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  // Excel may give dates as serial numbers or as strings; normalize to YYYY-MM-DD
+  function formatExcelDate(value) {
+    if (value === null || value === undefined || value === '') return '';
+    if (typeof value === 'number') {
+      const parsed = XLSX.SSF.parse_date_code(value);
+      if (parsed) {
+        const mm = String(parsed.m).padStart(2, '0');
+        const dd = String(parsed.d).padStart(2, '0');
+        return `${parsed.y}-${mm}-${dd}`;
+      }
+    }
+    const str = String(value).trim();
+    const asDate = new Date(str);
+    if (!isNaN(asDate.getTime()) && /\d/.test(str)) {
+      const yyyy = asDate.getFullYear();
+      const mm = String(asDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(asDate.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    return str;
+  }
+
+  document.getElementById('importBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    const fileInput = document.getElementById('excelFile');
+    const file = fileInput.files[0];
+    const date = document.getElementById('importDate').value || new Date().toISOString().slice(0, 10);
+
+    if (!file) {
+      setImportStatus(t('chooseFileFirst'), 'err');
+      return;
+    }
+    if (typeof XLSX === 'undefined') {
+      setImportStatus(t('xlsxLibFailed'), 'err');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+
+        if (!rows.length) {
+          setImportStatus(t('noRowsFound'), 'err');
+          return;
+        }
+
+        const nameKeys = ['item name', 'item', 'name', 'description', 'product'];
+        const codeKeys = ['item code', 'code', 'sku', 'item no', 'item number', 'part no'];
+        const qtyKeys = ['quantity', 'qty'];
+        const uomKeys = ['uom', 'unit', 'unit of measure'];
+        const platformKeys = ['platform/vessel', 'platform / vessel', 'platform', 'vessel'];
+        const expiryKeys = ['expiry date', 'expiry', 'exp date', 'exp'];
+
+        let added = 0, skipped = 0;
+        const newRecords = [];
+
+        rows.forEach(row => {
+          const nameKey = findKey(row, nameKeys);
+          const codeKey = findKey(row, codeKeys);
+          const qtyKey = findKey(row, qtyKeys);
+          const uomKey = findKey(row, uomKeys);
+          const platformKey = findKey(row, platformKeys);
+          const expiryKey = findKey(row, expiryKeys);
+
+          const item = nameKey ? String(row[nameKey]).trim() : '';
+          const itemCode = codeKey ? String(row[codeKey]).trim() : '';
+          const qty = qtyKey ? parseFloat(row[qtyKey]) : NaN;
+          const uom = uomKey ? String(row[uomKey]).trim() : '';
+          const platform = platformKey ? String(row[platformKey]).trim() : '';
+          const expiryDate = expiryKey ? formatExcelDate(row[expiryKey]) : '';
+
+          if (!item || !qty || isNaN(qty) || qty <= 0) {
+            skipped++;
+            return;
+          }
+
+          newRecords.push({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + added,
+            item,
+            itemCode,
+            qty,
+            uom,
+            type: importType,
+            date,
+            platform,
+            expiryDate
+          });
+          added++;
+        });
+
+        if (!added) {
+          setImportStatus(t('noValidRows'), 'err');
+          return;
+        }
+
+        setImportStatus(t('syncing'));
+        const ok = await addRecordsAndSync(newRecords);
+        render();
+
+        if (!ok) {
+          setImportStatus(t('syncFailed'), 'err');
+          return;
+        }
+
+        if (added && !skipped) {
+          setImportStatus(t('importedOk', { count: added, type: importType === 'IN' ? t('typeIn') : t('typeOut') }), 'ok');
+        } else {
+          setImportStatus(t('importedPartial', { count: added, skipped }), 'ok');
+        }
+
+        fileInput.value = '';
+      } catch (err) {
+        console.error(err);
+        setImportStatus(t('fileReadError'), 'err');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  // ================= 管理员登录 =================
+  const adminModal = document.getElementById('adminModal');
+  const adminModalTitle = document.getElementById('adminModalTitle');
+  const adminModalSub = document.getElementById('adminModalSub');
+  const adminKeyInput = document.getElementById('adminKeyInput');
+  const adminModalError = document.getElementById('adminModalError');
+  const adminModalConfirm = document.getElementById('adminModalConfirm');
+  const adminModalCancel = document.getElementById('adminModalCancel');
+  const adminToggleBtn = document.getElementById('adminToggleBtn');
+  const adminBtnLabel = document.getElementById('adminBtnLabel');
+  const adminNotice = document.getElementById('adminNotice');
+
+  function updateAdminUI() {
+    document.body.classList.toggle('is-admin', isAdmin);
+    adminBtnLabel.textContent = isAdmin ? t('logoutAdminBtn') : t('adminLoginBtn');
+    adminToggleBtn.classList.toggle('active', isAdmin);
+    if (adminNotice) adminNotice.style.display = isAdmin ? 'none' : 'block';
+  }
+
+  function openAdminModal() {
+    adminKeyInput.value = '';
+    adminModalError.textContent = '';
+    const isFirstTimeSetup = !adminKeyHash;
+    adminModalTitle.textContent = isFirstTimeSetup ? t('adminSetupTitle') : t('adminLoginTitle');
+    adminModalSub.textContent = isFirstTimeSetup ? t('adminSetupSub') : t('adminLoginSub');
+    adminModal.classList.add('open');
+    setTimeout(() => adminKeyInput.focus(), 50);
+  }
+
+  function closeAdminModal() {
+    adminModal.classList.remove('open');
+  }
+
+  adminToggleBtn.addEventListener('click', () => {
+    if (isAdmin) {
+      isAdmin = false;
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      updateAdminUI();
+      renderCurrentView();
+      return;
+    }
+    openAdminModal();
+  });
+
+  adminModalCancel.addEventListener('click', closeAdminModal);
+  adminKeyInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') adminModalConfirm.click();
+  });
+
+  adminModalConfirm.addEventListener('click', async () => {
+    const val = adminKeyInput.value;
+    if (!val) {
+      adminModalError.textContent = t('adminKeyWrong');
+      return;
+    }
+    const hash = await sha256(val);
+
+    if (!adminKeyHash) {
+      // 首次设置管理员密钥
+      if (val.length < 6) {
+        adminModalError.textContent = t('adminKeyTooShort');
+        return;
+      }
+      const cfg = getGhConfig();
+      if (!cfg || !cfg.token) {
+        adminModalError.textContent = t('ghConfigMissing');
+        return;
+      }
+      adminModalConfirm.disabled = true;
+      try {
+        await pushSharedData(records, hash, packingLists);
+        adminKeyHash = hash;
+        isAdmin = true;
+        sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
+        localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+        closeAdminModal();
+        updateAdminUI();
+        renderCurrentView();
+      } catch (err) {
+        adminModalError.textContent = err.message;
+      }
+      adminModalConfirm.disabled = false;
+      return;
+    }
+
+    if (hash !== adminKeyHash) {
+      adminModalError.textContent = t('adminKeyWrong');
+      return;
+    }
+    isAdmin = true;
+    sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
+    closeAdminModal();
+    updateAdminUI();
+    renderCurrentView();
+  });
+
+  // ---- GitHub 同步 Token 设置（任何需要写入的设备都要单独配置，与管理员密钥彼此独立）----
+  const syncSettingsModal = document.getElementById('syncSettingsModal');
+  document.getElementById('syncSettingsBtn').addEventListener('click', () => {
+    const cfg = getGhConfig();
+    document.getElementById('ghToken').value = (cfg && cfg.token) || '';
+    document.getElementById('ghSettingsStatus').textContent = '';
+    syncSettingsModal.classList.add('open');
+  });
+  document.getElementById('syncSettingsCancel').addEventListener('click', () => {
+    syncSettingsModal.classList.remove('open');
+  });
+
+  document.getElementById('saveGhSettingsBtn').addEventListener('click', () => {
+    const cfg = {
+      token: document.getElementById('ghToken').value.trim()
+    };
+    const statusEl = document.getElementById('ghSettingsStatus');
+    if (!cfg.token) {
+      statusEl.textContent = t('ghSettingsIncomplete');
+      statusEl.className = 'modal-status err';
+      return;
+    }
+    localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(cfg));
+    statusEl.textContent = t('ghSettingsSaved');
+    statusEl.className = 'modal-status ok';
+  });
+
+  // ================= 刷新 / 自动同步 =================
+  document.getElementById('refreshBtn').addEventListener('click', () => loadDataAndRender(false));
+
+  // 未登录 GitHub API 每小时约 60 次请求上限，多设备同时轮询容易超限，
+  // 因此自动刷新间隔放宽到 3 分钟；用户仍可随时点右上角 ⟳ 手动刷新。
+  setInterval(() => loadDataAndRender(true), 180000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') loadDataAndRender(true);
+  });
+
+  // ================= 页面切换：Packing List / Stock Balance =================
+  const choiceView = document.getElementById('choiceView');
+  const packingListView = document.getElementById('packingListView');
+  const packingDetailView = document.getElementById('packingDetailView');
+  const stockView = document.getElementById('stockView');
+  const homeBtn = document.getElementById('homeBtn');
+
+  function renderCurrentView() {
+    choiceView.style.display = currentView === 'choice' ? 'block' : 'none';
+    packingListView.style.display = currentView === 'packing' ? 'block' : 'none';
+    packingDetailView.style.display = currentView === 'packingDetail' ? 'block' : 'none';
+    stockView.style.display = currentView === 'stock' ? 'block' : 'none';
+    homeBtn.style.display = currentView === 'choice' ? 'none' : 'flex';
+
+    if (currentView === 'stock') render();
+    else if (currentView === 'packing') renderPackingListView();
+    else if (currentView === 'packingDetail') renderPackingDetail();
+  }
+
+  document.getElementById('gotoPackingBtn').addEventListener('click', () => {
+    currentView = 'packing';
+    renderCurrentView();
+  });
+  document.getElementById('gotoStockBtn').addEventListener('click', () => {
+    currentView = 'stock';
+    renderCurrentView();
+  });
+  homeBtn.addEventListener('click', () => {
+    currentView = 'choice';
+    renderCurrentView();
+  });
+  document.getElementById('backToPackingListBtn').addEventListener('click', () => {
+    currentView = 'packing';
+    currentPackingListId = null;
+    renderCurrentView();
+  });
+
+  // ================= Packing List：列表页 =================
+  function packingListProgress(pl) {
+    const total = pl.items.length;
+    const done = pl.items.filter(i => i.done).length;
+    const hasIncomplete = pl.items.some(i => i.done && i.qtyTaken !== i.qtyRequested);
+    return { total, done, pct: total ? Math.round((done / total) * 100) : 0, hasIncomplete };
+  }
+
+  function packingListOverallStatus(pl) {
+    const { total, done, hasIncomplete } = packingListProgress(pl);
+    if (total === 0 || done < total) return 'open';
+    return hasIncomplete ? 'incomplete' : 'completed';
+  }
+
+  function packingListStatusLabel(status) {
+    if (status === 'completed') return t('plStatusCompleted');
+    if (status === 'incomplete') return '⚠ ' + t('plIncompleteLabel');
+    return t('plStatusOpen');
+  }
+
+  function renderPackingListView() {
+    const container = document.getElementById('packingListsContainer');
+    const emptyEl = document.getElementById('packingListEmpty');
+    const sorted = packingLists.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    container.innerHTML = '';
+    emptyEl.style.display = sorted.length ? 'none' : 'block';
+
+    sorted.forEach(pl => {
+      const { total, done, pct } = packingListProgress(pl);
+      const status = packingListOverallStatus(pl);
+      const card = document.createElement('div');
+      card.className = 'pl-card';
+      card.innerHTML = `
+        <div class="pl-card-top">
+          <div class="pl-card-title">${escapeHtml(pl.title)}</div>
+          <span class="pl-status-badge ${status}">${packingListStatusLabel(status)}</span>
+        </div>
+        <div class="pl-card-meta">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''}</div>
+        <div class="pl-progress-bar"><div class="pl-progress-fill" style="width:${pct}%;"></div></div>
+        <div class="pl-progress-label">${done}/${total} ${t('plItemsDoneLabel')}</div>
+      `;
+      card.addEventListener('click', () => {
+        currentPackingListId = pl.id;
+        currentView = 'packingDetail';
+        renderCurrentView();
+      });
+      container.appendChild(card);
+    });
+  }
+
+  document.getElementById('newPackingListBtn').addEventListener('click', () => openNewPackingListModal());
+
+  // ---- 新建 Packing List ----
+  const newPackingListModal = document.getElementById('newPackingListModal');
+  const plItemsContainer = document.getElementById('plItemsContainer');
+  let plItemRows = [];
+
+  function openNewPackingListModal() {
+    document.getElementById('plTitle').value = '';
+    document.getElementById('plPlatform').value = '';
+    document.getElementById('plDate').valueAsDate = new Date();
+    document.getElementById('plError').textContent = '';
+    document.getElementById('plImportStatus').textContent = '';
+    document.getElementById('plImportStatus').className = 'modal-status';
+    plItemRows = [];
+    plItemsContainer.innerHTML = '';
+    addPlItemRow();
+    newPackingListModal.classList.add('open');
+  }
+
+  function addPlItemRow(prefill) {
+    prefill = prefill || {};
+    const rowId = 'plrow_' + Math.random().toString(36).slice(2, 8);
+    plItemRows.push(rowId);
+    const row = document.createElement('div');
+    row.className = 'pl-new-item-row';
+    row.id = rowId;
+    row.innerHTML = `
+      <input type="text" class="pl-item-name-input" placeholder="${t('itemNameLabel')}" list="itemNameList" autocomplete="off" value="${escapeHtml(prefill.item || '')}">
+      <input type="text" class="pl-item-code-input" placeholder="${t('itemCodeLabel')}" autocomplete="off" value="${escapeHtml(prefill.itemCode || '')}">
+      <input type="number" class="pl-item-qty-input" placeholder="${t('qtyLabel')}" min="1" step="1" value="${prefill.qty || ''}">
+      <button type="button" class="pl-remove-item-btn">✕</button>
+    `;
+    plItemsContainer.appendChild(row);
+
+    const nameInput = row.querySelector('.pl-item-name-input');
+    const codeInput = row.querySelector('.pl-item-code-input');
+    nameInput.addEventListener('input', () => {
+      const map = getNameToCodeMap();
+      const match = map[nameInput.value.trim().toLowerCase()];
+      if (match) codeInput.value = match;
+    });
+    row.querySelector('.pl-remove-item-btn').addEventListener('click', () => {
+      row.remove();
+      plItemRows = plItemRows.filter(id => id !== rowId);
+    });
+  }
+
+  document.getElementById('plAddItemBtn').addEventListener('click', () => addPlItemRow());
+  document.getElementById('plCancelBtn').addEventListener('click', () => newPackingListModal.classList.remove('open'));
+
+  // ---- 从 Excel 批量导入 Packing List 货物项 ----
+  document.getElementById('plExcelFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const statusEl = document.getElementById('plImportStatus');
+    if (!file) return;
+    if (typeof XLSX === 'undefined') {
+      statusEl.textContent = t('xlsxLibFailed');
+      statusEl.className = 'modal-status err';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+
+        if (!rows.length) {
+          statusEl.textContent = t('noRowsFound');
+          statusEl.className = 'modal-status err';
+          return;
+        }
+
+        const nameKeys = ['item name', 'item', 'name', 'description', 'product'];
+        const codeKeys = ['item code', 'code', 'sku', 'item no', 'item number', 'part no'];
+        const qtyKeys = ['quantity', 'qty'];
+
+        // 清空目前的空白行，只保留导入结果
+        plItemRows.slice().forEach(rowId => {
+          const row = document.getElementById(rowId);
+          if (row) row.remove();
+        });
+        plItemRows = [];
+
+        let added = 0, skipped = 0;
+        rows.forEach(row => {
+          const nameKey = findKey(row, nameKeys);
+          const codeKey = findKey(row, codeKeys);
+          const qtyKey = findKey(row, qtyKeys);
+          const item = nameKey ? String(row[nameKey]).trim() : '';
+          const itemCode = codeKey ? String(row[codeKey]).trim() : '';
+          const qty = qtyKey ? parseFloat(row[qtyKey]) : NaN;
+
+          if (!item || !qty || isNaN(qty) || qty <= 0) { skipped++; return; }
+          addPlItemRow({ item, itemCode, qty });
+          added++;
+        });
+
+        if (!added) addPlItemRow();
+
+        statusEl.textContent = skipped
+          ? t('importedPartial', { count: added, skipped })
+          : t('plImportedOk', { count: added });
+        statusEl.className = 'modal-status ok';
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = t('fileReadError');
+        statusEl.className = 'modal-status err';
+      }
+      e.target.value = '';
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  document.getElementById('plSaveBtn').addEventListener('click', async () => {
+    const title = document.getElementById('plTitle').value.trim();
+    const platform = document.getElementById('plPlatform').value.trim();
+    const date = document.getElementById('plDate').value;
+    const errEl = document.getElementById('plError');
+
+    if (!title || !date) {
+      errEl.textContent = t('plTitleDateRequired');
+      return;
+    }
+
+    const items = [];
+    plItemRows.forEach(rowId => {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+      const name = row.querySelector('.pl-item-name-input').value.trim();
+      const code = row.querySelector('.pl-item-code-input').value.trim();
+      const qty = parseFloat(row.querySelector('.pl-item-qty-input').value);
+      if (name && qty > 0) {
+        // 从既有库存记录里找 UOM
+        const known = records.find(r => r.item.trim().toLowerCase() === name.toLowerCase());
+        items.push({
+          id: 'pli_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          item: name,
+          itemCode: code,
+          uom: known ? known.uom : '',
+          qtyRequested: qty,
+          done: false,
+          qtyTaken: null,
+          completedAt: null
+        });
+      }
+    });
+
+    if (!items.length) {
+      errEl.textContent = t('plNeedAtLeastOneItem');
+      return;
+    }
+
+    document.getElementById('plSaveBtn').disabled = true;
+    const newPl = {
+      id: 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      title, platform, date,
+      createdAt: new Date().toISOString(),
+      items
+    };
+
+    const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => ({
+      packingLists: latestPackingLists.concat([newPl]),
+      records: latestRecords
+    }));
+    document.getElementById('plSaveBtn').disabled = false;
+
+    if (ok) {
+      newPackingListModal.classList.remove('open');
+      renderCurrentView();
+    } else {
+      errEl.textContent = t('syncFailed');
+    }
+  });
+
+  // ---- Packing List 详情 / 勾选完成 ----
+  function renderPackingDetail() {
+    const pl = packingLists.find(p => p.id === currentPackingListId);
+    const headerEl = document.getElementById('packingDetailHeader');
+    const itemsEl = document.getElementById('packingDetailItems');
+
+    if (!pl) {
+      headerEl.innerHTML = '';
+      itemsEl.innerHTML = `<div class="empty">${t('packingListEmptyText')}</div>`;
+      return;
+    }
+
+    const { total, done } = packingListProgress(pl);
+    headerEl.innerHTML = `
+      <h2 style="margin:0 0 4px;">${escapeHtml(pl.title)}</h2>
+      <div class="pl-card-meta" style="margin-bottom:16px;">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''} · ${done}/${total} ${t('plItemsDoneLabel')}</div>
+    `;
+
+    itemsEl.innerHTML = '';
+    pl.items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'pl-item-row' + (item.done ? ' done' : '');
+      if (item.done) {
+        const isIncomplete = item.status === 'incomplete' || item.qtyTaken !== item.qtyRequested;
+        row.innerHTML = `
+          <div class="pl-item-top">
+            <div>
+              <div class="pl-item-name">${escapeHtml(item.item)}</div>
+              <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} ${escapeHtml(item.uom || '')}</div>
+            </div>
+            <div style="text-align:right;">
+              ${isIncomplete
+                ? `<span class="pl-status-badge incomplete">⚠ ${t('plIncompleteLabel')}</span>`
+                : `<span class="pl-status-badge completed">✓ ${t('plCompleteLabel')}</span>`}
+              <div class="pl-done-check">${t('plDoneLabel', { qty: item.qtyTaken })}</div>
+              <button class="pl-undo-btn">${t('undoBtn')}</button>
+            </div>
+          </div>
+        `;
+        const undoBtn = row.querySelector('.pl-undo-btn');
+        undoBtn.addEventListener('click', async () => {
+          const cfg = getGhConfig();
+          if (!cfg || !cfg.token) {
+            alert(t('ghConfigMissing'));
+            return;
+          }
+          if (!confirm(t('undoConfirm'))) return;
+          undoBtn.disabled = true;
+          const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
+            const targetPl = latestPackingLists.find(p => p.id === pl.id);
+            if (targetPl) {
+              const targetItem = targetPl.items.find(i => i.id === item.id);
+              if (targetItem) {
+                targetItem.done = false;
+                targetItem.qtyTaken = null;
+                targetItem.completedAt = null;
+                targetItem.status = null;
+              }
+            }
+            const newRecords = latestRecords.filter(r => r.sourcePackingListItemId !== item.id);
+            return { packingLists: latestPackingLists, records: newRecords };
+          });
+          undoBtn.disabled = false;
+          if (ok) renderCurrentView();
+        });
+      } else {
+        row.innerHTML = `
+          <div class="pl-item-top">            <div>
+              <div class="pl-item-name">${escapeHtml(item.item)}</div>
+              <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} ${escapeHtml(item.uom || '')}</div>
+            </div>
+          </div>
+          <div class="pl-item-actions">
+            <input type="number" min="0" step="1" class="pl-qty-taken-input" value="${item.qtyRequested}">
+            <button class="pl-done-btn">${t('plMarkDoneBtn')}</button>
+          </div>
+        `;
+        const qtyInput = row.querySelector('.pl-qty-taken-input');
+        const doneBtn = row.querySelector('.pl-done-btn');
+        doneBtn.addEventListener('click', async () => {
+          const qtyTaken = parseFloat(qtyInput.value);
+          if (!qtyTaken || qtyTaken <= 0) return;
+          const cfg = getGhConfig();
+          if (!cfg || !cfg.token) {
+            alert(t('ghConfigMissing'));
+            return;
+          }
+          doneBtn.disabled = true;
+          const newRecordId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+          const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
+            const targetPl = latestPackingLists.find(p => p.id === pl.id);
+            if (targetPl) {
+              const targetItem = targetPl.items.find(i => i.id === item.id);
+              if (targetItem) {
+                targetItem.done = true;
+                targetItem.qtyTaken = qtyTaken;
+                targetItem.completedAt = new Date().toISOString();
+                targetItem.status = (qtyTaken === targetItem.qtyRequested) ? 'complete' : 'incomplete';
+              }
+            }
+            const newRecord = {
+              id: newRecordId,
+              item: item.item,
+              itemCode: item.itemCode,
+              qty: qtyTaken,
+              uom: item.uom,
+              type: 'OUT',
+              date: new Date().toISOString().slice(0, 10),
+              platform: pl.platform,
+              expiryDate: '',
+              sourcePackingList: pl.title,
+              sourcePackingListId: pl.id,
+              sourcePackingListItemId: item.id
+            };
+            return {
+              packingLists: latestPackingLists,
+              records: latestRecords.concat([newRecord])
+            };
+          });
+          doneBtn.disabled = false;
+          if (ok) renderCurrentView();
+        });
+      }
+      itemsEl.appendChild(row);
+    });
+  }
+
+  // ================= 导出 Packing List 为送货单 DO（PDF / Excel）=================
+  // 公司抬头信息取自现有 DO 单据格式，如需调整可在此处直接修改
+  const DO_COMPANY = {
+    name: 'FU SHENG ENTERPRISE',
+    regLine: 'Reg No.: LA0005711-P / 200503030203  |  TIN: D12089461000',
+    address: 'PN2403, Lot 205312269, Kg Lajau, Off Jalan Kg Bukit Kuda, P.O Box 81699, 87026 W.P Labuan',
+    contact: 'Tel: +6010-2328226 / +6011-51336228 / +6087-425966  |  Fax: +6087-416822',
+    email: 'Email: fusheng-ent@hotmail.com'
+  };
+
+  function doItemStatusLabel(item) {
+    if (!item.done) return t('plPendingLabel');
+    return (item.qtyTaken === item.qtyRequested) ? t('plCompleteLabel') : t('plIncompleteLabel');
+  }
+
+  function buildDoHtml(pl) {
+    const overallStatus = packingListOverallStatus(pl);
+    const rows = pl.items.map((item, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${escapeHtml(item.item)}${item.itemCode ? ' (' + escapeHtml(item.itemCode) + ')' : ''}</td>
+        <td class="num">${item.qtyRequested}</td>
+        <td class="num">${item.done ? item.qtyTaken : '-'}</td>
+        <td>${escapeHtml(item.uom || '')}</td>
+        <td>${doItemStatusLabel(item)}</td>
+      </tr>
+    `).join('');
+
+    const totalOrdered = pl.items.reduce((s, i) => s + (i.qtyRequested || 0), 0);
+    const totalTaken = pl.items.reduce((s, i) => s + (i.done ? (i.qtyTaken || 0) : 0), 0);
+
+    return `
+      <!DOCTYPE html>
+      <html><head><meta charset="UTF-8"><title>${escapeHtml(pl.title)}</title>
+      <style>
+        body { font-family: Arial, Helvetica, sans-serif; padding: 30px; color: #111; }
+        .center { text-align: center; }
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .small { font-size: 11px; margin: 2px 0; }
+        h2 { font-size: 16px; margin: 20px 0 16px; text-align: center; }
+        .info-grid { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 12px; }
+        .info-grid table td { padding: 1px 6px 1px 0; vertical-align: top; }
+        table.items { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        table.items th, table.items td { border: 1px solid #999; padding: 6px 8px; text-align: left; }
+        table.items th { background: #f0f0f0; }
+        td.num { text-align: right; }
+        .totals { text-align: right; font-size: 13px; margin-top: 10px; font-weight: bold; }
+        .sign-row { display: flex; justify-content: space-between; margin-top: 60px; font-size: 12px; }
+        .sign-row div { width: 40%; border-top: 1px solid #333; text-align: center; padding-top: 6px; }
+        .status-banner { text-align: center; font-weight: bold; margin: 10px 0; font-size: 13px; }
+        .status-banner.completed { color: #1f9d63; }
+        .status-banner.incomplete { color: #d64545; }
+        .status-banner.open { color: #b8860b; }
+        @media print { body { padding: 10px; } }
+      </style>
+      </head><body>
+        <div class="center">
+          <h1>${DO_COMPANY.name}</h1>
+          <div class="small"><b>${DO_COMPANY.regLine}</b></div>
+          <div class="small">${DO_COMPANY.address}</div>
+          <div class="small">${DO_COMPANY.contact}</div>
+          <div class="small">${DO_COMPANY.email}</div>
+        </div>
+        <h2>Delivery Order</h2>
+        <div class="info-grid">
+          <table><tr><td><b>Sold To:</b></td></tr><tr><td>${escapeHtml(pl.platform || '-')}</td></tr></table>
+          <table>
+            <tr><td>No.</td><td><b>${escapeHtml(pl.title)}</b></td></tr>
+            <tr><td>Date</td><td>${pl.date || ''}</td></tr>
+            <tr><td>Page</td><td>1 of 1</td></tr>
+          </table>
+        </div>
+        <div class="status-banner ${overallStatus}">${packingListStatusLabel(overallStatus)}</div>
+        <table class="items">
+          <thead><tr><th>#</th><th>Description</th><th>Qty Ordered</th><th>Qty Delivered</th><th>UOM</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="totals">Total Ordered: ${totalOrdered} &nbsp;&nbsp; Total Delivered: ${totalTaken}</div>
+        <div class="sign-row">
+          <div>Authorised Signature</div>
+          <div>Recipient's Chop and Signature</div>
+        </div>
+      </body></html>
+    `;
+  }
+
+  function exportPackingListToPdf(pl) {
+    const html = buildDoHtml(pl);
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+    iframe.onload = () => {
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      }, 200);
+    };
+  }
+
+  function exportPackingListToExcel(pl) {
+    const overallStatus = packingListOverallStatus(pl);
+    const data = [
+      [DO_COMPANY.name],
+      [DO_COMPANY.regLine],
+      [DO_COMPANY.address],
+      [DO_COMPANY.contact],
+      [DO_COMPANY.email],
+      [],
+      ['Delivery Order'],
+      ['No.', pl.title, '', 'Date', pl.date || ''],
+      ['Sold To', pl.platform || '-'],
+      ['Status', packingListStatusLabel(overallStatus)],
+      [],
+      ['#', 'Description', 'Item Code', 'Qty Ordered', 'Qty Delivered', 'UOM', 'Status']
+    ];
+    pl.items.forEach((item, idx) => {
+      data.push([
+        idx + 1,
+        item.item,
+        item.itemCode || '',
+        item.qtyRequested,
+        item.done ? item.qtyTaken : '',
+        item.uom || '',
+        doItemStatusLabel(item)
+      ]);
+    });
+    const totalOrdered = pl.items.reduce((s, i) => s + (i.qtyRequested || 0), 0);
+    const totalTaken = pl.items.reduce((s, i) => s + (i.done ? (i.qtyTaken || 0) : 0), 0);
+    data.push([]);
+    data.push(['', '', '', 'Total:', totalOrdered, totalTaken]);
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'DO');
+    XLSX.writeFile(wb, `DO_${pl.title.replace(/[^\w-]+/g, '_')}.xlsx`);
+  }
+
+  document.getElementById('exportDoPdfBtn').addEventListener('click', () => {
+    const pl = packingLists.find(p => p.id === currentPackingListId);
+    if (pl) exportPackingListToPdf(pl);
+  });
+  document.getElementById('exportDoExcelBtn').addEventListener('click', () => {
+    const pl = packingLists.find(p => p.id === currentPackingListId);
+    if (pl) exportPackingListToExcel(pl);
+  });
+
+  document.getElementById('deletePackingListBtn').addEventListener('click', async () => {
+    if (!isAdmin || !currentPackingListId) return;
+    if (!confirm(t('deletePackingListConfirm'))) return;
+    const idToDelete = currentPackingListId;
+    const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => ({
+      packingLists: latestPackingLists.filter(p => p.id !== idToDelete),
+      records: latestRecords
+    }));
+    if (ok) {
+      currentView = 'packing';
+      currentPackingListId = null;
+      renderCurrentView();
+    }
+  });
+
+  // ================= 清空全部库存记录（管理员，需重新输入密码确认） =================
+  const clearAllModal = document.getElementById('clearAllModal');
+  const clearAllPasswordInput = document.getElementById('clearAllPasswordInput');
+  const clearAllError = document.getElementById('clearAllError');
+  const clearAllConfirmBtn = document.getElementById('clearAllConfirm');
+
+  document.getElementById('clearAllStockBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    clearAllPasswordInput.value = '';
+    clearAllError.textContent = '';
+    clearAllModal.classList.add('open');
+    setTimeout(() => clearAllPasswordInput.focus(), 50);
+  });
+
+  document.getElementById('clearAllCancel').addEventListener('click', () => {
+    clearAllModal.classList.remove('open');
+  });
+
+  clearAllPasswordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') clearAllConfirmBtn.click();
+  });
+
+  clearAllConfirmBtn.addEventListener('click', async () => {
+    const val = clearAllPasswordInput.value;
+    if (!val) {
+      clearAllError.textContent = t('adminKeyWrong');
+      return;
+    }
+    const hash = await sha256(val);
+    if (hash !== adminKeyHash) {
+      clearAllError.textContent = t('adminKeyWrong');
+      return;
+    }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) {
+      clearAllError.textContent = t('ghConfigMissing');
+      return;
+    }
+
+    clearAllConfirmBtn.disabled = true;
+    setSyncStatus(t('syncing'));
+    try {
+      const latest = await fetchSharedData();
+      await pushSharedData([], latest.adminKeyHash, latest.packingLists);
+      records = [];
+      adminKeyHash = latest.adminKeyHash;
+      packingLists = latest.packingLists;
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      clearAllModal.classList.remove('open');
+      renderCurrentView();
+    } catch (err) {
+      console.error(err);
+      clearAllError.textContent = t('syncFailed') + ': ' + err.message;
+      setSyncStatus(t('syncFailed'), 'err');
+    }
+    clearAllConfirmBtn.disabled = false;
+  });
+
+  // ================= 设备锁（PIN / 指纹） =================
+  const lockScreen = document.getElementById('lockScreen');
+  const lockCard = document.getElementById('lockCard');
+
+  function getDeviceLock() {
+    try {
+      const raw = localStorage.getItem(DEVICE_LOCK_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function bufToBase64(buf) {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)));
+  }
+  function base64ToBuf(b64) {
+    return Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer;
+  }
+
+  async function platformAuthAvailable() {
+    return !!(window.PublicKeyCredential &&
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable &&
+      await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
+  }
+
+  function lockScreenOpen() { lockScreen.classList.add('open'); }
+  function lockScreenClose() { lockScreen.classList.remove('open'); }
+
+  // ---- 首次设置：选择 PIN 或指纹 ----
+  async function renderSetupChoice() {
+    const hasBiometric = await platformAuthAvailable();
+    lockCard.innerHTML = `
+      <div class="lock-icon">🔒</div>
+      <h2>${t('deviceLockSetupTitle')}</h2>
+      <div class="lock-sub">${t('deviceLockSetupSub')}</div>
+      <div class="setup-choice">
+        ${hasBiometric ? `
+          <button id="chooseFingerprint">${t('setupFingerprintOption')}<span class="desc">${t('setupFingerprintOptionDesc')}</span></button>
+        ` : ''}
+        <button id="choosePin">${t('setupPinOption')}<span class="desc">${t('setupPinOptionDesc')}</span></button>
+      </div>
+      ${!hasBiometric ? `<div class="lock-error" style="margin-top:10px;">${t('pinNotAvailable')}</div>` : ''}
+    `;
+    if (hasBiometric) {
+      document.getElementById('chooseFingerprint').addEventListener('click', setupFingerprint);
+    }
+    document.getElementById('choosePin').addEventListener('click', () => renderPinSetup(1));
+  }
+
+  // ---- PIN 设置（第一次输入 -> 第二次确认） ----
+  let pendingPin = '';
+
+  function renderPinSetup(stage) {
+    lockCard.innerHTML = `
+      <div class="lock-icon">🔒</div>
+      <h2>${t('deviceLockSetupTitle')}</h2>
+      <div class="lock-sub">${stage === 1 ? t('enterNewPin') : t('confirmNewPin')}</div>
+      <div class="pin-dots" id="pinDots">
+        ${Array.from({length: 6}).map(() => '<div class="dot"></div>').join('')}
+      </div>
+      <div class="lock-error" id="pinError"></div>
+      <div class="pin-keypad" id="pinKeypad"></div>
+    `;
+    buildKeypad(stage === 1 ? handlePinSetupInput1 : handlePinSetupInput2);
+  }
+
+  let currentPinBuffer = '';
+
+  function buildKeypad(onDigit) {
+    const keypad = document.getElementById('pinKeypad');
+    const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+    currentPinBuffer = '';
+    keypad.innerHTML = keys.map(k => k ? `<button data-key="${k}" class="${k === '⌫' ? 'wide' : ''}">${k}</button>` : '<div></div>').join('');
+    keypad.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        if (key === '⌫') {
+          currentPinBuffer = currentPinBuffer.slice(0, -1);
+        } else if (currentPinBuffer.length < 6) {
+          currentPinBuffer += key;
+        }
+        updatePinDots();
+        if (currentPinBuffer.length === 6) onDigit(currentPinBuffer);
+      });
+    });
+  }
+
+  function updatePinDots() {
+    const dots = document.querySelectorAll('#pinDots .dot');
+    dots.forEach((d, i) => d.classList.toggle('filled', i < currentPinBuffer.length));
+  }
+
+  function handlePinSetupInput1(pin) {
+    pendingPin = pin;
+    setTimeout(() => renderPinSetup(2), 150);
+  }
+
+  async function handlePinSetupInput2(pin) {
+    if (pin !== pendingPin) {
+      document.getElementById('pinError').textContent = t('pinMismatch');
+      setTimeout(() => renderPinSetup(1), 700);
+      return;
+    }
+    const hash = await sha256(pin);
+    localStorage.setItem(DEVICE_LOCK_KEY, JSON.stringify({ method: 'pin', hash }));
+    lockScreenClose();
+    boot();
+  }
+
+  // ---- 指纹注册 ----
+  async function setupFingerprint() {
+    try {
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const userId = crypto.getRandomValues(new Uint8Array(16));
+      const cred = await navigator.credentials.create({
+        publicKey: {
+          challenge,
+          rp: { name: 'SRS', id: location.hostname },
+          user: { id: userId, name: 'srs-user', displayName: 'SRS User' },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+          authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+          timeout: 60000
+        }
+      });
+      const credentialId = bufToBase64(cred.rawId);
+      localStorage.setItem(DEVICE_LOCK_KEY, JSON.stringify({ method: 'webauthn', credentialId }));
+      lockScreenClose();
+      boot();
+    } catch (err) {
+      console.error(err);
+      renderSetupChoice();
+      setTimeout(() => alert(t('fingerprintSetupFailed')), 50);
+    }
+  }
+
+  // ---- 解锁界面 ----
+  function renderUnlockPin(lock) {
+    lockCard.innerHTML = `
+      <div class="lock-icon">🔒</div>
+      <h2>${t('unlockTitle')}</h2>
+      <div class="lock-sub">${t('enterPinToUnlock')}</div>
+      <div class="pin-dots" id="pinDots">
+        ${Array.from({length: 6}).map(() => '<div class="dot"></div>').join('')}
+      </div>
+      <div class="lock-error" id="pinError"></div>
+      <div class="pin-keypad" id="pinKeypad"></div>
+      <button class="lock-alt-link muted" id="forgotPinBtn">${t('forgotPinLink')}</button>
+    `;
+    buildKeypad(async (pin) => {
+      const hash = await sha256(pin);
+      if (hash === lock.hash) {
+        lockScreenClose();
+        boot();
+      } else {
+        document.getElementById('pinError').textContent = t('wrongPin');
+        setTimeout(() => renderUnlockPin(lock), 500);
+      }
+    });
+    document.getElementById('forgotPinBtn').addEventListener('click', () => {
+      if (confirm(t('forgotPinConfirm'))) {
+        localStorage.removeItem(DEVICE_LOCK_KEY);
+        renderSetupChoice();
+      }
+    });
+  }
+
+  async function renderUnlockFingerprint(lock) {
+    lockCard.innerHTML = `
+      <div class="lock-icon">🔒</div>
+      <h2>${t('unlockTitle')}</h2>
+      <div class="lock-sub">${t('tapToUnlock')}</div>
+      <button class="fingerprint-btn" id="fpUnlockBtn">👆 ${t('tapToUnlock')}</button>
+      <div class="lock-error" id="fpError"></div>
+      <button class="lock-alt-link muted" id="forgotPinBtn2">${t('forgotPinLink')}</button>
+    `;
+    document.getElementById('forgotPinBtn2').addEventListener('click', () => {
+      if (confirm(t('forgotPinConfirm'))) {
+        localStorage.removeItem(DEVICE_LOCK_KEY);
+        renderSetupChoice();
+      }
+    });
+
+    async function tryUnlock() {
+      try {
+        const challenge = crypto.getRandomValues(new Uint8Array(32));
+        await navigator.credentials.get({
+          publicKey: {
+            challenge,
+            allowCredentials: [{ id: base64ToBuf(lock.credentialId), type: 'public-key' }],
+            userVerification: 'required',
+            timeout: 60000
+          }
+        });
+        lockScreenClose();
+        boot();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('fpError').textContent = t('fingerprintPromptFailed');
+      }
+    }
+    document.getElementById('fpUnlockBtn').addEventListener('click', tryUnlock);
+    tryUnlock();
+  }
+
+  // ---- 设备锁入口 ----
+  async function initDeviceLock() {
+    const lock = getDeviceLock();
+    lockScreenOpen();
+    if (!lock) {
+      await renderSetupChoice();
+      return false;
+    }
+    if (lock.method === 'webauthn') {
+      await renderUnlockFingerprint(lock);
+    } else {
+      renderUnlockPin(lock);
+    }
+    return false;
+  }
+
+  // ================= 启动流程 =================
+  async function boot() {
+    updateAdminUI();
+    await loadDataAndRender(false);
+  }
+
+  (async function start() {
+    applyStaticTranslations();
+    await initDeviceLock();
+  })();
+
+  // ---------- 注册 Service Worker（支持离线使用与添加到主屏幕）----------
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js').catch(err => {
+        console.log('Service Worker 注册失败：', err);
+      });
+    });
+  }
+</script>
+
+</body>
+</html>
