@@ -2,20 +2,6 @@
   "adminKeyHash": "2f20d1befe201807cb5542c9ecaaeb4646df3139d7daf5d8feaf7f22e36f504d",
   "records": [
     {
-      "id": "mtmlcyh8mawd8",
-      "item": "MINERAL WATER 1.5LX12'S",
-      "itemCode": "MW001",
-      "qty": 10,
-      "uom": "",
-      "type": "OUT",
-      "date": "2026-09-04",
-      "platform": "SK PURPOSE - DRINKING WATER",
-      "expiryDate": "",
-      "sourcePackingList": "PL2026001",
-      "sourcePackingListId": "pl_mtmlcezp16vb",
-      "sourcePackingListItemId": "pli_mtmlcezpm4f8"
-    },
-    {
       "id": "mtmlddssz9hf1",
       "item": "MINERAL WATER 500MLX24'S",
       "itemCode": "MW001",
@@ -79,9 +65,10 @@
           "itemCode": "MW001",
           "uom": "",
           "qtyRequested": 30,
-          "done": true,
-          "qtyTaken": 10,
-          "completedAt": "2026-09-04T06:47:11.259Z"
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null,
+          "status": null
         },
         {
           "id": "pli_mtmlcezppuoy",
