@@ -22,6 +22,17 @@
       "date": "2028-06-13",
       "platform": "",
       "expiryDate": ""
+    },
+    {
+      "id": "mto04003t7dxa",
+      "item": "Beef topside 20kg",
+      "itemCode": "",
+      "qty": 75,
+      "uom": "CTN",
+      "type": "IN",
+      "date": "2026-09-05",
+      "platform": "",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
