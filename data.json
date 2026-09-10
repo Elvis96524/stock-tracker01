@@ -1,17 +1,5 @@
 {
   "adminKeyHash": "2f20d1befe201807cb5542c9ecaaeb4646df3139d7daf5d8feaf7f22e36f504d",
-  "records": [
-    {
-      "id": "mto02t9pqg4bj",
-      "item": "DUCKLING HALAL",
-      "itemCode": "DH001",
-      "qty": 621,
-      "uom": "KG",
-      "type": "IN",
-      "date": "2028-06-13",
-      "platform": "",
-      "expiryDate": ""
-    }
-  ],
+  "records": [],
   "packingLists": []
 }
