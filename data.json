@@ -14,6 +14,17 @@
       "sourcePackingList": "PO/SK26/0384",
       "sourcePackingListId": "pl_mtv5voczyhrw",
       "sourcePackingListItemId": "pli_mtv5vocy1owq"
+    },
+    {
+      "id": "mtv5y1wb6meal",
+      "item": "BEEF STRIPLOIN INDIAN (CUT)",
+      "itemCode": "BSTRIP20",
+      "qty": 100,
+      "uom": "KG",
+      "type": "IN",
+      "date": "2026-09-09",
+      "platform": "BILLION",
+      "expiryDate": "2027-01-10"
     }
   ],
   "packingLists": [
