@@ -25,6 +25,17 @@
       "date": "2026-09-09",
       "platform": "BILLION",
       "expiryDate": "2027-01-10"
+    },
+    {
+      "id": "mtv5zlmr0mwmi",
+      "item": "BEEF STRIPLOIN INDIAN (CUT)",
+      "itemCode": "",
+      "qty": 100,
+      "uom": "KG",
+      "type": "IN",
+      "date": "2026-09-10",
+      "platform": "BILLION",
+      "expiryDate": "2027-01-10"
     }
   ],
   "packingLists": [
