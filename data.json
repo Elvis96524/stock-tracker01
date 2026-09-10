@@ -1,43 +1,6 @@
 {
   "adminKeyHash": "2f20d1befe201807cb5542c9ecaaeb4646df3139d7daf5d8feaf7f22e36f504d",
-  "records": [
-    {
-      "id": "mtv5wmxe1zg3j",
-      "item": "BEEF STRIPLOIN INDIAN (CUT)",
-      "itemCode": "",
-      "qty": 20,
-      "uom": "",
-      "type": "OUT",
-      "date": "2026-09-10",
-      "platform": "SK PURPOSE (OCTOBER)",
-      "expiryDate": "",
-      "sourcePackingList": "PO/SK26/0384",
-      "sourcePackingListId": "pl_mtv5voczyhrw",
-      "sourcePackingListItemId": "pli_mtv5vocy1owq"
-    },
-    {
-      "id": "mtv5y1wb6meal",
-      "item": "BEEF STRIPLOIN INDIAN (CUT)",
-      "itemCode": "BSTRIP20",
-      "qty": 100,
-      "uom": "KG",
-      "type": "IN",
-      "date": "2026-09-09",
-      "platform": "BILLION",
-      "expiryDate": "2027-01-10"
-    },
-    {
-      "id": "mtv5zlmr0mwmi",
-      "item": "BEEF STRIPLOIN INDIAN (CUT)",
-      "itemCode": "",
-      "qty": 100,
-      "uom": "KG",
-      "type": "IN",
-      "date": "2026-09-10",
-      "platform": "BILLION",
-      "expiryDate": "2027-01-10"
-    }
-  ],
+  "records": [],
   "packingLists": [
     {
       "id": "pl_mtv5voczyhrw",
