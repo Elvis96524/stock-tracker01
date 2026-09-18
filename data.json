@@ -1,17 +1,5 @@
 {
   "adminKeyHash": "2f20d1befe201807cb5542c9ecaaeb4646df3139d7daf5d8feaf7f22e36f504d",
-  "records": [
-    {
-      "id": "mu5qk0rdbxgau",
-      "item": "Topside",
-      "itemCode": "Ss001",
-      "qty": 100,
-      "uom": "KG",
-      "type": "IN",
-      "date": "2026-09-17",
-      "platform": "",
-      "expiryDate": ""
-    }
-  ],
+  "records": [],
   "packingLists": []
 }
