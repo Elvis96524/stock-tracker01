@@ -321,6 +321,17 @@
     border-radius: 6px;
   }
   .del-btn:hover { background: var(--out-bg); color: var(--out); }
+  .edit-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-right: 4px;
+  }
+  .edit-btn:hover { background: #e8edfc; color: var(--accent); }
   .balance-cell { font-size: 16px; font-weight: 700; }
 
   .detail-row td {
@@ -716,6 +727,20 @@
   .modal-status.ok { color: var(--in); }
   .modal-status.err { color: var(--out); }
 
+  /* ---------- 编辑记录弹窗 ---------- */
+  .edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 14px;
+    margin-bottom: 14px;
+  }
+  .edit-grid .field { margin-bottom: 10px; }
+  .edit-grid .field.full { grid-column: span 2; }
+  .edit-grid input { margin-bottom: 0; }
+  @media (max-width: 480px) {
+    .edit-grid { grid-template-columns: 1fr; }
+  }
+
   .settings-toggle-row {
     display: flex;
     justify-content: space-between;
@@ -1021,6 +1046,58 @@
     </div>
   </div>
 
+  <!-- 编辑进出记录（管理员） -->
+  <div class="modal-overlay" id="editRecordModal">
+    <div class="modal-card" style="max-width:480px;">
+      <h2 data-i18n="editRecordModalTitle">编辑记录</h2>
+      <div class="sub" data-i18n="editRecordModalSub">修改后保存将同步给所有设备。</div>
+      <form id="editRecordForm">
+        <div class="edit-grid">
+          <div class="field full">
+            <label for="editName" data-i18n="itemNameLabel">货物名称</label>
+            <input type="text" id="editName" placeholder="例如：钢螺栓 M6" data-i18n-ph="itemNamePlaceholder" required autocomplete="off" list="itemNameList">
+          </div>
+          <div class="field">
+            <label for="editCode" data-i18n="itemCodeLabel">货物编号</label>
+            <input type="text" id="editCode" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="editQty" data-i18n="qtyLabel">数量</label>
+            <input type="number" id="editQty" min="0.0001" step="any" placeholder="0" required>
+          </div>
+          <div class="field">
+            <label for="editUom" data-i18n="uomLabel">UOM</label>
+            <input type="text" id="editUom" placeholder="例如：pcs, box, kg" data-i18n-ph="uomPlaceholder">
+          </div>
+          <div class="field">
+            <label data-i18n="typeLabel">类型</label>
+            <div class="type-toggle">
+              <button type="button" id="editTypeIn" class="active in" data-i18n="typeIn">入库</button>
+              <button type="button" id="editTypeOut" class="out" data-i18n="typeOut">出库</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="editDate" data-i18n="dateLabel">日期</label>
+            <input type="date" id="editDate" required>
+          </div>
+          <div class="field">
+            <label for="editPlatform" data-i18n="platformLabel">Platform/Vessel</label>
+            <input type="text" id="editPlatform" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off" list="platformList">
+          </div>
+          <div class="field">
+            <label for="editExpiry" data-i18n="expiryDateLabel">过期日期</label>
+            <input type="date" id="editExpiry">
+          </div>
+        </div>
+        <div class="modal-error" id="editRecordError"></div>
+        <div class="modal-btn-row">
+          <button type="button" class="btn-secondary" id="editRecordCancel" data-i18n="cancelBtn">取消</button>
+          <button type="submit" class="btn-primary" id="editRecordSave" data-i18n="saveBtn">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Packing List 详情 / 领取清单页 -->
   <div id="packingDetailView" style="display:none;">
     <div class="panel">
@@ -1214,6 +1291,11 @@
       deleteBtn: '删除',
       deleteRecordTitle: '删除此条记录',
       deleteConfirm: '确定要删除这条记录吗？此操作不可撤销。',
+      editBtn: '编辑',
+      editRecordTitle: '编辑此条记录',
+      editRecordModalTitle: '编辑记录',
+      editRecordModalSub: '修改后保存将同步给所有设备。',
+      editSaveFailed: '保存失败，请检查数量与日期是否填写正确。',
       expiredSuffix: '已过期',
       expiringSoonSuffix: '即将到期',
       chooseFileFirst: '请先选择文件。',
@@ -1354,6 +1436,11 @@
       deleteBtn: 'Delete',
       deleteRecordTitle: 'Delete this record',
       deleteConfirm: 'Are you sure you want to delete this record? This cannot be undone.',
+      editBtn: 'Edit',
+      editRecordTitle: 'Edit this record',
+      editRecordModalTitle: 'Edit Record',
+      editRecordModalSub: 'Saved changes will sync to all devices.',
+      editSaveFailed: 'Failed to save. Please check the quantity and date.',
       expiredSuffix: 'expired',
       expiringSoonSuffix: 'expiring soon',
       chooseFileFirst: 'Please choose a file first.',
@@ -1494,6 +1581,11 @@
       deleteBtn: 'Padam',
       deleteRecordTitle: 'Padam rekod ini',
       deleteConfirm: 'Anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.',
+      editBtn: 'Edit',
+      editRecordTitle: 'Edit rekod ini',
+      editRecordModalTitle: 'Edit Rekod',
+      editRecordModalSub: 'Perubahan yang disimpan akan disegerakkan ke semua peranti.',
+      editSaveFailed: 'Gagal menyimpan. Sila semak kuantiti dan tarikh.',
       expiredSuffix: 'telah luput',
       expiringSoonSuffix: 'hampir luput',
       chooseFileFirst: 'Sila pilih fail dahulu.',
@@ -1809,6 +1901,32 @@
     }
   }
 
+  // 编辑已有记录：拉取最新数据，替换对应 id 的字段后推送回 GitHub
+  async function updateRecordAndSync(id, updatedFields) {
+    setSyncStatus(t('syncing'));
+    try {
+      const latest = await fetchSharedData();
+      let found = false;
+      const merged = latest.records.map(r => {
+        if (r.id !== id) return r;
+        found = true;
+        return Object.assign({}, r, updatedFields);
+      });
+      if (!found) throw new Error('record not found');
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists);
+      records = merged;
+      adminKeyHash = latest.adminKeyHash;
+      packingLists = latest.packingLists;
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      return true;
+    } catch (err) {
+      console.error(err);
+      setSyncStatus(t('syncFailed') + ': ' + err.message, 'err');
+      return false;
+    }
+  }
+
   // 通用：拉取最新数据，用回调修改 packingLists（可选同时追加 records），推送回 GitHub
   async function mutatePackingListsAndSync(mutateFn) {
     setSyncStatus(t('syncing'));
@@ -2100,7 +2218,10 @@
             <td data-label="${t('colPlatform')}"><span class="cell-value">${escapeHtml(t2.platform || '—')}${t2.sourcePackingList ? ` <span class="pill">📋 ${escapeHtml(t2.sourcePackingList)}</span>` : ''}</span></td>
             <td data-label="${t('colExpiry')}">${expiryLabel(t2.expiryDate)}</td>
             <td data-label="${t('colBalance')}" class="qty">${t2.runningBalance}</td>
-            ${isAdmin ? `<td data-label=""><button class="del-btn" data-id="${t2.id}" title="${t('deleteRecordTitle')}">✕ ${t('deleteBtn')}</button></td>` : ''}
+            ${isAdmin ? `<td data-label="">
+              <button class="edit-btn" data-id="${t2.id}" title="${t('editRecordTitle')}">✎ ${t('editBtn')}</button>
+              <button class="del-btn" data-id="${t2.id}" title="${t('deleteRecordTitle')}">✕ ${t('deleteBtn')}</button>
+            </td>` : ''}
           </tr>
         `).join('');
 
@@ -2132,6 +2253,15 @@
             if (!isAdmin) return;
             if (!confirm(t('deleteConfirm'))) return;
             await deleteRecordAndSync(btn.dataset.id);
+          });
+        });
+
+        detailRow.querySelectorAll('.edit-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!isAdmin) return;
+            const rec = records.find(r => r.id === btn.dataset.id);
+            if (rec) openEditRecordModal(rec);
           });
         });
       }
@@ -3063,6 +3193,89 @@
       setSyncStatus(t('syncFailed'), 'err');
     }
     clearAllConfirmBtn.disabled = false;
+  });
+
+  // ================= 编辑已有记录（手动或 Excel 导入均可编辑） =================
+  const editRecordModal = document.getElementById('editRecordModal');
+  const editRecordForm = document.getElementById('editRecordForm');
+  const editRecordError = document.getElementById('editRecordError');
+  const editRecordSave = document.getElementById('editRecordSave');
+  const editName = document.getElementById('editName');
+  const editCode = document.getElementById('editCode');
+  const editQty = document.getElementById('editQty');
+  const editUom = document.getElementById('editUom');
+  const editDate = document.getElementById('editDate');
+  const editPlatform = document.getElementById('editPlatform');
+  const editExpiry = document.getElementById('editExpiry');
+  const editTypeIn = document.getElementById('editTypeIn');
+  const editTypeOut = document.getElementById('editTypeOut');
+
+  let editingRecordId = null;
+  let editingType = 'IN';
+
+  function setEditType(type) {
+    editingType = type;
+    editTypeIn.classList.toggle('active', type === 'IN');
+    editTypeOut.classList.toggle('active', type === 'OUT');
+  }
+  editTypeIn.addEventListener('click', () => setEditType('IN'));
+  editTypeOut.addEventListener('click', () => setEditType('OUT'));
+
+  function openEditRecordModal(rec) {
+    if (!isAdmin) return;
+    editingRecordId = rec.id;
+    editName.value = rec.item || '';
+    editCode.value = rec.itemCode || '';
+    editQty.value = rec.qty != null ? rec.qty : '';
+    editUom.value = rec.uom || '';
+    editDate.value = rec.date || '';
+    editPlatform.value = rec.platform || '';
+    editExpiry.value = rec.expiryDate || '';
+    setEditType(rec.type === 'OUT' ? 'OUT' : 'IN');
+    editRecordError.textContent = '';
+    editRecordModal.classList.add('open');
+    setTimeout(() => editName.focus(), 50);
+  }
+
+  document.getElementById('editRecordCancel').addEventListener('click', () => {
+    editRecordModal.classList.remove('open');
+    editingRecordId = null;
+  });
+
+  editRecordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!isAdmin || !editingRecordId) return;
+
+    const item = editName.value.trim();
+    const itemCode = editCode.value.trim();
+    const qty = parseFloat(editQty.value);
+    const uom = editUom.value.trim();
+    const date = editDate.value;
+    const platform = editPlatform.value.trim();
+    const expiryDate = editExpiry.value;
+
+    if (!item || !qty || qty <= 0 || !date) {
+      editRecordError.textContent = t('editSaveFailed');
+      return;
+    }
+
+    editRecordSave.disabled = true;
+    editRecordError.textContent = '';
+
+    const ok = await updateRecordAndSync(editingRecordId, {
+      item, itemCode, qty, uom, date, platform, expiryDate, type: editingType
+    });
+
+    editRecordSave.disabled = false;
+
+    if (!ok) {
+      editRecordError.textContent = t('editSaveFailed');
+      return;
+    }
+
+    editRecordModal.classList.remove('open');
+    editingRecordId = null;
+    renderCurrentView();
   });
 
   // ================= 设备锁（PIN / 指纹） =================
