@@ -154,6 +154,17 @@
       "date": "2026-10-07",
       "platform": "Chicway",
       "expiryDate": ""
+    },
+    {
+      "id": "muxu7ow651m5e",
+      "item": "Drinking Water 1.5L - Let's go",
+      "itemCode": "",
+      "qty": 10,
+      "uom": "Ctn",
+      "type": "OUT",
+      "date": "2026-10-07",
+      "platform": "Chicway",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
