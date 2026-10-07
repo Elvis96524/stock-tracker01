@@ -121,6 +121,17 @@
       "date": "2026-10-07",
       "platform": "Borneo Grocery",
       "expiryDate": ""
+    },
+    {
+      "id": "muxnw5vzlf8y0",
+      "item": "Drinking Water 500ml - Can Do",
+      "itemCode": "",
+      "qty": 30,
+      "uom": "Ctn",
+      "type": "OUT",
+      "date": "2026-10-07",
+      "platform": "Borneo Mart",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
