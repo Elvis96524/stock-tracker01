@@ -165,6 +165,17 @@
       "date": "2026-10-07",
       "platform": "Chicway",
       "expiryDate": ""
+    },
+    {
+      "id": "muywh7g174tcd",
+      "item": "Drinking Water 1.5L - Sabah water",
+      "itemCode": "",
+      "qty": 27,
+      "uom": "Ctn",
+      "type": "OUT",
+      "date": "2026-10-08",
+      "platform": "Borneo Grocery",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
