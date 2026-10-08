@@ -176,6 +176,17 @@
       "date": "2026-10-08",
       "platform": "Borneo Grocery",
       "expiryDate": ""
+    },
+    {
+      "id": "muywhkubyqn1d",
+      "item": "Drinking Water 1.5L - Let's go",
+      "itemCode": "",
+      "qty": 23,
+      "uom": "Ctn",
+      "type": "OUT",
+      "date": "2026-10-08",
+      "platform": "Borneo Grocery",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
