@@ -242,6 +242,17 @@
       "date": "2026-10-10",
       "platform": "SK Falcon",
       "expiryDate": ""
+    },
+    {
+      "id": "mv1q74v8i45in",
+      "item": "Drinking Water 1.5L - Sabah water",
+      "itemCode": "",
+      "qty": 1070,
+      "uom": "Ctn",
+      "type": "IN",
+      "date": "2026-10-10",
+      "platform": "",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
