@@ -231,6 +231,17 @@
       "date": "2026-10-10",
       "platform": "SK Falcon",
       "expiryDate": ""
+    },
+    {
+      "id": "mv1mylh7r4679",
+      "item": "Drinking Water 500ml - Can Do",
+      "itemCode": "",
+      "qty": 30,
+      "uom": "Ctn",
+      "type": "OUT",
+      "date": "2026-10-10",
+      "platform": "SK Falcon",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
