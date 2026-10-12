@@ -286,6 +286,17 @@
       "date": "2026-10-12",
       "platform": "Borneo Grocery",
       "expiryDate": ""
+    },
+    {
+      "id": "mv4opfnx9wz78",
+      "item": "Drinking Water 500ml - Sabah Water",
+      "itemCode": "",
+      "qty": 20,
+      "uom": "Ctn",
+      "type": "OUT",
+      "date": "2026-10-12",
+      "platform": "Borneo Grocery",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
