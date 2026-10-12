@@ -275,6 +275,17 @@
       "date": "2026-10-12",
       "platform": "Borneo Mart",
       "expiryDate": ""
+    },
+    {
+      "id": "mv4op4yr61zx0",
+      "item": "Drinking Water 1.5L - Sabah water",
+      "itemCode": "",
+      "qty": 30,
+      "uom": "Ctn",
+      "type": "OUT",
+      "date": "2026-10-12",
+      "platform": "Borneo Grocery",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
