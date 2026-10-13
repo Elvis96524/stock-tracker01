@@ -158,18 +158,23 @@
   .import-row .field { min-width: 140px; }
 
   form#manualForm {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
     align-items: end;
     max-width: 100%;
   }
-  form#manualForm .field,
+  form#manualForm .field {
+    flex: 1 1 160px;
+    min-width: 140px;
+    max-width: 100%;
+  }
   form#manualForm input {
     min-width: 0;
+    width: 100%;
   }
   form#manualForm .add-btn {
-    grid-column: 1 / -1;
+    flex: 1 1 100%;
   }
 
   .add-btn {
@@ -185,10 +190,6 @@
   }
   .add-btn:hover { background: var(--accent-hover); }
 
-  @media (max-width: 1000px) {
-    form#manualForm { grid-template-columns: 1fr 1fr; }
-    form#manualForm .add-btn { grid-column: span 2; }
-  }
 
   .file-btn {
     background: #fff;
@@ -474,8 +475,7 @@
     .import-row .field { min-width: 0; }
     .import-row .type-toggle { width: 100% !important; }
 
-    form#manualForm { grid-template-columns: 1fr !important; }
-    form#manualForm .add-btn { grid-column: span 1 !important; }
+    form#manualForm .field { flex: 1 1 100% !important; min-width: 0 !important; }
 
     .pill, .badge, .expiry-tag { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
   }
