@@ -308,6 +308,17 @@
       "date": "2026-10-13",
       "platform": "OS ONE",
       "expiryDate": ""
+    },
+    {
+      "id": "mv5xuvesp0tfu",
+      "item": "Drinking Water 500ml - Can Do",
+      "itemCode": "",
+      "qty": 7,
+      "uom": "ctn",
+      "type": "OUT",
+      "date": "2026-10-13",
+      "platform": "OS ONE",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
