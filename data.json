@@ -319,6 +319,17 @@
       "date": "2026-10-13",
       "platform": "OS ONE",
       "expiryDate": ""
+    },
+    {
+      "id": "mv5yn9nr9rqid",
+      "item": "Drinking Water 1.5L - Let's go",
+      "itemCode": "",
+      "qty": 500,
+      "uom": "ctn",
+      "type": "IN",
+      "date": "2026-10-12",
+      "platform": "",
+      "expiryDate": ""
     }
   ],
   "packingLists": []
