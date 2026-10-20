@@ -1244,7 +1244,6 @@
           <th data-i18n="colItem">货物名称</th>
           <th data-i18n="colBalance">库存总数</th>
           <th data-i18n="colUom">UOM</th>
-          <th data-i18n="colPlatform">Platform/Vessel</th>
           <th data-i18n="colExpiry">最近过期日期</th>
         </tr>
       </thead>
@@ -2228,9 +2227,6 @@
 
     groups.forEach(g => {
       const isExpanded = expanded.has(g.key);
-      const platformPills = g.platforms.size
-        ? Array.from(g.platforms).map(p => `<span class="pill">${escapeHtml(p)}</span>`).join('')
-        : '<span class="expiry-tag none">—</span>';
 
       const row = document.createElement('tr');
       row.className = 'item-row' + (isExpanded ? ' expanded' : '');
@@ -2239,7 +2235,6 @@
         <td class="name-cell"><span class="chevron">▶</span>${escapeHtml(g.item)}</td>
         <td data-label="${t('colBalance')}" class="balance-cell">${g.balance}</td>
         <td data-label="${t('colUom')}">${escapeHtml(g.uom)}</td>
-        <td data-label="${t('colPlatform')}"><span class="cell-value">${platformPills}</span></td>
         <td data-label="${t('colExpiry')}">${expiryLabel(g.nearestExpiry)}</td>
       `;
       row.addEventListener('click', () => {
@@ -2268,7 +2263,7 @@
         `).join('');
 
         detailRow.innerHTML = `
-          <td colspan="6">
+          <td colspan="5">
             <div class="detail-wrap">
               <table class="detail-table">
                 <thead>
