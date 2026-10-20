@@ -344,6 +344,20 @@
       "sourcePackingList": "PO0465",
       "sourcePackingListId": "pl_mvge8ygydrjq",
       "sourcePackingListItemId": "pli_mvge8ygwr7fm"
+    },
+    {
+      "id": "mvgechagnut72",
+      "item": "Drinking Water 500ml - Can Do",
+      "itemCode": "",
+      "qty": 5,
+      "uom": "ctn",
+      "type": "OUT",
+      "date": "2026-10-20",
+      "platform": "SK PREMIER ( OCT 1ST )",
+      "expiryDate": "",
+      "sourcePackingList": "PO0465",
+      "sourcePackingListId": "pl_mvge8ygydrjq",
+      "sourcePackingListItemId": "pli_mvge8ygwha1k"
     }
   ],
   "packingLists": [
@@ -373,9 +387,12 @@
           "itemCode": "",
           "uom": "",
           "qtyRequested": 5,
-          "done": false,
-          "qtyTaken": null,
-          "completedAt": null
+          "done": true,
+          "qtyTaken": 5,
+          "completedAt": "2026-10-20T08:03:39.181Z",
+          "status": "complete",
+          "stockItem": "Drinking Water 500ml - Can Do",
+          "stockItemCode": ""
         },
         {
           "id": "pli_mvge8ygwjcvf",
