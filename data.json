@@ -330,6 +330,20 @@
       "date": "2026-10-12",
       "platform": "",
       "expiryDate": ""
+    },
+    {
+      "id": "mvgdwdm0mthy6",
+      "item": "BEEF STRIPLOIN INDIAN (CUT)",
+      "itemCode": "",
+      "qty": 10,
+      "uom": "",
+      "type": "OUT",
+      "date": "2026-10-20",
+      "platform": "SK PREMIER ( OCT 1ST )",
+      "expiryDate": "",
+      "sourcePackingList": "PO0465",
+      "sourcePackingListId": "pl_mvgdv1je8gpk",
+      "sourcePackingListItemId": "pli_mvgdv1jd41qp"
     }
   ],
   "packingLists": [
@@ -346,9 +360,10 @@
           "itemCode": "",
           "uom": "",
           "qtyRequested": 15,
-          "done": false,
-          "qtyTaken": null,
-          "completedAt": null
+          "done": true,
+          "qtyTaken": 10,
+          "completedAt": "2026-10-20T07:51:07.860Z",
+          "status": "incomplete"
         },
         {
           "id": "pli_mvgdv1jdxifo",
