@@ -330,20 +330,6 @@
       "date": "2026-10-12",
       "platform": "",
       "expiryDate": ""
-    },
-    {
-      "id": "mvgechagnut72",
-      "item": "Drinking Water 500ml - Can Do",
-      "itemCode": "",
-      "qty": 5,
-      "uom": "ctn",
-      "type": "OUT",
-      "date": "2026-10-20",
-      "platform": "SK PREMIER ( OCT 1ST )",
-      "expiryDate": "",
-      "sourcePackingList": "PO0465",
-      "sourcePackingListId": "pl_mvge8ygydrjq",
-      "sourcePackingListItemId": "pli_mvge8ygwha1k"
     }
   ],
   "packingLists": []
