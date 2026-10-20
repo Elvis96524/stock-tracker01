@@ -863,6 +863,16 @@
   }
   .pl-done-btn:hover { opacity: 0.9; }
   .pl-done-check { color: var(--in); font-weight: 700; font-size: 13px; }
+  .pl-admin-alloc { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .pl-admin-alloc label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .pl-admin-alloc input.pl-stock-pick {
+    width: 100%; border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 10px; font-size: 14px;
+  }
+  .pl-admin-alloc .pl-alloc-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .pl-admin-alloc .pl-alloc-row > div { flex: 0 0 auto; }
+  .pl-stock-hint { font-size: 12px; color: var(--muted); min-height: 16px; }
+  .pl-stock-hint.low { color: var(--out); font-weight: 600; }
 
   .pl-new-item-row {
     display: grid;
@@ -1377,6 +1387,14 @@
       plTitleDateRequired: '请填写标题和日期',
       plNeedAtLeastOneItem: '请至少添加一项有效货物（名称+数量）',
       plMarkDoneBtn: '✓ 完成领取',
+      plStockItemLabel: '从库存选择货物',
+      plStockItemPlaceholder: '搜索库存货物 / 编号…',
+      plGivenQtyLabel: '发放数量',
+      plDeductBtn: '✓ 确认并扣库存',
+      plStockBalanceHint: '当前库存：{bal} {uom}',
+      plPickStockFirst: '请从库存列表中选择一个货物。',
+      plOverBalanceConfirm: '发放数量 ({qty}) 超过当前库存 ({bal})，库存将变为负数。仍要继续吗？',
+      plStockUsedLabel: '库存货物：{name}',
       plDoneLabel: '已领取 {qty}',
       deletePackingListConfirm: '确定删除这个 Packing List 吗？已完成领取的项目不会撤回库存扣减。',
       ghSettingsSub: '此设备要新增/勾选完成/删除数据时，需要在本机保存一个有写入权限的 Token',
@@ -1522,6 +1540,14 @@
       plTitleDateRequired: 'Please fill in title and date',
       plNeedAtLeastOneItem: 'Please add at least one valid item (name + quantity)',
       plMarkDoneBtn: '✓ Mark Taken',
+      plStockItemLabel: 'Pick item from stock',
+      plStockItemPlaceholder: 'Search stock item / code…',
+      plGivenQtyLabel: 'Qty given',
+      plDeductBtn: '✓ Confirm & deduct stock',
+      plStockBalanceHint: 'Current stock: {bal} {uom}',
+      plPickStockFirst: 'Please pick an item from the stock list.',
+      plOverBalanceConfirm: 'Qty given ({qty}) is more than current stock ({bal}); the balance will go negative. Continue?',
+      plStockUsedLabel: 'Stock item: {name}',
       plDoneLabel: 'Taken {qty}',
       deletePackingListConfirm: 'Delete this packing list? Items already marked taken will not reverse their stock deduction.',
       ghSettingsSub: 'This device needs a write-enabled token saved locally to add, check off, or delete data',
@@ -1667,6 +1693,14 @@
       plTitleDateRequired: 'Sila isi tajuk dan tarikh',
       plNeedAtLeastOneItem: 'Sila tambah sekurang-kurangnya satu barang sah (nama + kuantiti)',
       plMarkDoneBtn: '✓ Tandakan Diambil',
+      plStockItemLabel: 'Pilih barang dari stok',
+      plStockItemPlaceholder: 'Cari barang stok / kod…',
+      plGivenQtyLabel: 'Kuantiti diberi',
+      plDeductBtn: '✓ Sahkan & tolak stok',
+      plStockBalanceHint: 'Stok semasa: {bal} {uom}',
+      plPickStockFirst: 'Sila pilih satu barang daripada senarai stok.',
+      plOverBalanceConfirm: 'Kuantiti diberi ({qty}) melebihi stok semasa ({bal}); baki akan menjadi negatif. Teruskan?',
+      plStockUsedLabel: 'Barang stok: {name}',
       plDoneLabel: 'Diambil {qty}',
       deletePackingListConfirm: 'Padam packing list ini? Item yang sudah ditandakan diambil tidak akan membatalkan potongan stok.',
       ghSettingsSub: 'Peranti ini memerlukan token dengan kebenaran tulis disimpan secara tempatan untuk menambah, menandakan selesai, atau memadam data',
@@ -2848,6 +2882,154 @@
   });
 
   // ---- Packing List 详情 / 勾选完成 ----
+  // 库存货物选项（用于 Packing List 管理员选择）：显示名称 + 编号 + 当前库存
+  function getStockPickOptions() {
+    return buildGroups()
+      .sort((a, b) => a.item.localeCompare(b.item))
+      .map(g => ({
+        label: (g.itemCode ? g.itemCode + ' · ' : '') + g.item,
+        group: g
+      }));
+  }
+
+  function findStockGroupForPlItem(options, item) {
+    const code = (item.itemCode || '').trim().toLowerCase();
+    const name = (item.item || '').trim().toLowerCase();
+    return options.find(o => code && o.group.itemCode.trim().toLowerCase() === code)
+        || options.find(o => o.group.item.trim().toLowerCase() === name)
+        || null;
+  }
+
+  // 提交：标记 Packing List 项目已发放，并在库存中生成 OUT 记录（扣库存）
+  async function commitPackingItemTaken(pl, item, qtyTaken, stock) {
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) {
+      alert(t('ghConfigMissing'));
+      return false;
+    }
+    const newRecordId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
+      const targetPl = latestPackingLists.find(p => p.id === pl.id);
+      if (targetPl) {
+        const targetItem = targetPl.items.find(i => i.id === item.id);
+        if (targetItem) {
+          targetItem.done = true;
+          targetItem.qtyTaken = qtyTaken;
+          targetItem.completedAt = new Date().toISOString();
+          targetItem.status = (qtyTaken === targetItem.qtyRequested) ? 'complete' : 'incomplete';
+          targetItem.stockItem = stock.item;
+          targetItem.stockItemCode = stock.itemCode || '';
+        }
+      }
+      const newRecord = {
+        id: newRecordId,
+        item: stock.item,
+        itemCode: stock.itemCode || '',
+        qty: qtyTaken,
+        uom: stock.uom || item.uom || '',
+        type: 'OUT',
+        date: new Date().toISOString().slice(0, 10),
+        platform: pl.platform,
+        expiryDate: '',
+        sourcePackingList: pl.title,
+        sourcePackingListId: pl.id,
+        sourcePackingListItemId: item.id
+      };
+      return { packingLists: latestPackingLists, records: latestRecords.concat([newRecord]) };
+    });
+    return ok;
+  }
+
+  // 劳工：沿用原流程（按清单货物直接扣库存）
+  function renderLabourTakeRow(row, pl, item) {
+    row.innerHTML = `
+      <div class="pl-item-top">
+        <div>
+          <div class="pl-item-name">${escapeHtml(item.item)}</div>
+          <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} ${escapeHtml(item.uom || '')}</div>
+        </div>
+      </div>
+      <div class="pl-item-actions">
+        <input type="number" min="0" step="1" class="pl-qty-taken-input" value="${item.qtyRequested}">
+        <button class="pl-done-btn">${t('plMarkDoneBtn')}</button>
+      </div>
+    `;
+    const qtyInput = row.querySelector('.pl-qty-taken-input');
+    const doneBtn = row.querySelector('.pl-done-btn');
+    doneBtn.addEventListener('click', async () => {
+      const qtyTaken = parseFloat(qtyInput.value);
+      if (!qtyTaken || qtyTaken <= 0) return;
+      doneBtn.disabled = true;
+      const ok = await commitPackingItemTaken(pl, item, qtyTaken,
+        { item: item.item, itemCode: item.itemCode, uom: item.uom });
+      doneBtn.disabled = false;
+      if (ok) renderCurrentView();
+    });
+  }
+
+  // 管理员：从库存货物列表选择（带编号），填写发放数量，确认后扣库存
+  function renderAdminAllocRow(row, pl, item) {
+    const options = getStockPickOptions();
+    const listId = 'plStockList_' + item.id;
+    const preset = findStockGroupForPlItem(options, item);
+    row.innerHTML = `
+      <div class="pl-item-top">
+        <div>
+          <div class="pl-item-name">${escapeHtml(item.item)}</div>
+          <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} ${escapeHtml(item.uom || '')}</div>
+        </div>
+      </div>
+      <div class="pl-admin-alloc">
+        <div>
+          <label>${t('plStockItemLabel')}</label>
+          <input type="text" class="pl-stock-pick" list="${listId}" autocomplete="off" placeholder="${escapeHtml(t('plStockItemPlaceholder'))}" value="${escapeHtml(preset ? preset.label : '')}">
+          <datalist id="${listId}">
+            ${options.map(o => `<option value="${escapeHtml(o.label)}" label="${escapeHtml(t('plStockBalanceHint', { bal: o.group.balance, uom: o.group.uom }))}"></option>`).join('')}
+          </datalist>
+          <div class="pl-stock-hint"></div>
+        </div>
+        <div class="pl-alloc-row">
+          <div>
+            <label>${t('plGivenQtyLabel')}</label>
+            <input type="number" min="0" step="any" class="pl-qty-taken-input" value="${item.qtyRequested}">
+          </div>
+          <button class="pl-done-btn">${t('plDeductBtn')}</button>
+        </div>
+      </div>
+    `;
+    const pickInput = row.querySelector('.pl-stock-pick');
+    const hint = row.querySelector('.pl-stock-hint');
+    const qtyInput = row.querySelector('.pl-qty-taken-input');
+    const doneBtn = row.querySelector('.pl-done-btn');
+
+    const currentPick = () => options.find(o => o.label === pickInput.value.trim()) || null;
+    const updateHint = () => {
+      const pick = currentPick();
+      if (!pick) { hint.textContent = ''; hint.classList.remove('low'); return; }
+      const qty = parseFloat(qtyInput.value) || 0;
+      hint.textContent = t('plStockBalanceHint', { bal: pick.group.balance, uom: pick.group.uom });
+      hint.classList.toggle('low', qty > pick.group.balance);
+    };
+    pickInput.addEventListener('input', updateHint);
+    pickInput.addEventListener('change', updateHint);
+    qtyInput.addEventListener('input', updateHint);
+    updateHint();
+
+    doneBtn.addEventListener('click', async () => {
+      const qtyTaken = parseFloat(qtyInput.value);
+      if (!qtyTaken || qtyTaken <= 0) return;
+      const pick = currentPick();
+      if (!pick) { alert(t('plPickStockFirst')); return; }
+      if (qtyTaken > pick.group.balance &&
+          !confirm(t('plOverBalanceConfirm', { qty: qtyTaken, bal: pick.group.balance }))) return;
+      doneBtn.disabled = true;
+      const ok = await commitPackingItemTaken(pl, item, qtyTaken,
+        { item: pick.group.item, itemCode: pick.group.itemCode, uom: pick.group.uom });
+      doneBtn.disabled = false;
+      if (ok) renderCurrentView();
+    });
+  }
+
   function renderPackingDetail() {
     const pl = packingLists.find(p => p.id === currentPackingListId);
     const headerEl = document.getElementById('packingDetailHeader');
@@ -2876,6 +3058,7 @@
             <div>
               <div class="pl-item-name">${escapeHtml(item.item)}</div>
               <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} ${escapeHtml(item.uom || '')}</div>
+              ${item.stockItem ? `<div class="pl-item-meta">📦 ${t('plStockUsedLabel', { name: escapeHtml((item.stockItemCode ? item.stockItemCode + ' · ' : '') + item.stockItem) })}</div>` : ''}
             </div>
             <div style="text-align:right;">
               ${isIncomplete
@@ -2913,62 +3096,11 @@
           if (ok) renderCurrentView();
         });
       } else {
-        row.innerHTML = `
-          <div class="pl-item-top">            <div>
-              <div class="pl-item-name">${escapeHtml(item.item)}</div>
-              <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} ${escapeHtml(item.uom || '')}</div>
-            </div>
-          </div>
-          <div class="pl-item-actions">
-            <input type="number" min="0" step="1" class="pl-qty-taken-input" value="${item.qtyRequested}">
-            <button class="pl-done-btn">${t('plMarkDoneBtn')}</button>
-          </div>
-        `;
-        const qtyInput = row.querySelector('.pl-qty-taken-input');
-        const doneBtn = row.querySelector('.pl-done-btn');
-        doneBtn.addEventListener('click', async () => {
-          const qtyTaken = parseFloat(qtyInput.value);
-          if (!qtyTaken || qtyTaken <= 0) return;
-          const cfg = getGhConfig();
-          if (!cfg || !cfg.token) {
-            alert(t('ghConfigMissing'));
-            return;
-          }
-          doneBtn.disabled = true;
-          const newRecordId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-          const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
-            const targetPl = latestPackingLists.find(p => p.id === pl.id);
-            if (targetPl) {
-              const targetItem = targetPl.items.find(i => i.id === item.id);
-              if (targetItem) {
-                targetItem.done = true;
-                targetItem.qtyTaken = qtyTaken;
-                targetItem.completedAt = new Date().toISOString();
-                targetItem.status = (qtyTaken === targetItem.qtyRequested) ? 'complete' : 'incomplete';
-              }
-            }
-            const newRecord = {
-              id: newRecordId,
-              item: item.item,
-              itemCode: item.itemCode,
-              qty: qtyTaken,
-              uom: item.uom,
-              type: 'OUT',
-              date: new Date().toISOString().slice(0, 10),
-              platform: pl.platform,
-              expiryDate: '',
-              sourcePackingList: pl.title,
-              sourcePackingListId: pl.id,
-              sourcePackingListItemId: item.id
-            };
-            return {
-              packingLists: latestPackingLists,
-              records: latestRecords.concat([newRecord])
-            };
-          });
-          doneBtn.disabled = false;
-          if (ok) renderCurrentView();
-        });
+        if (isAdmin) {
+          renderAdminAllocRow(row, pl, item);
+        } else {
+          renderLabourTakeRow(row, pl, item);
+        }
       }
       itemsEl.appendChild(row);
     });
