@@ -876,7 +876,7 @@
 
   .pl-new-item-row {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr auto;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
     gap: 8px;
     align-items: center;
     margin-bottom: 10px;
@@ -2728,17 +2728,21 @@
     row.innerHTML = `
       <input type="text" class="pl-item-name-input" placeholder="${t('itemNameLabel')}" list="itemNameList" autocomplete="off" value="${escapeHtml(prefill.item || '')}">
       <input type="text" class="pl-item-code-input" placeholder="${t('itemCodeLabel')}" autocomplete="off" value="${escapeHtml(prefill.itemCode || '')}">
-      <input type="number" class="pl-item-qty-input" placeholder="${t('qtyLabel')}" min="1" step="1" value="${prefill.qty || ''}">
+      <input type="number" class="pl-item-qty-input" placeholder="${t('qtyLabel')}" min="1" step="any" value="${prefill.qty || ''}">
+      <input type="text" class="pl-item-uom-input" placeholder="${t('uomLabel')}" autocomplete="off" value="${escapeHtml(prefill.uom || '')}">
       <button type="button" class="pl-remove-item-btn">✕</button>
     `;
     plItemsContainer.appendChild(row);
 
     const nameInput = row.querySelector('.pl-item-name-input');
     const codeInput = row.querySelector('.pl-item-code-input');
+    const uomInput = row.querySelector('.pl-item-uom-input');
     nameInput.addEventListener('input', () => {
       const map = getNameToCodeMap();
       const match = map[nameInput.value.trim().toLowerCase()];
       if (match) codeInput.value = match;
+      const known = records.find(r => r.uom && r.item.trim().toLowerCase() === nameInput.value.trim().toLowerCase());
+      if (known && !uomInput.value) uomInput.value = known.uom;
     });
     row.querySelector('.pl-remove-item-btn').addEventListener('click', () => {
       row.remove();
@@ -2777,6 +2781,7 @@
         const nameKeys = ['item name', 'item', 'name', 'description', 'product'];
         const codeKeys = ['item code', 'code', 'sku', 'item no', 'item number', 'part no'];
         const qtyKeys = ['quantity', 'qty'];
+        const uomKeys = ['uom', 'unit', 'unit of measure'];
 
         // 清空目前的空白行，只保留导入结果
         plItemRows.slice().forEach(rowId => {
@@ -2790,12 +2795,14 @@
           const nameKey = findKey(row, nameKeys);
           const codeKey = findKey(row, codeKeys);
           const qtyKey = findKey(row, qtyKeys);
+          const uomKey = findKey(row, uomKeys);
           const item = nameKey ? String(row[nameKey]).trim() : '';
           const itemCode = codeKey ? String(row[codeKey]).trim() : '';
           const qty = qtyKey ? parseFloat(row[qtyKey]) : NaN;
+          const uom = uomKey ? String(row[uomKey]).trim() : '';
 
           if (!item || !qty || isNaN(qty) || qty <= 0) { skipped++; return; }
-          addPlItemRow({ item, itemCode, qty });
+          addPlItemRow({ item, itemCode, qty, uom });
           added++;
         });
 
@@ -2833,6 +2840,7 @@
       const name = row.querySelector('.pl-item-name-input').value.trim();
       const code = row.querySelector('.pl-item-code-input').value.trim();
       const qty = parseFloat(row.querySelector('.pl-item-qty-input').value);
+      const typedUom = row.querySelector('.pl-item-uom-input').value.trim();
       if (name && qty > 0) {
         // 从既有库存记录里找 UOM
         const known = records.find(r => r.item.trim().toLowerCase() === name.toLowerCase());
@@ -2840,7 +2848,7 @@
           id: 'pli_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
           item: name,
           itemCode: code,
-          uom: known ? known.uom : '',
+          uom: typedUom || (known ? known.uom : ''),
           qtyRequested: qty,
           done: false,
           qtyTaken: null,
@@ -2941,7 +2949,7 @@
       <div class="pl-item-top">
         <div>
           <div class="pl-item-name">${escapeHtml(item.item)}</div>
-          <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} ${escapeHtml(item.uom || '')}</div>
+          <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div>
         </div>
       </div>
       <div class="pl-item-actions">
@@ -2971,7 +2979,7 @@
       <div class="pl-item-top">
         <div>
           <div class="pl-item-name">${escapeHtml(item.item)}</div>
-          <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} ${escapeHtml(item.uom || '')}</div>
+          <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div>
         </div>
       </div>
       <div class="pl-admin-alloc">
@@ -3052,7 +3060,7 @@
           <div class="pl-item-top">
             <div>
               <div class="pl-item-name">${escapeHtml(item.item)}</div>
-              <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} ${escapeHtml(item.uom || '')}</div>
+              <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div>
               ${item.stockItem ? `<div class="pl-item-meta">📦 ${t('plStockUsedLabel', { name: escapeHtml((item.stockItemCode ? item.stockItemCode + ' · ' : '') + item.stockItem) })}</div>` : ''}
             </div>
             <div style="text-align:right;">
