@@ -332,5 +332,1775 @@
       "expiryDate": ""
     }
   ],
-  "packingLists": []
+  "packingLists": [
+    {
+      "id": "pl_mvgeojz578ym",
+      "title": "PO0246",
+      "platform": "SK PREMIER ( OCT 1ST )",
+      "date": "2026-10-20",
+      "createdAt": "2026-10-20T08:13:01.601Z",
+      "items": [
+        {
+          "id": "pli_mvgeojz4qog2",
+          "item": "BEEF STRIPLOIN INDIAN (CUT)",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 15,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4e2hv",
+          "item": "BEEF STREAKY BACON SLICED 500G",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4tylh",
+          "item": "BEEF BURGER 6'S/360G RAMLY",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz47qbb",
+          "item": "SATAY BEEF 50PCS/PKT",
+          "itemCode": "",
+          "uom": "PCS",
+          "qtyRequested": 50,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4v4jm",
+          "item": "LAMB SHOULDER AUST/ NZ",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz42ari",
+          "item": "MUTTON CUBE BONE AUST",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4711g",
+          "item": "WHOLE CHICKEN/AYAM BERSIH",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 60,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz48b7x",
+          "item": "CHICKEN WING",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 20,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz40ovb",
+          "item": "CHICKEN WHOLE LEG",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 20,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4xcoe",
+          "item": "CHICKEN BREAST BONELESS",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4boe9",
+          "item": "CHICKEN BURGER 6'S/360G RAMLY",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4zuxo",
+          "item": "CHICKEN FRANK 300G GOLDEN CHOICE",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 12,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4m0jd",
+          "item": "SATAY CHICKEN 50PCS/PKT",
+          "itemCode": "",
+          "uom": "PCS",
+          "qtyRequested": 50,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4ry72",
+          "item": "BLACK PROMFERT FISH/IKAN BAWAL HITAM FZ",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4kcbb",
+          "item": "CAT FISH/IKAN KELI FZ",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4b2m4",
+          "item": "IKAN SELAR FZ",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4ou5u",
+          "item": "IKAN TALAPIA FZ",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4l3hy",
+          "item": "RED SNAPPER FISH/IKAN MERAH FZ GRADE A",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 7,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz41l1m",
+          "item": "SEABASS FISH/IKAN SIAKAP FZ",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4ymu3",
+          "item": "MEDIUM PRAWN FZ GRADE A - 40'S - 50'S",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 8,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz43xw7",
+          "item": "SQUID TUBE CLEAN LARGE /SOTONG TUBE FZ",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 8,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4wgaa",
+          "item": "CHICKEN BALLS 850G (OFFER AYAMAS/RAMLY)",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz46ljy",
+          "item": "FISH BALLS",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4jl8a",
+          "item": "FISH CAKE",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4efjd",
+          "item": "CUTTLEFISH BALLS/SQUID BALLS 1KG ( Offer: SURIA )",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4jzio",
+          "item": "PRAWN BALLS 1KG ( Offer: SURIA )",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4v99y",
+          "item": "FRENCH FRIES CRINKLE CUT 1KG",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4rybm",
+          "item": "FRENCH FRIES SHOESTRING 1KG",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz468u3",
+          "item": "KARIPAP AYAM  20'S@300GM",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4c2an",
+          "item": "KARIPAP SARDINE 20'S@300GM",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4398l",
+          "item": "MINI PAU KACANG MERAH 25GMx10'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4xjjl",
+          "item": "MINI PAU KAYA 25GMx10'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4ud77",
+          "item": "KEROPOK LEKOR 900GM",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4c5kz",
+          "item": "CHEDDAR CHEESE SLICES 12'S/250G COWHEAD",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz44nq6",
+          "item": "PUTERI MARGERINE 1KG",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4znov",
+          "item": "BANANA/PISANG BERANGAN/EMAS/RASTALI",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4h1xb",
+          "item": "BANANA/PISANG GORENG/NANGKA",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4h1yd",
+          "item": "HONEYDEW/TEMBIKAI SUSU",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 8,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4j2bb",
+          "item": "PAPAYA/BETIK",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz49fl8",
+          "item": "PAMELO/LIMAU BALI (KG)",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz4shoc",
+          "item": "PEAR CHINESE / YA PEAR 36'S-96'S (OFFER 1CTN)",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5lhdq",
+          "item": "WATERMELON/TEMBIKAI RED",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5qyxj",
+          "item": "BABY KAILAN",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5fo1l",
+          "item": "BITTERGOURD/PERIA PANJANG",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz53k9f",
+          "item": "BROCCOLI/BUNGA KAILAN IMPORT",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz52gbx",
+          "item": "BUNGA KANTAN/GINGER FLOWER",
+          "itemCode": "",
+          "uom": "PCS",
+          "qtyRequested": 12,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5g6xv",
+          "item": "CARROT/LOBAK MERAH",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5hl67",
+          "item": "CAULIFLOWER/BUNGA KUBIS IMPORT",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz57q3r",
+          "item": "CELERY LOCAL/CHINESE PARSLEY/DAUN SUP",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5uax5",
+          "item": "CHYE SAM/SAWI HIJAU",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz57h0i",
+          "item": "CUCUMBER/TIMUN",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5i5rw",
+          "item": "DAUN JERUK/DAUN LIMAU PURUT",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5dxi1",
+          "item": "DAUN KARI/CURRY LEAVES",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz54emk",
+          "item": "DAUN KESUM",
+          "itemCode": "",
+          "uom": "IKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5xfmh",
+          "item": "DAUN PANDAN",
+          "itemCode": "",
+          "uom": "IKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz58yhh",
+          "item": "DAUN PISANG/BANANA LEAVES",
+          "itemCode": "",
+          "uom": "IKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5l02f",
+          "item": "DAUN PUCUK PAKU",
+          "itemCode": "",
+          "uom": "IKT",
+          "qtyRequested": 8,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5a59r",
+          "item": "DAUN PUCUK UBI KAYU/DAUN SINGKONG",
+          "itemCode": "",
+          "uom": "IKT",
+          "qtyRequested": 12,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5ld8v",
+          "item": "BEAN SPROUTS/TAUGEH",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz51gyh",
+          "item": "KACANG BOTOL MUDA/FOUR ANGLED BEAN",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz51nj8",
+          "item": "KHAI CHOY/SAYUR PAHIT",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz58wfl",
+          "item": "LEEK",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5du80",
+          "item": "LEMON GRASS/SERAI (KG)",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5mczd",
+          "item": "LIMAU KASTURI/LOCAL LIME",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5117a",
+          "item": "LONG BEANS/KACANG PANJANG",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz56ccm",
+          "item": "LONG CABBAGE/KUBIS PANJANG",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5opke",
+          "item": "MORNING GLORY/KANGKONG",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5eifs",
+          "item": "PAK CHOY/SAWI PUTIH",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz53kko",
+          "item": "PETOLA/LOOFA/GAMBAS/OYONG",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz57chw",
+          "item": "POTATOES/UBI KENTANG",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz52of2",
+          "item": "RED CHILLI PADI/CILI PADI MERAH",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5hfdd",
+          "item": "RED CHILLI/CILI MERAH/CABE MERAH",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5jypn",
+          "item": "ROUND CABBAGE/KUBIS BULAT",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5q3do",
+          "item": "SIEW PAK CHOY/SAWI JEPUN",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5cllb",
+          "item": "SPRING ONION/DAUN BAWANG",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5aqun",
+          "item": "TOMATOES/TOMATO (LL)  CRYSTAL/CAMP",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5jctx",
+          "item": "WHITE RADISH/LOBAK PUTIH",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz58p8g",
+          "item": "YOUNG CORN/JAGUNG MUDA  90G",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5o57z",
+          "item": "BAWANG BESAR/LARGE ONION (HOLLAND)",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5u8o8",
+          "item": "BAWANG BESAR/LARGE ONION BOMBAY",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5pdtp",
+          "item": "BAWANG KECIL/SMALL ONION",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5b70g",
+          "item": "BAWANG PUTIH/GARLIC WHOLE",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5u46p",
+          "item": "TAUHU POK/TAUHU GORENG 9'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 6,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz57053",
+          "item": "TOFU PUTIH 320GM - 2'S/PKT",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5vh08",
+          "item": "TEMPE",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 12,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5skxz",
+          "item": "DRY ANCHOVY PEELED/IKAN BILIS BELAH",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5zhcx",
+          "item": "DRY SHRIMP/UDANG KERING",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5pt0b",
+          "item": "FRESH EGGS/TELUR 30'S/TRAY GRADE B",
+          "itemCode": "",
+          "uom": "TRAY",
+          "qtyRequested": 30,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5bptj",
+          "item": "SALT/GARAM HALUS IKG",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 8,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5pjen",
+          "item": "CASTER SUGAR @ 450G BUNGA RAYA",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5cz7n",
+          "item": "COOKING OIL 5KG",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 12,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5sfol",
+          "item": "BERAS AAA 10KG",
+          "itemCode": "",
+          "uom": "BAG",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5wef1",
+          "item": "GLUTINOUS RICE FLOUR/TEPUNG PULUT 500G",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz599p4",
+          "item": "WHEAT FLOUR/TEPUNG GANDUM 1KG - GREEN",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz52x7z",
+          "item": "CONDENSED MILK 500G",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 24,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5bxrj",
+          "item": "EVAPORATED CREAMER MILK 390G",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5xjoy",
+          "item": "FULL CREAM MILK 1Lx12 NESTLE ( Offer D.Dairy )",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5f0sh",
+          "item": "LOW FAT MILK 1Lx12 NESTLE ( Offer D.Dairy )",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5jecw",
+          "item": "CORDIAL ROSE 2L SAGA",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5cfu7",
+          "item": "COCA COLA 320MLx24",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5qf1c",
+          "item": "SOYA BEAN 300MLx24 SEASONS/DRINHO",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz51g0a",
+          "item": "ALI CAFE 5in1 ,BLACK 30GMX20'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5mkqe",
+          "item": "ALITEA TEA TONGKAT ALI 20GMX18'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz59pac",
+          "item": "COFFEE MATE CREAMER 450G (REFILL PACK)",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz57ski",
+          "item": "GREEN TEA 1.5Gx50'S BOH",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5lp1a",
+          "item": "NESCAFE 3in1 ORIGINAL 28'S X 19GM",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5tcvz",
+          "item": "TEA BAGS 2Gx100'S(200G) LIPTON",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5u63c",
+          "item": "BLACK BEANS FRIED MACKEREL 160G SUNSTAR",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz54ik0",
+          "item": "CORNED BEEF 340G PAWADA",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5g7sc",
+          "item": "CURRY BEEF 160G  STARKING",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz58w1g",
+          "item": "SAMBAL IKAN BILIS 160G STARKING",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5hixy",
+          "item": "SARDINE IN TOMATO SAUCE 425G AYAM",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 8,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5ebx5",
+          "item": "TUNA CHUNKS IN SUNFLOWER OIL 180G AYAM",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5n4yy",
+          "item": "FRUIT COCKTAIL 850G",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5r4mn",
+          "item": "LONGAN IN SYRUP 565G",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5kz96",
+          "item": "LYCHEE IN SYRUP 565G",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz54sjp",
+          "item": "PEACHES HALVES IN SYRUP 822G",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5vqa9",
+          "item": "PINEAPPLE RINGS IN SYRUP 565G",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5w4mj",
+          "item": "AJINOMOTO 1KG",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5o897",
+          "item": "CHILLI SAUCE 340G MAGGI",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 15,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5pvum",
+          "item": "CHILLI SAUCE THAI 355G KIMBALL",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5bkuq",
+          "item": "FISH SAUCE 750ML",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz50q91",
+          "item": "KICAP MANIS 500ML KIPAS UDANG",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz575gs",
+          "item": "KICAP MASIN 645ML KIPAS UDANG",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5ouen",
+          "item": "OYSTER SAUCE 340GM MAGGI",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz540y2",
+          "item": "REAL MAYONNAISE 3L LADY'S CHOICE",
+          "itemCode": "",
+          "uom": "TUB",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5q718",
+          "item": "SAMBAL ASLI 395ML ABC",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5rp6c",
+          "item": "SHRIMP PASTE/BELACAN 250GM",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5t0ix",
+          "item": "TOMATO SAUCE 325G MAGGI",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5rdpk",
+          "item": "VINEGAR/CUKA 630ML",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz540xm",
+          "item": "GREEN BEAN/KACANG HIJAU",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 8,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5kqc4",
+          "item": "KACANG TANAH/GROUNDNUT (KG)",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5f2eg",
+          "item": "PAPADOM ROUND 100G",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5erou",
+          "item": "BAWANG GORENG/FRIED SHALLOT 1KG",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5lffa",
+          "item": "CURRY CHICKEN/MEAT POWDER 250G BABAS",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5uvhp",
+          "item": "CURRY FISH POWDER 250G BABAS",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5shcx",
+          "item": "TURMERIC POWDER 250G BABA'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5ix5r",
+          "item": "WHITE PEPPER POWDER 400GM",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5mksx",
+          "item": "CHICKEN STOCK 1KG KNORR/TUMIX",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5xqu8",
+          "item": "KURMA POWDER 250G BABA'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5l05w",
+          "item": "SUP BUNJUT 8G ADABI",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 12,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5jfa1",
+          "item": "SUP TULANG 13GM ADABI",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 12,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5btdy",
+          "item": "ASST BISCUIT @ 500GM FUNMIX/ TOPMIX",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz54qro",
+          "item": "BUTTER COOKIES @ 454G KHONG GUAN",
+          "itemCode": "",
+          "uom": "TIN",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5k6bo",
+          "item": "CHEESE CRACKER @ 100G JULIE'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 12,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5zmnc",
+          "item": "CORN FLAKES @ 500G NESTLE",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz54fug",
+          "item": "CRACKER WEETAMEAL 600GM JACOB",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5ve5c",
+          "item": "CREAM CRACKER (ORIGINAL) 600G JACOB'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5avr8",
+          "item": "HONEY STARS 500G NESTLE",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz59d4l",
+          "item": "INSTANT OATMEAL 1KG CAPTAIN OAT",
+          "itemCode": "",
+          "uom": "TUB",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5igjp",
+          "item": "KOKO CRUNCH 500G NESTLE",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5dpwx",
+          "item": "BANANA CAKE/KEK PISANG",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz55ld3",
+          "item": "HOT DOG BUN 10'S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5i8uj",
+          "item": "100% WHOLEMEAL BREAD 400G LOCAL",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5chdm",
+          "item": "WHITE BREAD SLICED 600G (GARDENIA)",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5sjt4",
+          "item": "BIHUN CAP TG @ 300GM",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 10,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5kw26",
+          "item": "MEE CURRY 79Gx5'Sx12 MAGGI",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5b541",
+          "item": "MEE GORENG 91Gx5'Sx8 SEDAP 40PKT/CTN",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5sh1s",
+          "item": "IBUMIE 60'S",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5srzd",
+          "item": "NUTELLA HAZELNUT - COCOA SPREAD 350GM",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5erk3",
+          "item": "PEANUT BUTTER CRUNCHY 510G",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz52tw1",
+          "item": "SERI KAYA 480G SUNSTAR",
+          "itemCode": "",
+          "uom": "CAN",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5cw0b",
+          "item": "FISH CRACKER/KEROPOK IKAN 250G",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz52a9m",
+          "item": "SHRIMP CRACKER/KEROPOK UDANG 250G",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5v1jp",
+          "item": "KICAP MANIS PEDAS MAHSURI 410ML",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 4,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz59f4k",
+          "item": "MILO IN CAN 24X240ML",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 3,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz52o9v",
+          "item": "YOUNG COCONUT JUICE W/PULP - KING CAR 310ML",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5y34m",
+          "item": "NESCAFE ORIGINAL 240MLX24",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5m6pl",
+          "item": "NESCAFE GOLD BTL",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5wur7",
+          "item": "HW DARK SOYA SAUCE 630ML",
+          "itemCode": "",
+          "uom": "BTL",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz521gc",
+          "item": "BEEF BALL RAMLY 800GM",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 7,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5dmvk",
+          "item": "GRAPE SEEDLESS 5KG/CTN",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 1,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5rjno",
+          "item": "KACANG HIJAU",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 7,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5xs5b",
+          "item": "ICE CREAM DRUMSTICK KIT-KAT  110MLX20'S",
+          "itemCode": "",
+          "uom": "CTN",
+          "qtyRequested": 2,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz59r4r",
+          "item": "BOH GREEN TEA LATTE 27Gx 12S",
+          "itemCode": "",
+          "uom": "PKT",
+          "qtyRequested": 5,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        },
+        {
+          "id": "pli_mvgeojz5k2rw",
+          "item": "UDANG GALAH",
+          "itemCode": "",
+          "uom": "KG",
+          "qtyRequested": 7,
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null
+        }
+      ]
+    }
+  ]
 }
