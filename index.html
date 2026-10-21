@@ -869,8 +869,11 @@
     width: 100%; border: 1px solid var(--border); border-radius: 8px;
     padding: 9px 10px; font-size: 14px;
   }
-  .pl-admin-alloc .pl-alloc-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
-  .pl-admin-alloc .pl-alloc-row > div { flex: 0 0 auto; }
+  .pl-alloc-lines { display: flex; flex-direction: column; gap: 10px; }
+  .pl-alloc-line { display: flex; gap: 10px; align-items: flex-start; }
+  .pl-alloc-pick { flex: 1 1 auto; min-width: 0; }
+  .pl-alloc-qty { flex: 0 0 110px; }
+  .pl-alloc-qty input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; font-size: 14px; }
   .pl-stock-hint { font-size: 12px; color: var(--muted); min-height: 16px; }
   .pl-stock-hint.low { color: var(--out); font-weight: 600; }
 
@@ -2903,33 +2906,35 @@
         || null;
   }
 
-  // 提交：标记 Packing List 项目已发放，并在库存中生成 OUT 记录（扣库存）
-  async function commitPackingItemTaken(pl, item, qtyTaken, stock) {
+  // 提交：标记 Packing List 项目已发放，并为每条分配在库存中生成 OUT 记录（扣库存）
+  // lines: [{ stock: {item,itemCode,uom}, qty }]
+  async function commitPackingItemTaken(pl, item, lines) {
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) {
       alert(t('ghConfigMissing'));
       return false;
     }
-    const newRecordId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const totalQty = lines.reduce((sum, l) => sum + l.qty, 0);
     const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
       const targetPl = latestPackingLists.find(p => p.id === pl.id);
       if (targetPl) {
         const targetItem = targetPl.items.find(i => i.id === item.id);
         if (targetItem) {
           targetItem.done = true;
-          targetItem.qtyTaken = qtyTaken;
+          targetItem.qtyTaken = totalQty;
           targetItem.completedAt = new Date().toISOString();
-          targetItem.status = (qtyTaken === targetItem.qtyRequested) ? 'complete' : 'incomplete';
-          targetItem.stockItem = stock.item;
-          targetItem.stockItemCode = stock.itemCode || '';
+          targetItem.status = (totalQty === targetItem.qtyRequested) ? 'complete' : 'incomplete';
+          targetItem.allocations = lines.map(l => ({
+            item: l.stock.item, itemCode: l.stock.itemCode || '', uom: l.stock.uom || '', qty: l.qty
+          }));
         }
       }
-      const newRecord = {
-        id: newRecordId,
-        item: stock.item,
-        itemCode: stock.itemCode || '',
-        qty: qtyTaken,
-        uom: stock.uom || item.uom || '',
+      const newRecords = lines.map(l => ({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        item: l.stock.item,
+        itemCode: l.stock.itemCode || '',
+        qty: l.qty,
+        uom: l.stock.uom || item.uom || '',
         type: 'OUT',
         date: new Date().toISOString().slice(0, 10),
         platform: pl.platform,
@@ -2937,8 +2942,8 @@
         sourcePackingList: pl.title,
         sourcePackingListId: pl.id,
         sourcePackingListItemId: item.id
-      };
-      return { packingLists: latestPackingLists, records: latestRecords.concat([newRecord]) };
+      }));
+      return { packingLists: latestPackingLists, records: latestRecords.concat(newRecords) };
     });
     return ok;
   }
@@ -2963,14 +2968,15 @@
       const qtyTaken = parseFloat(qtyInput.value);
       if (!qtyTaken || qtyTaken <= 0) return;
       doneBtn.disabled = true;
-      const ok = await commitPackingItemTaken(pl, item, qtyTaken,
-        { item: item.item, itemCode: item.itemCode, uom: item.uom });
+      const ok = await commitPackingItemTaken(pl, item,
+        [{ stock: { item: item.item, itemCode: item.itemCode, uom: item.uom }, qty: qtyTaken }]);
       doneBtn.disabled = false;
       if (ok) renderCurrentView();
     });
   }
 
-  // 管理员：从库存货物列表选择（带编号），填写发放数量，确认后扣库存
+  // 管理员：每一行 = [从库存选择货物] + [发放数量]（并排）；填好一行后自动出现新的一行，
+  // 可从多个库存货物凑齐同一个清单项目。确认后逐行扣库存。
   function renderAdminAllocRow(row, pl, item) {
     const options = getStockPickOptions();
     const listId = 'plStockList_' + item.id;
@@ -2983,51 +2989,81 @@
         </div>
       </div>
       <div class="pl-admin-alloc">
-        <div>
-          <label>${t('plStockItemLabel')}</label>
-          <input type="text" class="pl-stock-pick" list="${listId}" autocomplete="off" placeholder="${escapeHtml(t('plStockItemPlaceholder'))}" value="${escapeHtml(preset ? preset.label : '')}">
-          <datalist id="${listId}">
-            ${options.map(o => `<option value="${escapeHtml(o.label)}" label="${escapeHtml(t('plStockBalanceHint', { bal: o.group.balance, uom: o.group.uom }))}"></option>`).join('')}
-          </datalist>
-          <div class="pl-stock-hint"></div>
-        </div>
-        <div class="pl-alloc-row">
-          <div>
-            <label>${t('plGivenQtyLabel')}</label>
-            <input type="number" min="0" step="any" class="pl-qty-taken-input" value="${item.qtyRequested}">
-          </div>
-          <button class="pl-done-btn">${t('plDeductBtn')}</button>
-        </div>
+        <datalist id="${listId}">
+          ${options.map(o => `<option value="${escapeHtml(o.label)}" label="${escapeHtml(t('plStockBalanceHint', { bal: o.group.balance, uom: o.group.uom }))}"></option>`).join('')}
+        </datalist>
+        <div class="pl-alloc-lines"></div>
+        <button class="pl-done-btn" style="align-self:flex-start;">${t('plDeductBtn')}</button>
       </div>
     `;
-    const pickInput = row.querySelector('.pl-stock-pick');
-    const hint = row.querySelector('.pl-stock-hint');
-    const qtyInput = row.querySelector('.pl-qty-taken-input');
+    const linesEl = row.querySelector('.pl-alloc-lines');
     const doneBtn = row.querySelector('.pl-done-btn');
+    const pickOf = (input) => options.find(o => o.label === input.value.trim()) || null;
 
-    const currentPick = () => options.find(o => o.label === pickInput.value.trim()) || null;
-    const updateHint = () => {
-      const pick = currentPick();
-      if (!pick) { hint.textContent = ''; hint.classList.remove('low'); return; }
-      const qty = parseFloat(qtyInput.value) || 0;
-      hint.textContent = t('plStockBalanceHint', { bal: pick.group.balance, uom: pick.group.uom });
-      hint.classList.toggle('low', qty > pick.group.balance);
-    };
-    pickInput.addEventListener('input', updateHint);
-    pickInput.addEventListener('change', updateHint);
-    qtyInput.addEventListener('input', updateHint);
-    updateHint();
+    function addLine(presetPick, presetQty) {
+      const line = document.createElement('div');
+      line.className = 'pl-alloc-line';
+      line.innerHTML = `
+        <div class="pl-alloc-pick">
+          <label>${t('plStockItemLabel')}</label>
+          <input type="text" class="pl-stock-pick" list="${listId}" autocomplete="off" placeholder="${escapeHtml(t('plStockItemPlaceholder'))}" value="${escapeHtml(presetPick ? presetPick.label : '')}">
+          <div class="pl-stock-hint"></div>
+        </div>
+        <div class="pl-alloc-qty">
+          <label>${t('plGivenQtyLabel')}</label>
+          <input type="number" min="0" step="any" class="pl-qty-taken-input" value="${presetQty != null ? presetQty : ''}">
+        </div>
+      `;
+      linesEl.appendChild(line);
+      const pickInput = line.querySelector('.pl-stock-pick');
+      const qtyInput = line.querySelector('.pl-qty-taken-input');
+      const hint = line.querySelector('.pl-stock-hint');
+      const update = () => {
+        const pick = pickOf(pickInput);
+        const qty = parseFloat(qtyInput.value) || 0;
+        if (pick) {
+          hint.textContent = t('plStockBalanceHint', { bal: pick.group.balance, uom: pick.group.uom });
+          hint.classList.toggle('low', qty > pick.group.balance);
+        } else {
+          hint.textContent = ''; hint.classList.remove('low');
+        }
+        // 这一行（且是最后一行）已选好货物并填了数量 → 出现新的一行
+        if (pick && qty > 0 && linesEl.lastElementChild === line) addLine(null, null);
+      };
+      pickInput.addEventListener('input', update);
+      pickInput.addEventListener('change', update);
+      qtyInput.addEventListener('input', update);
+      update();
+    }
+    addLine(preset, preset ? item.qtyRequested : item.qtyRequested);
 
     doneBtn.addEventListener('click', async () => {
-      const qtyTaken = parseFloat(qtyInput.value);
-      if (!qtyTaken || qtyTaken <= 0) return;
-      const pick = currentPick();
-      if (!pick) { alert(t('plPickStockFirst')); return; }
-      if (qtyTaken > pick.group.balance &&
-          !confirm(t('plOverBalanceConfirm', { qty: qtyTaken, bal: pick.group.balance }))) return;
+      const lines = [];
+      let incomplete = false;
+      linesEl.querySelectorAll('.pl-alloc-line').forEach(line => {
+        const pickInput = line.querySelector('.pl-stock-pick');
+        const qty = parseFloat(line.querySelector('.pl-qty-taken-input').value);
+        const pick = pickOf(pickInput);
+        if (!pickInput.value.trim() && !(qty > 0)) return; // 空行忽略
+        if (!pick || !(qty > 0)) { incomplete = true; return; }
+        lines.push({ pick, qty });
+      });
+      if (incomplete || !lines.length) { alert(t('plPickStockFirst')); return; }
+
+      // 同一库存货物在多行出现时，合并计算是否超出库存
+      const perStock = {};
+      lines.forEach(l => { perStock[l.pick.label] = (perStock[l.pick.label] || 0) + l.qty; });
+      for (const label of Object.keys(perStock)) {
+        const pick = options.find(o => o.label === label);
+        if (perStock[label] > pick.group.balance &&
+            !confirm(t('plOverBalanceConfirm', { qty: perStock[label], bal: pick.group.balance }))) return;
+      }
+
       doneBtn.disabled = true;
-      const ok = await commitPackingItemTaken(pl, item, qtyTaken,
-        { item: pick.group.item, itemCode: pick.group.itemCode, uom: pick.group.uom });
+      const ok = await commitPackingItemTaken(pl, item, lines.map(l => ({
+        stock: { item: l.pick.group.item, itemCode: l.pick.group.itemCode, uom: l.pick.group.uom },
+        qty: l.qty
+      })));
       doneBtn.disabled = false;
       if (ok) renderCurrentView();
     });
@@ -3061,7 +3097,7 @@
             <div>
               <div class="pl-item-name">${escapeHtml(item.item)}</div>
               <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div>
-              ${item.stockItem ? `<div class="pl-item-meta">📦 ${t('plStockUsedLabel', { name: escapeHtml((item.stockItemCode ? item.stockItemCode + ' · ' : '') + item.stockItem) })}</div>` : ''}
+              ${(item.allocations || []).map(a => `<div class="pl-item-meta">📦 ${escapeHtml((a.itemCode ? a.itemCode + ' · ' : '') + a.item)} × ${a.qty} ${escapeHtml(a.uom || '')}</div>`).join('')}
             </div>
             <div style="text-align:right;">
               ${isIncomplete
@@ -3090,6 +3126,7 @@
                 targetItem.qtyTaken = null;
                 targetItem.completedAt = null;
                 targetItem.status = null;
+                targetItem.allocations = null;
               }
             }
             const newRecords = latestRecords.filter(r => r.sourcePackingListItemId !== item.id);
