@@ -330,20 +330,6 @@
       "date": "2026-10-12",
       "platform": "",
       "expiryDate": ""
-    },
-    {
-      "id": "mvhgjtu5jwp36",
-      "item": "Drinking Water 1.5L - Let's go",
-      "itemCode": "",
-      "qty": 10,
-      "uom": "ctn",
-      "type": "OUT",
-      "date": "2026-10-21",
-      "platform": "SK PREMIER ( OCT 1ST )",
-      "expiryDate": "",
-      "sourcePackingList": "PO0246",
-      "sourcePackingListId": "pl_mvgeojz578ym",
-      "sourcePackingListItemId": "pli_mvgeojz4qog2"
     }
   ],
   "packingLists": [
@@ -360,10 +346,10 @@
           "itemCode": "",
           "uom": "KG",
           "qtyRequested": 15,
-          "done": true,
-          "qtyTaken": 10,
-          "completedAt": "2026-10-21T01:53:07.099Z",
-          "status": "incomplete",
+          "done": false,
+          "qtyTaken": null,
+          "completedAt": null,
+          "status": null,
           "stockItem": "Drinking Water 1.5L - Let's go",
           "stockItemCode": ""
         },
