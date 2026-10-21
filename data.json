@@ -330,6 +330,34 @@
       "date": "2026-10-12",
       "platform": "",
       "expiryDate": ""
+    },
+    {
+      "id": "mvhgxea51ak3u",
+      "item": "Drinking Water 1.5L - Let's go",
+      "itemCode": "",
+      "qty": 10,
+      "uom": "ctn",
+      "type": "OUT",
+      "date": "2026-10-21",
+      "platform": "SK PREMIER ( OCT 1ST )",
+      "expiryDate": "",
+      "sourcePackingList": "PO0246",
+      "sourcePackingListId": "pl_mvgeojz578ym",
+      "sourcePackingListItemId": "pli_mvgeojz4qog2"
+    },
+    {
+      "id": "mvhgxea5kk3ic",
+      "item": "Drinking Water 500ml - Can Do",
+      "itemCode": "",
+      "qty": 20,
+      "uom": "ctn",
+      "type": "OUT",
+      "date": "2026-10-21",
+      "platform": "SK PREMIER ( OCT 1ST )",
+      "expiryDate": "",
+      "sourcePackingList": "PO0246",
+      "sourcePackingListId": "pl_mvgeojz578ym",
+      "sourcePackingListItemId": "pli_mvgeojz4qog2"
     }
   ],
   "packingLists": [
@@ -346,12 +374,26 @@
           "itemCode": "",
           "uom": "KG",
           "qtyRequested": 15,
-          "done": false,
-          "qtyTaken": null,
-          "completedAt": null,
-          "status": null,
+          "done": true,
+          "qtyTaken": 30,
+          "completedAt": "2026-10-21T02:03:39.533Z",
+          "status": "incomplete",
           "stockItem": "Drinking Water 1.5L - Let's go",
-          "stockItemCode": ""
+          "stockItemCode": "",
+          "allocations": [
+            {
+              "item": "Drinking Water 1.5L - Let's go",
+              "itemCode": "",
+              "uom": "ctn",
+              "qty": 10
+            },
+            {
+              "item": "Drinking Water 500ml - Can Do",
+              "itemCode": "",
+              "uom": "ctn",
+              "qty": 20
+            }
+          ]
         },
         {
           "id": "pli_mvgeojz4e2hv",
