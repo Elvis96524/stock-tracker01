@@ -493,6 +493,24 @@
   }
   #lockScreen.open { display: flex; }
 
+  #loginScreen {
+    position: fixed; inset: 0; background: var(--bg); z-index: 190;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  #loginScreen.open { display: flex; }
+  #loginScreen input[type="text"], #loginScreen input[type="password"] {
+    width: 100%; border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; font-size: 15px; margin-bottom: 12px; background: #fafbfc;
+  }
+  #loginScreen .login-stay { display:flex; gap:8px; align-items:center; font-size:13px; color: var(--muted); margin-bottom:14px; }
+  #loginScreen .login-btn {
+    width:100%; border:none; border-radius:10px; padding:13px 0; font-size:15px; font-weight:700;
+    background: var(--accent); color:#fff; cursor:pointer;
+  }
+  #loginScreen .login-btn:disabled { opacity:.6; }
+  .user-row { display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .user-row .me { color: var(--muted); font-size:12px; }
   .lock-card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -943,6 +961,39 @@
 </head>
 <body>
 
+<!-- 用户登录（管理员发放的 ID + 密码） -->
+<div id="loginScreen">
+  <div class="lock-card">
+    <div class="lock-icon">👤</div>
+    <h2 data-i18n="loginTitle">登录</h2>
+    <div class="lock-sub" data-i18n="loginSub">请输入管理员发给您的用户 ID 和密码</div>
+    <form id="loginForm">
+      <input type="text" id="loginId" data-i18n-ph="userIdLabel" autocomplete="username" autocapitalize="off" spellcheck="false">
+      <input type="password" id="loginPw" data-i18n-ph="userPwLabel" autocomplete="current-password">
+      <label class="login-stay"><input type="checkbox" id="loginStay" style="width:auto; margin:0;"> <span data-i18n="loginStayLabel">在此设备保持登录</span></label>
+      <div class="modal-error" id="loginError"></div>
+      <button type="submit" class="login-btn" id="loginBtn" data-i18n="loginBtn">登录</button>
+    </form>
+  </div>
+</div>
+
+<!-- 用户管理（管理员） -->
+<div class="modal-overlay" id="usersModal">
+  <div class="modal-card" style="max-width:460px;">
+    <h2 data-i18n="usersTitle">用户管理</h2>
+    <div class="sub" id="usersSub"></div>
+    <div class="warn-box" id="usersEnableWarn" style="display:none;" data-i18n="enableAccountsWarn"></div>
+    <div id="usersList" style="margin-bottom:14px;"></div>
+    <input type="text" id="userNewId" data-i18n-ph="userIdLabel" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <input type="password" id="userNewPw" data-i18n-ph="userPwLabel" autocomplete="new-password">
+    <div class="modal-error" id="usersError"></div>
+    <div class="modal-btn-row">
+      <button class="btn-secondary" id="usersClose" data-i18n="closeBtn">关闭</button>
+      <button class="btn-primary" id="usersAddBtn" data-i18n="userAddBtn">添加 / 重设密码</button>
+    </div>
+  </div>
+</div>
+
 <!-- 设备解锁屏（PIN / 指纹） -->
 <div id="lockScreen">
   <div class="lock-card" id="lockCard"></div>
@@ -969,6 +1020,8 @@
     <div class="sub" data-i18n="ghSettingsSub">此设备要新增/勾选完成/删除数据时，需要在本机保存一个有写入权限的 Token</div>
     <div class="warn-box" data-i18n="ghSettingsWarn">⚠️ Token 会以明文保存在本设备浏览器中，请使用仅限此仓库、仅勾选 Contents 读写权限的 Fine-grained Token。</div>
     <input type="password" id="ghToken" data-i18n-ph="ghTokenLabel" autocomplete="off">
+    <div class="sub" style="margin:4px 0 8px;" data-i18n="dataKeySub">数据加密密码：data.json 以此密码加密，所有设备必须填写相同的密码才能读取。忘记密码将无法恢复数据。</div>
+    <input type="password" id="dataKeyInput" data-i18n-ph="dataKeyPlaceholder" autocomplete="off">
     <div class="modal-status" id="ghSettingsStatus"></div>
     <div class="modal-btn-row">
       <button class="btn-secondary" id="syncSettingsCancel" data-i18n="cancelBtn">取消</button>
@@ -995,7 +1048,9 @@
       <button class="refresh-btn" id="refreshBtn" title="Refresh">⟳</button>
       <button class="admin-btn" id="syncSettingsBtn" title="Sync Settings">⚙</button>
       <button class="admin-btn" id="homeBtn" title="Home" style="display:none;">🏠</button>
+      <button class="admin-btn" id="usersBtn" data-admin-only title="Users">👥</button>
       <button class="admin-btn" id="adminToggleBtn"><span id="adminBtnLabel" data-i18n="adminLoginBtn">🔑 管理员</span></button>
+      <button class="admin-btn" id="userBadgeBtn" style="display:none;"></button>
     </div>
   </header>
 
@@ -1063,6 +1118,48 @@
       <div class="modal-btn-row">
         <button class="btn-secondary" id="clearAllCancel" data-i18n="cancelBtn">取消</button>
         <button class="danger-btn" id="clearAllConfirm" style="flex:1;" data-i18n="clearAllConfirmBtn">确认清空</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 归档旧记录（管理员，需重新输入密码） -->
+  <div class="modal-overlay" id="archiveModal">
+    <div class="modal-card" style="max-width:460px;">
+      <h2 data-i18n="archiveTitle">归档旧记录</h2>
+      <div class="sub" data-i18n="archiveSub">把截止日期（含）之前的记录移到归档文件，并为每个货物保留一条“期初结余”，库存总数不变。有关联 Packing List 的记录不会被归档。</div>
+      <div class="field" style="margin-bottom:10px;">
+        <label for="archiveCutoff" data-i18n="archiveCutoffLabel">归档截止日期</label>
+        <input type="date" id="archiveCutoff">
+      </div>
+      <div class="warn-box" id="archivePreview" style="margin-bottom:12px;"></div>
+      <input type="password" id="archivePasswordInput" data-i18n-ph="adminKeyPlaceholder" autocomplete="off">
+      <div class="modal-error" id="archiveError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="archiveCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="archiveConfirm" data-i18n="archiveConfirmBtn">确认归档</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 查看归档记录 -->
+  <div class="modal-overlay" id="archiveViewModal">
+    <div class="modal-card" style="max-width:760px;">
+      <h2 data-i18n="archiveViewTitle">归档记录</h2>
+      <input type="text" id="archiveFilter" data-i18n-ph="archiveFilterPh" autocomplete="off">
+      <div class="modal-status" id="archiveViewStatus"></div>
+      <div style="overflow-x:auto; margin-bottom:14px;">
+        <table class="detail-table" id="archiveTable">
+          <thead><tr>
+            <th data-i18n="colDate">日期</th><th data-i18n="colCode">编号</th><th data-i18n="colItem">货物名称</th>
+            <th data-i18n="colType">类型</th><th data-i18n="colQty">数量</th><th data-i18n="colUom">UOM</th>
+            <th data-i18n="colPlatform">Platform/Vessel</th>
+          </tr></thead>
+          <tbody id="archiveTableBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="archiveViewClose" data-i18n="closeBtn">关闭</button>
+        <button class="btn-primary" id="archiveCsvBtn" data-i18n="archiveCsvBtn">下载 CSV</button>
       </div>
     </div>
   </div>
@@ -1209,7 +1306,10 @@
   <div class="panel">
     <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0;">
       <h2 style="margin:0;" data-i18n="overviewPanelTitle">货物库存总览</h2>
-      <button class="danger-btn" id="clearAllStockBtn" data-admin-only data-i18n="clearAllStockBtn">🗑️ Clear All</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="export-btn" id="archiveBtn" data-admin-only data-i18n="archiveBtn">📦 Archive old records</button>
+        <button class="danger-btn" id="clearAllStockBtn" data-admin-only data-i18n="clearAllStockBtn">🗑️ Clear All</button>
+      </div>
     </div>
     <div class="toolbar">
       <input type="text" id="search" placeholder="搜索货物名称或编号..." data-i18n-ph="searchPlaceholder" autocomplete="off" list="searchSuggestList">
@@ -1239,6 +1339,7 @@
         </select>
       </div>
       <button class="export-btn" id="exportBtn" data-i18n="exportBtnText">导出 CSV</button>
+      <button class="export-btn" id="viewArchiveBtn" data-i18n="viewArchiveBtn">📚 View archive</button>
     </div>
     <table>
       <thead>
@@ -1343,8 +1444,51 @@
       ghTokenLabel: 'Personal Access Token',
       saveGhSettingsBtn: '保存设置',
       ghSettingsSaved: '设置已保存',
-      ghSettingsIncomplete: '请完整填写用户名、仓库名和 Token',
+      ghSettingsIncomplete: '请填写 Token 或数据加密密码',
       ghConfigMissing: '请先在管理员设置中配置 GitHub 同步信息',
+      dataKeyMissing: '请先在同步设置（⚙）中填写数据加密密码',
+      dataKeyWrong: '数据加密密码不正确，无法解密数据',
+      dataKeySub: '数据加密密码：data.json 以此密码加密，所有设备必须填写相同的密码才能读取。忘记密码将无法恢复数据。',
+      dataKeyPlaceholder: '数据加密密码',
+      archiveBtn: '📦 归档旧记录',
+      viewArchiveBtn: '📚 查看归档',
+      archiveTitle: '归档旧记录',
+      archiveSub: '把截止日期（含）之前的记录移到归档文件，并为每个货物保留一条“期初结余”，库存总数不变。有关联 Packing List 的记录不会被归档。',
+      archiveCutoffLabel: '归档截止日期',
+      archivePreview: '将归档 {n} 条记录，并生成 {m} 条期初结余。请再次输入管理员密钥确认。',
+      archiveNothing: '该日期之前没有可归档的记录。',
+      archiveConfirmBtn: '确认归档',
+      archiveDone: '已归档 {n} 条记录。',
+      archiveViewTitle: '归档记录',
+      archiveFilterPh: '搜索货物名称或编号…',
+      archiveCsvBtn: '下载 CSV',
+      archiveEmpty: '暂无归档记录。',
+      archiveCount: '显示 {shown} / {total} 条',
+      openingBalanceLabel: '期初结余',
+      closeBtn: '关闭',
+      loginTitle: '登录',
+      loginSub: '请输入管理员发给您的用户 ID 和密码',
+      userIdLabel: '用户 ID',
+      userPwLabel: '密码',
+      loginStayLabel: '在此设备保持登录',
+      loginBtn: '登录',
+      loginFailed: 'ID 或密码不正确',
+      loginRequired: '请先登录',
+      loginSessionExpired: '登录已失效（账号已更改），请重新登录',
+      accountsNotEnabled: '尚未启用用户账号',
+      signOutBtn: '退出登录',
+      signOutConfirm: '确定要退出登录吗？',
+      usersTitle: '用户管理',
+      usersSub: '只有您在这里创建的 ID 和密码才能进入本应用。用同一 ID 再次添加即可重设密码。',
+      usersEnableSub: '尚未启用用户账号。创建第一个用户（建议为您自己）即可启用。',
+      enableAccountsWarn: '⚠️ 启用后，所有设备必须用 ID 和密码登录才能读取数据，旧的“数据加密密码”将不再使用。请牢记您创建的第一个账号的密码——忘记且没有其他账号时数据无法恢复。',
+      enableAccountsBtn: '启用并创建',
+      userAddBtn: '添加 / 重设密码',
+      userRemoveBtn: '删除',
+      userRemoveConfirm: '删除此用户？系统会更换加密密钥，该用户将无法再读取数据。',
+      userYou: '您',
+      userPwTooShort: '请填写 ID，密码至少 6 位。',
+      userCantRemoveSelf: '不能删除自己当前登录的账号。',
       syncing: '同步中...',
       syncedAt: '已同步 · {time}',
       syncFailed: '同步失败',
@@ -1496,8 +1640,51 @@
       ghTokenLabel: 'Personal Access Token',
       saveGhSettingsBtn: 'Save Settings',
       ghSettingsSaved: 'Settings saved',
-      ghSettingsIncomplete: 'Please fill in username, repository, and token',
+      ghSettingsIncomplete: 'Please enter a token or the data encryption passphrase',
       ghConfigMissing: 'Please configure GitHub sync settings in the admin panel first',
+      dataKeyMissing: 'Please enter the data encryption passphrase in Sync Settings (⚙) first',
+      dataKeyWrong: 'Wrong data encryption passphrase — cannot decrypt the data',
+      dataKeySub: 'Data encryption passphrase: data.json is encrypted with it, and every device needs the same passphrase to read it. If it is forgotten the data cannot be recovered.',
+      dataKeyPlaceholder: 'Data encryption passphrase',
+      archiveBtn: '📦 Archive old records',
+      viewArchiveBtn: '📚 View archive',
+      archiveTitle: 'Archive old records',
+      archiveSub: 'Moves records up to the cut-off date (inclusive) into the archive file and keeps one "Opening balance" record per item, so stock totals do not change. Records linked to a packing list are not archived.',
+      archiveCutoffLabel: 'Archive up to date',
+      archivePreview: '{n} records will be archived and {m} opening balances created. Enter the admin key again to confirm.',
+      archiveNothing: 'No records to archive on or before that date.',
+      archiveConfirmBtn: 'Confirm archive',
+      archiveDone: 'Archived {n} records.',
+      archiveViewTitle: 'Archived records',
+      archiveFilterPh: 'Search item name or code…',
+      archiveCsvBtn: 'Download CSV',
+      archiveEmpty: 'No archived records yet.',
+      archiveCount: 'Showing {shown} of {total}',
+      openingBalanceLabel: 'Opening balance',
+      closeBtn: 'Close',
+      loginTitle: 'Sign in',
+      loginSub: 'Enter the user ID and password your admin gave you',
+      userIdLabel: 'User ID',
+      userPwLabel: 'Password',
+      loginStayLabel: 'Keep me signed in on this device',
+      loginBtn: 'Sign in',
+      loginFailed: 'Incorrect ID or password',
+      loginRequired: 'Please sign in first',
+      loginSessionExpired: 'Your sign-in is no longer valid (accounts changed). Please sign in again.',
+      accountsNotEnabled: 'User accounts are not enabled yet',
+      signOutBtn: 'Sign out',
+      signOutConfirm: 'Sign out of this device?',
+      usersTitle: 'Users',
+      usersSub: 'Only the IDs and passwords you create here can open this app. Add the same ID again to reset its password.',
+      usersEnableSub: 'User accounts are not enabled yet. Create the first user (suggested: yourself) to turn them on.',
+      enableAccountsWarn: '⚠️ Once enabled, every device must sign in with an ID and password to read the data, and the old "data encryption passphrase" is no longer used. Remember the first account\'s password — if it is forgotten and no other account exists, the data cannot be recovered.',
+      enableAccountsBtn: 'Enable & create',
+      userAddBtn: 'Add / reset password',
+      userRemoveBtn: 'Remove',
+      userRemoveConfirm: 'Remove this user? The encryption key will be changed so they can no longer read the data.',
+      userYou: 'you',
+      userPwTooShort: 'Enter an ID and a password of at least 6 characters.',
+      userCantRemoveSelf: 'You cannot remove the account you are signed in with.',
       syncing: 'Syncing...',
       syncedAt: 'Synced · {time}',
       syncFailed: 'Sync failed',
@@ -1649,8 +1836,51 @@
       ghTokenLabel: 'Personal Access Token',
       saveGhSettingsBtn: 'Simpan Tetapan',
       ghSettingsSaved: 'Tetapan disimpan',
-      ghSettingsIncomplete: 'Sila lengkapkan nama pengguna, repositori, dan token',
+      ghSettingsIncomplete: 'Sila masukkan token atau frasa laluan penyulitan data',
       ghConfigMissing: 'Sila konfigurasikan tetapan segerak GitHub dalam panel admin dahulu',
+      dataKeyMissing: 'Sila masukkan frasa laluan penyulitan data dalam Tetapan Segerak (⚙) dahulu',
+      dataKeyWrong: 'Frasa laluan penyulitan data salah — data tidak dapat dinyahsulit',
+      dataKeySub: 'Frasa laluan penyulitan data: data.json disulitkan dengannya, dan setiap peranti memerlukan frasa laluan yang sama untuk membacanya. Jika terlupa, data tidak dapat dipulihkan.',
+      dataKeyPlaceholder: 'Frasa laluan penyulitan data',
+      archiveBtn: '📦 Arkib rekod lama',
+      viewArchiveBtn: '📚 Lihat arkib',
+      archiveTitle: 'Arkib rekod lama',
+      archiveSub: 'Memindahkan rekod hingga tarikh akhir (termasuk) ke fail arkib dan menyimpan satu rekod "Baki permulaan" bagi setiap barang, jadi jumlah stok tidak berubah. Rekod yang dikaitkan dengan senarai pembungkusan tidak diarkibkan.',
+      archiveCutoffLabel: 'Arkib sehingga tarikh',
+      archivePreview: '{n} rekod akan diarkibkan dan {m} baki permulaan dicipta. Masukkan kunci admin sekali lagi untuk mengesahkan.',
+      archiveNothing: 'Tiada rekod untuk diarkibkan pada atau sebelum tarikh itu.',
+      archiveConfirmBtn: 'Sahkan arkib',
+      archiveDone: '{n} rekod telah diarkibkan.',
+      archiveViewTitle: 'Rekod arkib',
+      archiveFilterPh: 'Cari nama atau kod barang…',
+      archiveCsvBtn: 'Muat turun CSV',
+      archiveEmpty: 'Belum ada rekod arkib.',
+      archiveCount: 'Menunjukkan {shown} daripada {total}',
+      openingBalanceLabel: 'Baki permulaan',
+      closeBtn: 'Tutup',
+      loginTitle: 'Log masuk',
+      loginSub: 'Masukkan ID pengguna dan kata laluan yang diberikan oleh admin',
+      userIdLabel: 'ID Pengguna',
+      userPwLabel: 'Kata laluan',
+      loginStayLabel: 'Kekalkan log masuk pada peranti ini',
+      loginBtn: 'Log masuk',
+      loginFailed: 'ID atau kata laluan salah',
+      loginRequired: 'Sila log masuk dahulu',
+      loginSessionExpired: 'Log masuk anda tidak sah lagi (akaun diubah). Sila log masuk semula.',
+      accountsNotEnabled: 'Akaun pengguna belum diaktifkan',
+      signOutBtn: 'Log keluar',
+      signOutConfirm: 'Log keluar daripada peranti ini?',
+      usersTitle: 'Pengguna',
+      usersSub: 'Hanya ID dan kata laluan yang anda cipta di sini boleh membuka aplikasi ini. Tambah ID yang sama semula untuk menetapkan semula kata laluan.',
+      usersEnableSub: 'Akaun pengguna belum diaktifkan. Cipta pengguna pertama (cadangan: diri anda) untuk mengaktifkannya.',
+      enableAccountsWarn: '⚠️ Setelah diaktifkan, setiap peranti mesti log masuk dengan ID dan kata laluan untuk membaca data, dan "frasa laluan penyulitan data" lama tidak digunakan lagi. Ingat kata laluan akaun pertama — jika terlupa dan tiada akaun lain, data tidak dapat dipulihkan.',
+      enableAccountsBtn: 'Aktifkan & cipta',
+      userAddBtn: 'Tambah / tetap semula kata laluan',
+      userRemoveBtn: 'Buang',
+      userRemoveConfirm: 'Buang pengguna ini? Kunci penyulitan akan ditukar supaya mereka tidak dapat membaca data lagi.',
+      userYou: 'anda',
+      userPwTooShort: 'Masukkan ID dan kata laluan sekurang-kurangnya 6 aksara.',
+      userCantRemoveSelf: 'Anda tidak boleh membuang akaun yang sedang anda gunakan.',
       syncing: 'Menyegerak...',
       syncedAt: 'Disegerak · {time}',
       syncFailed: 'Segerak gagal',
@@ -1801,20 +2031,209 @@
     return decodeURIComponent(escape(atob(b64.replace(/\n/g, ''))));
   }
 
-  // 拉取共享数据：走 GitHub Contents API，绕开 Pages/CDN 缓存，保证读到最新提交的内容。
-  // 未配置管理员 Token 的设备也能匿名读取（公开仓库），但受 GitHub 未登录接口的
-  // 请求频率限制（每小时约 60 次），已登录管理员的 Token 请求额度会高很多。
-  async function fetchSharedData() {
-    const cfg = getGhConfig();
-    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${REPO_PATH}?ref=${REPO_BRANCH}&t=${Date.now()}`;
-    const headers = { 'Accept': 'application/vnd.github+json' };
-    if (cfg && cfg.token) headers['Authorization'] = `token ${cfg.token}`;
+  // ================= data.json 加密（AES-256-GCM，密钥由“数据密码”经 PBKDF2 派生）=================
+  // 数据密码只保存在各设备本机（与 Token 一样存于 localStorage），不会写进仓库。
+  const ENC_ITER = 250000;
 
+  function bytesToB64(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  }
+  function b64ToBytes(b64) {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  async function deriveAesKey(passphrase, salt, iter) {
+    const baseKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' },
+      baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+    );
+  }
+  async function encryptPayload(obj, passphrase) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveAesKey(passphrase, salt, ENC_ITER);
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(obj)));
+    return JSON.stringify({
+      srsEncrypted: 1, alg: 'AES-256-GCM', kdf: 'PBKDF2-SHA256', iter: ENC_ITER,
+      salt: bytesToB64(salt), iv: bytesToB64(iv), data: bytesToB64(new Uint8Array(ct))
+    });
+  }
+  async function decryptPayload(envelope, passphrase) {
+    const key = await deriveAesKey(passphrase, b64ToBytes(envelope.salt), envelope.iter || ENC_ITER);
+    try {
+      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(envelope.iv) }, key, b64ToBytes(envelope.data));
+      return JSON.parse(new TextDecoder().decode(pt));
+    } catch (e) {
+      const err = new Error(t('dataKeyWrong'));
+      err.code = 'BADKEY';
+      throw err;
+    }
+  }
+  function getDataKey() {
+    const cfg = getGhConfig();
+    return (cfg && cfg.dataKey) || '';
+  }
+
+  // ================= 用户账号（v2 加密）=================
+  // data.json 用随机“主密钥”加密；每个用户的 ID+密码经 PBKDF2 得到一把“包装密钥”，
+  // 用它把主密钥包起来存进文件。没有有效的 ID+密码就拿不到主密钥，也就读不了数据。
+  // 用户 ID 以 SHA-256 形式作为索引；每个用户的包装密钥另存于加密内容里，
+  // 这样管理员删除用户时可以更换主密钥并为其余用户重新包装（真正撤销访问）。
+  const SESSION_KEY = 'srsSession_v1';
+  let session = { master: null, uid: '', id: '', persist: false };
+  let authState = { mode: 'legacy', envUsers: {}, usersPayload: {}, archiveKey: '', archiveKeyPrev: '' };
+
+  const rand32 = () => crypto.getRandomValues(new Uint8Array(32));
+  const importRawAes = (raw) => crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
+
+  function loadSession() {
+    for (const [store, persist] of [[sessionStorage, false], [localStorage, true]]) {
+      try {
+        const raw = store.getItem(SESSION_KEY);
+        if (raw) {
+          const o = JSON.parse(raw);
+          session = { master: b64ToBytes(o.m), uid: o.uid, id: o.id, persist };
+          return;
+        }
+      } catch (e) {}
+    }
+  }
+  function persistSession() {
+    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
+    if (!session.master) return;
+    const val = JSON.stringify({ m: bytesToB64(session.master), uid: session.uid, id: session.id });
+    (session.persist ? localStorage : sessionStorage).setItem(SESSION_KEY, val);
+  }
+  function clearSession() {
+    session = { master: null, uid: '', id: '', persist: false };
+    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
+  }
+  loadSession();
+
+  function loginRequiredError(msgKey) {
+    const err = new Error(t(msgKey || 'loginRequired'));
+    err.code = 'LOGIN';
+    return err;
+  }
+
+  async function sealWithKey(obj, rawKey) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await importRawAes(rawKey), new TextEncoder().encode(JSON.stringify(obj)));
+    return JSON.stringify({ srsEncrypted: 2, alg: 'AES-256-GCM', iv: bytesToB64(iv), data: bytesToB64(new Uint8Array(ct)) });
+  }
+  async function openWithKey(env, rawKey) {
+    try {
+      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(env.iv) }, await importRawAes(rawKey), b64ToBytes(env.data));
+      return JSON.parse(new TextDecoder().decode(pt));
+    } catch (e) {
+      throw loginRequiredError('loginSessionExpired');
+    }
+  }
+  async function deriveWrapBits(password, salt, iter) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+    return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, 256));
+  }
+  async function wrapRaw(masterRaw, wrapBits, uid) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(uid) }, await importRawAes(wrapBits), masterRaw);
+    return { iv: bytesToB64(iv), wk: bytesToB64(new Uint8Array(ct)) };
+  }
+  async function unwrapRaw(entry, wrapBits, uid) {
+    try {
+      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(entry.iv), additionalData: new TextEncoder().encode(uid) }, await importRawAes(wrapBits), b64ToBytes(entry.wk));
+      return new Uint8Array(pt);
+    } catch (e) {
+      throw loginRequiredError('loginFailed');
+    }
+  }
+  const userUid = (id) => sha256(id.trim().toLowerCase());
+
+  // 登录：用 ID+密码解开主密钥
+  async function loginWithCredentials(id, password, persist) {
+    const text = await fetchRepoText(REPO_PATH);
+    if (text === null) throw new Error('fetch failed: 404');
+    const env = JSON.parse(text);
+    if (env.srsEncrypted !== 2) throw new Error(t('accountsNotEnabled'));
+    const uid = await userUid(id);
+    const entry = (env.users || {})[uid];
+    if (!entry) throw loginRequiredError('loginFailed');
+    const bits = await deriveWrapBits(password, b64ToBytes(entry.salt), entry.iter || ENC_ITER);
+    const master = await unwrapRaw(entry, bits, uid);
+    session = { master, uid, id: id.trim(), persist: !!persist };
+    persistSession();
+  }
+
+  // 为某个用户生成登录条目（salt 新随机；返回 envelope 条目 + payload 条目）
+  async function buildUserEntries(id, password, masterRaw) {
+    const uid = await userUid(id);
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const bits = await deriveWrapBits(password, salt, ENC_ITER);
+    const wrapped = await wrapRaw(masterRaw, bits, uid);
+    return {
+      uid,
+      env: { salt: bytesToB64(salt), iter: ENC_ITER, iv: wrapped.iv, wk: wrapped.wk },
+      payload: { id: id.trim(), wb: bytesToB64(bits), createdAt: new Date().toISOString() }
+    };
+  }
+
+  // 读取仓库文件原文：使用 raw 媒体类型，文件可达 100MB（默认 JSON 格式超过 1MB 就拿不到内容）。
+  // 走 GitHub Contents API，绕开 Pages/CDN 缓存。文件不存在时返回 null。
+  async function fetchRepoText(path) {
+    const cfg = getGhConfig();
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}&t=${Date.now()}`;
+    const headers = { 'Accept': 'application/vnd.github.raw+json' };
+    if (cfg && cfg.token) headers['Authorization'] = `token ${cfg.token}`;
     const res = await fetch(url, { headers, cache: 'no-store' });
+    if (res.status === 404) return null;
     if (!res.ok) throw new Error('fetch failed: ' + res.status);
-    const json = await res.json();
-    const content = base64ToUtf8(json.content || '');
-    const parsed = JSON.parse(content);
+    return res.text();
+  }
+
+  // 解析文件内容：加密格式则用本机数据密码解密；旧版明文也能读取
+  async function openPayload(parsed) {
+    if (parsed && parsed.srsEncrypted === 1) {
+      const dataKey = getDataKey();
+      if (!dataKey) {
+        const err = new Error(t('dataKeyMissing'));
+        err.code = 'NEEDKEY';
+        throw err;
+      }
+      return decryptPayload(parsed, dataKey);
+    }
+    return parsed;
+  }
+
+  // 拉取共享数据
+  async function fetchSharedData() {
+    const text = await fetchRepoText(REPO_PATH);
+    if (text === null) throw new Error('fetch failed: 404');
+    const raw = JSON.parse(text);
+    let parsed;
+    if (raw && raw.srsEncrypted === 2) {
+      if (!session.master) throw loginRequiredError('loginRequired');
+      parsed = await openWithKey(raw, session.master);
+      authState = {
+        mode: 'v2',
+        envUsers: raw.users || {},
+        usersPayload: parsed.users || {},
+        archiveKey: parsed.archiveKey || '',
+        archiveKeyPrev: parsed.archiveKeyPrev || ''
+      };
+      // 账号已被管理员删除（主密钥已更换时上面会直接失败）；此处再确认自己仍在名单内
+      if (session.uid && !authState.usersPayload[session.uid]) throw loginRequiredError('loginSessionExpired');
+    } else {
+      authState = { mode: 'legacy', envUsers: {}, usersPayload: {}, archiveKey: '', archiveKeyPrev: '' };
+      parsed = await openPayload(raw);
+    }
     return {
       adminKeyHash: parsed.adminKeyHash || '',
       records: Array.isArray(parsed.records) ? parsed.records : [],
@@ -1822,14 +2241,13 @@
     };
   }
 
-  // 把最新数据写回 GitHub（需要设备本机配置好 Token）
-  async function pushSharedData(newRecords, newAdminKeyHash, newPackingLists) {
+  // 通用：写入仓库文件（需要本机 Token）。先取得现有文件的 sha 再 PUT。
+  async function putRepoFile(path, fileContent, message) {
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) {
       throw new Error(t('ghConfigMissing'));
     }
-    // 读写统一使用写死的仓库位置，避免管理员填写的仓库信息与实际部署位置不一致
-    const apiBase = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${REPO_PATH}`;
+    const apiBase = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`;
     const getRes = await fetch(`${apiBase}?ref=${REPO_BRANCH}&t=${Date.now()}`, {
       headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' }
     });
@@ -1840,8 +2258,6 @@
       const err = await getRes.json().catch(() => ({}));
       throw new Error(err.message || ('GET failed: ' + getRes.status));
     }
-
-    const fileContent = JSON.stringify({ adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [] }, null, 2);
     const putRes = await fetch(apiBase, {
       method: 'PUT',
       headers: {
@@ -1850,7 +2266,7 @@
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        message: 'SRS: update stock records',
+        message,
         content: utf8ToBase64(fileContent),
         branch: REPO_BRANCH,
         ...(sha ? { sha } : {})
@@ -1860,6 +2276,82 @@
       const err = await putRes.json().catch(() => ({}));
       throw new Error(err.message || ('PUT failed: ' + putRes.status));
     }
+  }
+
+  // 把最新数据写回 GitHub（加密后写入）
+  // authOverride：用于启用账号 / 添加删除用户（可更换主密钥、用户名单）
+  async function pushSharedData(newRecords, newAdminKeyHash, newPackingLists, authOverride) {
+    if (authOverride || authState.mode === 'v2') {
+      const a = authOverride || {
+        master: session.master, envUsers: authState.envUsers, usersPayload: authState.usersPayload,
+        archiveKey: authState.archiveKey, archiveKeyPrev: authState.archiveKeyPrev
+      };
+      if (!a.master) throw loginRequiredError('loginRequired');
+      const env = JSON.parse(await sealWithKey({
+        adminKeyHash: newAdminKeyHash,
+        records: newRecords,
+        packingLists: newPackingLists || [],
+        users: a.usersPayload,
+        archiveKey: a.archiveKey || '',
+        archiveKeyPrev: a.archiveKeyPrev || ''
+      }, a.master));
+      env.users = a.envUsers;
+      await putRepoFile(REPO_PATH, JSON.stringify(env), 'SRS: update stock records');
+      authState = { mode: 'v2', envUsers: a.envUsers, usersPayload: a.usersPayload, archiveKey: a.archiveKey || '', archiveKeyPrev: a.archiveKeyPrev || '' };
+      if (authOverride) { session.master = a.master; persistSession(); }
+      return;
+    }
+    const dataKey = getDataKey();
+    if (!dataKey) {
+      const err = new Error(t('dataKeyMissing'));
+      err.code = 'NEEDKEY';
+      throw err;
+    }
+    const fileContent = await encryptPayload(
+      { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [] },
+      dataKey
+    );
+    await putRepoFile(REPO_PATH, fileContent, 'SRS: update stock records');
+  }
+
+  // ---- 归档文件 archive.json（与 data.json 同一密码加密；只在查看/归档时读取）----
+  const ARCHIVE_PATH = 'archive.json';
+
+  // 读取归档：不存在返回 null；v2 用 archiveKey（含上一把），旧版用数据密码
+  async function fetchArchiveRaw() {
+    const text = await fetchRepoText(ARCHIVE_PATH);
+    if (text === null) return null;
+    const raw = JSON.parse(text);
+    let parsed;
+    if (raw && raw.srsEncrypted === 2) {
+      const keys = [authState.archiveKey, authState.archiveKeyPrev].filter(Boolean);
+      if (!keys.length) throw loginRequiredError('loginRequired');
+      for (const k of keys) {
+        try { parsed = await openWithKey(raw, b64ToBytes(k)); break; } catch (e) {}
+      }
+      if (!parsed) throw loginRequiredError('loginSessionExpired');
+    } else {
+      parsed = await openPayload(raw);
+    }
+    return Array.isArray(parsed.records) ? parsed.records : [];
+  }
+  async function fetchArchiveRecords() {
+    return (await fetchArchiveRaw()) || [];
+  }
+
+  async function pushArchiveRecords(archiveRecords) {
+    if (authState.mode === 'v2') {
+      if (!authState.archiveKey) throw loginRequiredError('loginRequired');
+      await putRepoFile(ARCHIVE_PATH, await sealWithKey({ records: archiveRecords }, b64ToBytes(authState.archiveKey)), 'SRS: archive old records');
+      return;
+    }
+    const dataKey = getDataKey();
+    if (!dataKey) {
+      const err = new Error(t('dataKeyMissing'));
+      err.code = 'NEEDKEY';
+      throw err;
+    }
+    await putRepoFile(ARCHIVE_PATH, await encryptPayload({ records: archiveRecords }, dataKey), 'SRS: archive old records');
   }
 
   function setSyncStatus(msg, kind) {
@@ -1882,18 +2374,23 @@
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
     } catch (err) {
       console.error(err);
+      if (err.code === 'LOGIN') {
+        refreshBtn.classList.remove('spinning');
+        showLogin(err.message === t('loginRequired') ? '' : err.message, true);
+        return;
+      }
       try {
         const cached = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY));
         if (cached) {
           records = cached.records || [];
           adminKeyHash = cached.adminKeyHash || '';
           packingLists = cached.packingLists || [];
-          setSyncStatus(t('offlineUsingCache'), 'err');
+          setSyncStatus((err.code === 'NEEDKEY' || err.code === 'BADKEY') ? err.message : t('offlineUsingCache'), 'err');
         } else {
           records = [];
           adminKeyHash = '';
           packingLists = [];
-          setSyncStatus(t('fetchFailed'), 'err');
+          setSyncStatus((err.code === 'NEEDKEY' || err.code === 'BADKEY') ? err.message : t('fetchFailed'), 'err');
         }
       } catch (e2) {
         records = [];
@@ -1903,8 +2400,60 @@
       }
     }
     refreshBtn.classList.remove('spinning');
+    updateUserBadge();
     renderCurrentView();
   }
+
+  // ---- 登录界面 / 用户标识 ----
+  const loginScreen = document.getElementById('loginScreen');
+  function showLogin(message, wipe) {
+    if (loginScreen.classList.contains('open')) return; // 已显示时不要清掉用户正在输入的内容
+    if (wipe) {
+      clearSession();
+      records = []; packingLists = []; adminKeyHash = '';
+      localStorage.removeItem(LOCAL_CACHE_KEY);
+      isAdmin = false;
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      updateAdminUI();
+      updateUserBadge();
+    }
+    document.getElementById('loginError').textContent = message || '';
+    document.getElementById('loginPw').value = '';
+    loginScreen.classList.add('open');
+  }
+  function updateUserBadge() {
+    const btn = document.getElementById('userBadgeBtn');
+    const on = authState.mode === 'v2' && !!session.master;
+    btn.style.display = on ? '' : 'none';
+    btn.textContent = on ? '👤 ' + session.id + ' ⏻' : '';
+    btn.title = t('signOutBtn');
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('loginId').value;
+    const pw = document.getElementById('loginPw').value;
+    const errEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+    if (!id.trim() || !pw) { errEl.textContent = t('loginFailed'); return; }
+    btn.disabled = true;
+    errEl.textContent = '';
+    try {
+      await loginWithCredentials(id, pw, document.getElementById('loginStay').checked);
+      loginScreen.classList.remove('open');
+      currentView = 'choice';
+      await loadDataAndRender(false);
+    } catch (err) {
+      errEl.textContent = err.code === 'LOGIN' ? err.message : (t('fetchFailed') + ': ' + err.message);
+    }
+    btn.disabled = false;
+  });
+
+  document.getElementById('userBadgeBtn').addEventListener('click', () => {
+    if (!confirm(t('signOutConfirm'))) return;
+    authState = { mode: 'legacy', envUsers: {}, usersPayload: {}, archiveKey: '', archiveKeyPrev: '' };
+    showLogin('', true);
+  });
 
   // 新增/导入记录后：重新拉取最新数据，合并，推送回 GitHub
   async function addRecordsAndSync(newRecords) {
@@ -2130,8 +2679,8 @@
   }
 
   // Build per-item groups: running balance, transaction list, platforms, nearest expiry
-  function buildGroups() {
-    const sorted = records.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  function buildGroups(recs) {
+    const sorted = (recs || records).slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     const groups = {};
 
     sorted.forEach(r => {
@@ -2255,7 +2804,7 @@
             <td data-label="${t('colDate')}">${t2.date}</td>
             <td data-label="${t('colType')}"><span class="badge ${t2.type === 'IN' ? 'in' : 'out'}">${t2.type === 'IN' ? t('typeIn') : t('typeOut')}</span></td>
             <td data-label="${t('colQty')}" class="qty">${t2.type === 'IN' ? '+' : '-'}${t2.qty}</td>
-            <td data-label="${t('colPlatform')}"><span class="cell-value">${escapeHtml(t2.platform || '—')}${t2.sourcePackingList ? ` <span class="pill">📋 ${escapeHtml(t2.sourcePackingList)}</span>` : ''}</span></td>
+            <td data-label="${t('colPlatform')}"><span class="cell-value">${escapeHtml(t2.platform || '—')}${t2.sourcePackingList ? ` <span class="pill">📋 ${escapeHtml(t2.sourcePackingList)}</span>` : ''}${t2.isOpening ? ` <span class="pill">📦 ${t('openingBalanceLabel')}</span>` : ''}</span></td>
             <td data-label="${t('colExpiry')}">${expiryLabel(t2.expiryDate)}</td>
             <td data-label="${t('colBalance')}" class="qty">${t2.runningBalance}</td>
             ${isAdmin ? `<td data-label="">
@@ -2581,6 +3130,7 @@
   document.getElementById('syncSettingsBtn').addEventListener('click', () => {
     const cfg = getGhConfig();
     document.getElementById('ghToken').value = (cfg && cfg.token) || '';
+    document.getElementById('dataKeyInput').value = (cfg && cfg.dataKey) || '';
     document.getElementById('ghSettingsStatus').textContent = '';
     syncSettingsModal.classList.add('open');
   });
@@ -2588,12 +3138,14 @@
     syncSettingsModal.classList.remove('open');
   });
 
-  document.getElementById('saveGhSettingsBtn').addEventListener('click', () => {
+  document.getElementById('saveGhSettingsBtn').addEventListener('click', async () => {
     const cfg = {
-      token: document.getElementById('ghToken').value.trim()
+      token: document.getElementById('ghToken').value.trim(),
+      dataKey: document.getElementById('dataKeyInput').value
     };
     const statusEl = document.getElementById('ghSettingsStatus');
-    if (!cfg.token) {
+    // 只读设备可以只填数据密码；需要写入的设备两项都要填
+    if (!cfg.token && !cfg.dataKey) {
       statusEl.textContent = t('ghSettingsIncomplete');
       statusEl.className = 'modal-status err';
       return;
@@ -2601,6 +3153,7 @@
     localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(cfg));
     statusEl.textContent = t('ghSettingsSaved');
     statusEl.className = 'modal-status ok';
+    await loadDataAndRender(false); // 立即用新密码重新读取，状态栏会显示密码是否正确
   });
 
   // ================= 刷新 / 自动同步 =================
@@ -3314,6 +3867,281 @@
       currentPackingListId = null;
       renderCurrentView();
     }
+  });
+
+  // ================= 用户管理（管理员）=================
+  const usersModal = document.getElementById('usersModal');
+  const usersError = document.getElementById('usersError');
+
+  function renderUsersModal() {
+    const v2 = authState.mode === 'v2';
+    document.getElementById('usersSub').textContent = t(v2 ? 'usersSub' : 'usersEnableSub');
+    document.getElementById('usersEnableWarn').style.display = v2 ? 'none' : 'block';
+    document.getElementById('usersAddBtn').textContent = t(v2 ? 'userAddBtn' : 'enableAccountsBtn');
+    const listEl = document.getElementById('usersList');
+    const entries = Object.entries(authState.usersPayload || {});
+    listEl.innerHTML = v2 && entries.length
+      ? entries.map(([uid, u]) => `<div class="user-row">
+          <span>👤 ${escapeHtml(u.id)} ${uid === session.uid ? `<span class="me">(${t('userYou')})</span>` : ''}</span>
+          ${uid === session.uid ? '' : `<button class="del-btn" data-uid="${uid}">✕ ${t('userRemoveBtn')}</button>`}
+        </div>`).join('')
+      : '';
+    listEl.querySelectorAll('.del-btn').forEach(btn => btn.addEventListener('click', async () => {
+      if (!confirm(t('userRemoveConfirm'))) return;
+      btn.disabled = true;
+      usersError.textContent = '';
+      try {
+        await removeUserAndRotate(btn.dataset.uid);
+      } catch (err) {
+        console.error(err);
+        usersError.textContent = t('syncFailed') + ': ' + err.message;
+      }
+      renderUsersModal();
+    }));
+  }
+
+  document.getElementById('usersBtn').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    usersError.textContent = '';
+    document.getElementById('userNewId').value = '';
+    document.getElementById('userNewPw').value = '';
+    usersModal.classList.add('open');
+    renderUsersModal();
+  });
+  document.getElementById('usersClose').addEventListener('click', () => usersModal.classList.remove('open'));
+
+  // 添加用户 / 重设密码（主密钥不变）；未启用账号时，第一个用户即触发转换
+  async function addOrResetUser(id, password) {
+    const latest = await fetchSharedData();
+    const e = await buildUserEntries(id, password, session.master);
+    const envUsers = Object.assign({}, authState.envUsers, { [e.uid]: e.env });
+    const usersPayload = Object.assign({}, authState.usersPayload, { [e.uid]: e.payload });
+    await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, {
+      master: session.master, envUsers, usersPayload,
+      archiveKey: authState.archiveKey, archiveKeyPrev: authState.archiveKeyPrev
+    });
+  }
+
+  // 启用账号：把现有（旧版）数据转换为 v2，并创建第一个用户（通常是管理员自己）
+  async function enableAccounts(id, password) {
+    const latest = await fetchSharedData();            // 旧版读取（需要本机已配置数据密码或为明文）
+    let archived = null;
+    try { archived = await fetchArchiveRaw(); } catch (e) { archived = null; }
+    const master = rand32();
+    const archiveKey = bytesToB64(rand32());
+    const first = await buildUserEntries(id, password, master);
+    await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, {
+      master, envUsers: { [first.uid]: first.env }, usersPayload: { [first.uid]: first.payload },
+      archiveKey, archiveKeyPrev: ''
+    });
+    session.uid = first.uid; session.id = id.trim(); session.persist = false;
+    persistSession();
+    if (archived && archived.length) {
+      try { await pushArchiveRecords(archived); } catch (e) { console.error('archive re-encrypt failed', e); }
+    }
+  }
+
+  // 删除用户并更换主密钥 / 归档密钥，为其余用户重新包装；被删用户即使保留旧密钥也读不了新数据
+  async function removeUserAndRotate(uid) {
+    if (uid === session.uid) throw new Error(t('userCantRemoveSelf'));
+    const latest = await fetchSharedData();
+    let archived = null;
+    try { archived = await fetchArchiveRaw(); } catch (e) { archived = null; }
+    const newMaster = rand32();
+    const newArchiveKey = bytesToB64(rand32());
+    const envUsers = {}, usersPayload = {};
+    for (const [u, info] of Object.entries(authState.usersPayload)) {
+      if (u === uid) continue;
+      const old = authState.envUsers[u];
+      const w = await wrapRaw(newMaster, b64ToBytes(info.wb), u);
+      envUsers[u] = { salt: old.salt, iter: old.iter, iv: w.iv, wk: w.wk };
+      usersPayload[u] = info;
+    }
+    const prevArchiveKey = authState.archiveKey;
+    await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, {
+      master: newMaster, envUsers, usersPayload, archiveKey: newArchiveKey, archiveKeyPrev: prevArchiveKey
+    });
+    if (archived !== null) await pushArchiveRecords(archived);
+  }
+
+  document.getElementById('usersAddBtn').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const id = document.getElementById('userNewId').value.trim();
+    const pw = document.getElementById('userNewPw').value;
+    if (!id || pw.length < 6) { usersError.textContent = t('userPwTooShort'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { usersError.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('usersAddBtn');
+    btn.disabled = true;
+    usersError.textContent = '';
+    try {
+      if (authState.mode === 'v2') await addOrResetUser(id, pw);
+      else await enableAccounts(id, pw);
+      document.getElementById('userNewId').value = '';
+      document.getElementById('userNewPw').value = '';
+      usersError.textContent = '';
+      updateUserBadge();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+    } catch (err) {
+      console.error(err);
+      usersError.textContent = t('syncFailed') + ': ' + err.message;
+    }
+    btn.disabled = false;
+    renderUsersModal();
+  });
+
+  // ================= 归档旧记录（管理员）与查看归档 =================
+  // 归档规则：日期 <= 截止日期 且 没有关联 Packing List 的记录 → 移入 archive.json；
+  // 每个货物在 data.json 中留一条“期初结余”记录，所以库存总数保持不变。
+  function archiveEligible(recs, cutoff) {
+    return recs.filter(r => r.date && r.date <= cutoff && !r.sourcePackingListItemId);
+  }
+
+  async function archiveOldRecords(cutoff) {
+    const latest = await fetchSharedData();
+    const eligible = archiveEligible(latest.records, cutoff);
+    if (!eligible.length) return 0;
+
+    const openings = buildGroups(eligible)
+      .filter(g => g.balance !== 0)
+      .map(g => ({
+        id: 'open_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        item: g.item,
+        itemCode: g.itemCode,
+        qty: Math.abs(g.balance),
+        uom: g.uom,
+        type: g.balance > 0 ? 'IN' : 'OUT',
+        date: cutoff,
+        platform: '',
+        expiryDate: g.nearestExpiry || '',
+        isOpening: true
+      }));
+
+    // 先写归档文件（按记录 id 去重，失败重试不会产生重复），成功后再改 data.json
+    const oldArchive = await fetchArchiveRecords();
+    const seen = new Set(oldArchive.map(r => r.id));
+    await pushArchiveRecords(oldArchive.concat(eligible.filter(r => !seen.has(r.id))));
+
+    const gone = new Set(eligible.map(r => r.id));
+    const remaining = latest.records.filter(r => !gone.has(r.id)).concat(openings);
+    await pushSharedData(remaining, latest.adminKeyHash, latest.packingLists);
+
+    records = remaining;
+    adminKeyHash = latest.adminKeyHash;
+    packingLists = latest.packingLists;
+    localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+    setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+    return eligible.length;
+  }
+
+  const archiveModal = document.getElementById('archiveModal');
+  const archiveCutoff = document.getElementById('archiveCutoff');
+  const archivePreview = document.getElementById('archivePreview');
+  const archivePasswordInput = document.getElementById('archivePasswordInput');
+  const archiveError = document.getElementById('archiveError');
+  const archiveConfirmBtn = document.getElementById('archiveConfirm');
+
+  function updateArchivePreview() {
+    const cutoff = archiveCutoff.value;
+    if (!cutoff) { archivePreview.textContent = ''; return; }
+    const eligible = archiveEligible(records, cutoff);
+    const openings = buildGroups(eligible).filter(g => g.balance !== 0).length;
+    archivePreview.textContent = eligible.length
+      ? t('archivePreview', { n: eligible.length, m: openings })
+      : t('archiveNothing');
+  }
+
+  document.getElementById('archiveBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    archiveCutoff.value = d.toISOString().slice(0, 10);
+    archivePasswordInput.value = '';
+    archiveError.textContent = '';
+    updateArchivePreview();
+    archiveModal.classList.add('open');
+  });
+  archiveCutoff.addEventListener('input', updateArchivePreview);
+  document.getElementById('archiveCancel').addEventListener('click', () => archiveModal.classList.remove('open'));
+  archivePasswordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') archiveConfirmBtn.click(); });
+
+  archiveConfirmBtn.addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const cutoff = archiveCutoff.value;
+    if (!cutoff) return;
+    if (!archivePasswordInput.value || (await sha256(archivePasswordInput.value)) !== adminKeyHash) {
+      archiveError.textContent = t('adminKeyWrong');
+      return;
+    }
+    archiveConfirmBtn.disabled = true;
+    archiveError.textContent = '';
+    setSyncStatus(t('syncing'));
+    try {
+      const n = await archiveOldRecords(cutoff);
+      if (!n) {
+        archiveError.textContent = t('archiveNothing');
+      } else {
+        archiveModal.classList.remove('open');
+        renderCurrentView();
+        alert(t('archiveDone', { n }));
+      }
+    } catch (err) {
+      console.error(err);
+      archiveError.textContent = t('syncFailed') + ': ' + err.message;
+      setSyncStatus(t('syncFailed'), 'err');
+    }
+    archiveConfirmBtn.disabled = false;
+  });
+
+  // ---- 查看归档 ----
+  const archiveViewModal = document.getElementById('archiveViewModal');
+  const archiveFilter = document.getElementById('archiveFilter');
+  const archiveViewStatus = document.getElementById('archiveViewStatus');
+  const archiveTableBody = document.getElementById('archiveTableBody');
+  let archiveCache = [];
+
+  function renderArchiveRows() {
+    const q = archiveFilter.value.trim().toLowerCase();
+    const sorted = archiveCache.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const hit = sorted.filter(r => !q || (r.item || '').toLowerCase().includes(q) || (r.itemCode || '').toLowerCase().includes(q));
+    const shown = hit.slice(0, 500);
+    archiveTableBody.innerHTML = shown.map(r => `<tr>
+        <td>${escapeHtml(r.date || '')}</td><td>${escapeHtml(r.itemCode || '')}</td><td>${escapeHtml(r.item || '')}</td>
+        <td><span class="badge ${r.type === 'IN' ? 'in' : 'out'}">${r.type === 'IN' ? t('typeIn') : t('typeOut')}</span></td>
+        <td class="qty">${r.qty}</td><td>${escapeHtml(r.uom || '')}</td>
+        <td>${escapeHtml(r.platform || '')}${r.isOpening ? ' 📦 ' + t('openingBalanceLabel') : ''}</td>
+      </tr>`).join('');
+    archiveViewStatus.textContent = archiveCache.length
+      ? t('archiveCount', { shown: shown.length, total: hit.length })
+      : t('archiveEmpty');
+    archiveViewStatus.className = 'modal-status';
+  }
+
+  document.getElementById('viewArchiveBtn').addEventListener('click', async () => {
+    archiveFilter.value = '';
+    archiveTableBody.innerHTML = '';
+    archiveViewStatus.textContent = t('syncing');
+    archiveViewStatus.className = 'modal-status';
+    archiveViewModal.classList.add('open');
+    try {
+      archiveCache = await fetchArchiveRecords();
+      renderArchiveRows();
+    } catch (err) {
+      archiveCache = [];
+      archiveViewStatus.textContent = err.message;
+      archiveViewStatus.className = 'modal-status err';
+    }
+  });
+  archiveFilter.addEventListener('input', renderArchiveRows);
+  document.getElementById('archiveViewClose').addEventListener('click', () => archiveViewModal.classList.remove('open'));
+  document.getElementById('archiveCsvBtn').addEventListener('click', () => {
+    const header = ['Date', 'Code', 'Item', 'Type', 'Quantity', 'UOM', 'Platform/Vessel', 'Expiry Date', 'Opening balance'];
+    const rows = archiveCache.map(r => [r.date || '', r.itemCode || '', r.item || '', r.type, r.qty, r.uom || '', r.platform || '', r.expiryDate || '', r.isOpening ? 'Y' : '']);
+    const csv = [header, ...rows].map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'stock_archive.csv'; a.click();
+    URL.revokeObjectURL(url);
   });
 
   // ================= 清空全部库存记录（管理员，需重新输入密码确认） =================

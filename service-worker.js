@@ -4,7 +4,7 @@
 //     只有在断网时才回退到缓存副本。
 //   - 其他本地资源（HTML/CSS/JS/图标）：cache-first + 后台更新，支持离线打开。
 
-const CACHE_NAME = 'srs-cache-v2';
+const CACHE_NAME = 'srs-cache-v3';
 
 // 需要预缓存的同源资源（请确保这些文件与 service-worker.js 在同一目录下）
 const LOCAL_ASSETS = [
@@ -60,6 +60,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // GitHub API（data.json / archive.json 的读写）一律直连网络，不经过缓存
+  if (new URL(event.request.url).hostname === 'api.github.com') return;
 
   const isDataJson = event.request.url.includes('data.json');
 
