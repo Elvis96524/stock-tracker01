@@ -350,13 +350,34 @@
   .grn-line .grn-remove { border: none; background: transparent; color: var(--out); cursor: pointer; font-size: 16px; padding: 8px; }
   .grn-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; }
   .grn-card:hover { border-color: var(--accent); }
+  .grn-line .field select { width: 100%; margin: 0; min-width: 0; }
+  .qc-tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 8px; font-size: 11px; font-weight: 600; background: #fff4d6; color: #8a5a00; }
+  .qc-tag.rej { background: #fde4e4; color: #a12626; }
+  .report-wrap { overflow-x: auto; margin-bottom: 14px; }
+  .report-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  .report-table th, .report-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  .report-table th { font-size: 11px; color: var(--muted, #64748b); text-transform: uppercase; letter-spacing: .3px; }
+  .rv-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .rv-toolbar > * { flex: 0 0 auto; }
+  #scanModal { z-index: 400; }
+  .scan-btn { border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 6px 10px; font-size: 14px; cursor: pointer; margin-top: 6px; }
+  .sr-tab.active { border-color: var(--accent); font-weight: 700; }
+  .sr-sub { font-size: 12px; color: var(--muted, #64748b); }
+  .po-status.shipped, .po-status.delivered { background: #dff5e5; color: #1b7a3a; }
+  .po-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #eef2f7; color: #475569; }
+  .po-status.open { background: #e3f0ff; color: #1d5fb5; }
+  .po-status.partial { background: #fff4d6; color: #8a5a00; }
+  .po-status.received { background: #dff5e5; color: #1b7a3a; }
+  .po-status.cancelled { background: #fde4e4; color: #a12626; }
+  .grn-l .qc-btns { display: inline-flex; gap: 6px; margin-left: 8px; }
+  .grn-l .qc-btns button { border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
   .grn-card .grn-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
   .grn-card .grn-no { font-weight: 700; font-size: 15px; }
   .grn-lines { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; font-size: 13px; }
   .grn-lines .grn-l { padding: 6px 0; border-bottom: 1px dashed var(--border); }
   .mrow { padding: 10px 0; border-bottom: 1px solid var(--border); }
   .mrow .mname { font-size: 14px; margin-bottom: 6px; }
-  .mrow .mfields { display: grid; grid-template-columns: 1.1fr 0.7fr 0.7fr 1fr 1fr; gap: 8px; }
+  .mrow .mfields { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 8px; }
   .mrow .mfields input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; margin: 0; }
   @media (max-width: 560px) { .mrow .mfields { grid-template-columns: 1fr 1fr; } }
   .alert-chip { border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -1100,6 +1121,11 @@
         <div class="choice-title" data-i18n="choiceReceivingTitle">Receiving (GRN)</div>
         <div class="choice-desc" data-i18n="choiceReceivingDesc">收货入库，生成收货单</div>
       </button>
+      <button class="choice-card" id="gotoDeliveryBtn">
+        <div class="choice-icon">🚚</div>
+        <div class="choice-title" data-i18n="choiceDeliveryTitle">Delivery (DO)</div>
+        <div class="choice-desc" data-i18n="choiceDeliveryDesc">销售订单、出库单与客户签收</div>
+      </button>
       <button class="choice-card" id="gotoStockBtn">
         <div class="choice-icon">📦</div>
         <div class="choice-title" data-i18n="choiceStockTitle">Stock Balance</div>
@@ -1109,16 +1135,230 @@
     </div>
   </div>
 
+  <!-- 出库页：销售订单 SO + 出库单 DO -->
+  <div id="deliveryView" style="display:none;">
+    <datalist id="customerList"></datalist>
+    <div class="panel">
+      <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
+        <h2 style="margin:0;" data-i18n="soPanelTitle">销售订单 (SO)</h2>
+        <button class="admin-btn" id="newSoBtn" data-admin-only data-i18n="newSoBtn">+ 新销售订单</button>
+      </div>
+      <div id="soContainer" style="margin-top:10px;"></div>
+      <div class="empty" id="soEmpty" style="display:none;" data-i18n="soEmpty">还没有销售订单。</div>
+    </div>
+    <div class="panel">
+      <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
+        <h2 style="margin:0;" data-i18n="doPanelTitle">出库单 (DO)</h2>
+        <button class="admin-btn" id="newDoBtn" data-admin-only data-i18n="newDoBtn">+ 新出库单</button>
+      </div>
+      <input type="text" id="doFilter" data-i18n-ph="doFilterPh" autocomplete="off" style="margin:10px 0; width:100%;">
+      <div id="doContainer"></div>
+      <div class="empty" id="doEmpty" style="display:none;" data-i18n="doEmpty">还没有出库单。</div>
+    </div>
+  </div>
+
+  <!-- 新销售订单 -->
+  <div class="modal-overlay" id="soModal">
+    <div class="modal-card" style="max-width:700px;">
+      <h2 data-i18n="soTitle">新销售订单</h2>
+      <div class="sub" data-i18n="soSub">记录客户或船只要的货。发货时选择这张订单，系统会带出未发数量，可以分几次发。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><label for="soDate" data-i18n="dateLabel">日期</label><input type="date" id="soDate"></div>
+        <div class="field"><label for="soCustomer" data-i18n="customerLabel">客户</label><input type="text" id="soCustomer" list="customerList" autocomplete="off"></div>
+        <div class="field"><label for="soPlatform" data-i18n="platformLabel">Platform/Vessel</label><input type="text" id="soPlatform" list="platformList" autocomplete="off"></div>
+        <div class="field"><label for="soRequested" data-i18n="soRequestedLabel">要求交货日</label><input type="date" id="soRequested"></div>
+        <div class="field"><label for="soNote" data-i18n="noteLabel">备注</label><input type="text" id="soNote" autocomplete="off"></div>
+      </div>
+      <div id="soLines"></div>
+      <button type="button" class="lock-alt-link" id="soAddLineBtn" style="margin-bottom:12px;" data-i18n="addItemBtn">+ Add item</button>
+      <div class="modal-error" id="soError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="soCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="soSave" data-i18n="saveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新出库单 -->
+  <div class="modal-overlay" id="doModal">
+    <div class="modal-card" style="max-width:760px;">
+      <h2 data-i18n="doTitle">新出库单</h2>
+      <div class="sub" data-i18n="doSub">保存后按先到期先出自动选批次扣减库存，并生成出库单号。可只发订单的一部分，剩下的以后补发。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><label for="doDate" data-i18n="dateLabel">日期</label><input type="date" id="doDate"></div>
+        <div class="field"><label for="doSo" data-i18n="doSoLabel">对应销售订单</label><select id="doSo"></select></div>
+        <div class="field"><label for="doCustomer" data-i18n="customerLabel">客户</label><input type="text" id="doCustomer" list="customerList" autocomplete="off"></div>
+        <div class="field"><label for="doPlatform" data-i18n="platformLabel">Platform/Vessel</label><input type="text" id="doPlatform" list="platformList" autocomplete="off"></div>
+        <div class="field"><label for="doRef" data-i18n="refLabel2">客户单号 / 备注单号</label><input type="text" id="doRef" autocomplete="off"></div>
+        <div class="field"><label for="doNote" data-i18n="noteLabel">备注</label><input type="text" id="doNote" autocomplete="off"></div>
+      </div>
+      <div id="doLines"></div>
+      <button type="button" class="lock-alt-link" id="doAddLineBtn" style="margin-bottom:12px;" data-i18n="addItemBtn">+ Add item</button>
+      <button type="button" class="scan-btn" id="doScanBtn" style="margin:0 0 12px 8px;" data-i18n="doScanBtn">📷 扫码拣货</button>
+      <div class="modal-error" id="doError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="doCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="doSave" data-i18n="saveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 客户签收 POD -->
+  <div class="modal-overlay" id="podModal">
+    <div class="modal-card" style="max-width:480px;">
+      <h2 data-i18n="podTitle">客户签收 (POD)</h2>
+      <div class="sub" id="podInfo"></div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><label for="podReceiver" data-i18n="podReceiverLabel">签收人</label><input type="text" id="podReceiver" autocomplete="off"></div>
+        <div class="field"><label for="podDate" data-i18n="dateLabel">日期</label><input type="date" id="podDate"></div>
+        <div class="field"><label for="podNote" data-i18n="noteLabel">备注</label><input type="text" id="podNote" autocomplete="off"></div>
+      </div>
+      <div class="modal-error" id="podError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="podCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="podSave" data-i18n="saveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 收货单 GRN 列表页 -->
   <div id="receivingView" style="display:none;">
+    <div class="rv-toolbar">
+      <button class="export-btn" id="reportBtn" data-i18n="reportBtn">📊 报表</button>
+      <button class="export-btn" id="suppliersBtn" data-admin-only data-i18n="suppliersBtn">🏭 供应商</button>
+    </div>
+    <div class="panel" id="poPanel">
+      <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
+        <h2 style="margin:0;" data-i18n="poPanelTitle">采购单 (PO)</h2>
+        <button class="admin-btn" id="newPoBtn" data-admin-only data-i18n="newPoBtn">+ 新采购单</button>
+      </div>
+      <div id="poContainer" style="margin-top:10px;"></div>
+      <div class="empty" id="poEmpty" style="display:none;" data-i18n="poEmpty">还没有采购单。</div>
+    </div>
     <div class="panel">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="receivingPanelTitle">收货单 (GRN)</h2>
         <button class="admin-btn" id="newReceiptBtn" data-admin-only data-i18n="newReceiptBtn">+ 新收货单</button>
       </div>
+      <div id="qcPendingNote" class="qc-tag" style="display:none; margin:8px 0 0;"></div>
       <input type="text" id="receiptFilter" data-i18n-ph="receiptFilterPh" autocomplete="off" style="margin:10px 0; width:100%;">
       <div id="receiptsContainer"></div>
       <div class="empty" id="receiptsEmpty" style="display:none;" data-i18n="receiptsEmpty">还没有收货单。</div>
+    </div>
+    <div class="panel">
+      <h2 style="margin:0 0 10px;" data-i18n="returnsPanelTitle">退货单 (RTN)</h2>
+      <div id="returnsContainer"></div>
+      <div class="empty" id="returnsEmpty" style="display:none;" data-i18n="returnsEmpty">还没有退货单。</div>
+    </div>
+  </div>
+
+  <!-- 扫码 -->
+  <div class="modal-overlay" id="scanModal">
+    <div class="modal-card" style="max-width:480px;">
+      <h2 data-i18n="scanTitle">扫码</h2>
+      <div class="sub" id="scanHint"></div>
+      <video id="scanVideo" playsinline muted style="width:100%; border-radius:12px; background:#000; max-height:45vh;"></video>
+      <div id="scanLog" class="pl-item-meta" style="margin:8px 0; min-height:22px;"></div>
+      <div class="modal-error" id="scanError"></div>
+      <div class="modal-btn-row"><button class="btn-primary" id="scanDone" data-i18n="scanDone">完成</button></div>
+    </div>
+  </div>
+
+  <!-- 库存报表：估值 / 账龄 / 出入库汇总 -->
+  <div class="modal-overlay" id="stockReportModal">
+    <div class="modal-card" style="max-width:1000px;">
+      <h2 data-i18n="srTitle">库存报表</h2>
+      <div class="rv-toolbar">
+        <button class="export-btn sr-tab active" data-tab="val" data-i18n="srTabVal">库存估值</button>
+        <button class="export-btn sr-tab" data-tab="age" data-i18n="srTabAge">库存账龄</button>
+        <button class="export-btn sr-tab" data-tab="sum" data-i18n="srTabSum">出入库汇总</button>
+      </div>
+      <div class="rv-toolbar" style="align-items:flex-end;">
+        <div class="field" id="srBasisWrap" style="flex:0 1 200px;"><label for="srBasis" data-i18n="srBasis">估值依据</label><select id="srBasis"><option value="avg" data-i18n="srBasisAvg">采购均价优先</option><option value="master" data-i18n="srBasisMaster">主档单价优先</option></select></div>
+        <div class="field" id="srFromWrap" style="flex:0 1 150px;"><label for="srFrom" data-i18n="repFrom">从</label><input type="date" id="srFrom"></div>
+        <div class="field" id="srToWrap" style="flex:0 1 150px;"><label for="srTo" data-i18n="repTo">到</label><input type="date" id="srTo"></div>
+        <div class="field" style="flex:0 1 110px;"><label for="srCurrency" data-i18n="srCurrency">币种符号</label><input type="text" id="srCurrency" maxlength="6" autocomplete="off" placeholder="RM"></div>
+        <button class="export-btn" id="srExport" data-i18n="repExport">📄 导出 Excel</button>
+      </div>
+      <div id="srBody"></div>
+      <div class="modal-btn-row"><button class="btn-secondary" id="srClose" data-i18n="closeBtn">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 供应商（管理员） -->
+  <div class="modal-overlay" id="suppliersModal">
+    <div class="modal-card" style="max-width:600px;">
+      <h2 data-i18n="suppliersTitle">供应商</h2>
+      <div class="sub" data-i18n="suppliersSub">保存供应商的联系方式。新采购单或收货单里出现的新供应商会自动加入这里。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><label for="supName" data-i18n="supNameLabel">供应商名称</label><input type="text" id="supName" autocomplete="off"></div>
+        <div class="field"><label for="supContact" data-i18n="supContactLabel">联系人</label><input type="text" id="supContact" autocomplete="off"></div>
+        <div class="field"><label for="supPhone" data-i18n="supPhoneLabel">电话</label><input type="text" id="supPhone" autocomplete="off"></div>
+        <div class="field"><label for="supEmail" data-i18n="supEmailLabel">邮箱</label><input type="text" id="supEmail" autocomplete="off"></div>
+        <div class="field"><label for="supNote" data-i18n="noteLabel">备注</label><input type="text" id="supNote" autocomplete="off"></div>
+      </div>
+      <button class="export-btn" id="supSaveBtn" style="margin-bottom:10px;" data-i18n="supSaveBtn">＋ 保存供应商</button>
+      <div id="supList" style="margin-bottom:14px;"></div>
+      <div class="modal-error" id="supError"></div>
+      <div class="modal-btn-row"><button class="btn-secondary" id="supClose" data-i18n="closeBtn">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 退货给供应商（管理员） -->
+  <div class="modal-overlay" id="rtnModal">
+    <div class="modal-card" style="max-width:520px;">
+      <h2 data-i18n="rtnTitle">退货给供应商</h2>
+      <div class="sub" id="rtnInfo"></div>
+      <div class="sub" data-i18n="rtnStockNote">合格品退货会从库存扣减；拒收品退货只做记录，不影响库存。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><label for="rtnDate" data-i18n="dateLabel">日期</label><input type="date" id="rtnDate"></div>
+        <div class="field"><label for="rtnQty" id="rtnQtyLbl"></label><input type="number" id="rtnQty" min="0" step="any"></div>
+        <div class="field"><label for="rtnReason" data-i18n="reasonLabel">原因</label><select id="rtnReason">
+          <option value="damaged" data-i18n="rtnR_damaged">破损</option><option value="wrong" data-i18n="rtnR_wrong">发错货</option>
+          <option value="quality" data-i18n="rtnR_quality">质量问题</option><option value="expired" data-i18n="rtnR_expired">临期/过期</option>
+          <option value="other" data-i18n="rtnR_other">其他</option></select></div>
+        <div class="field"><label for="rtnNote" data-i18n="noteLabel">备注</label><input type="text" id="rtnNote" autocomplete="off"></div>
+      </div>
+      <div class="modal-error" id="rtnError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="rtnCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="rtnSave" data-i18n="saveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 报表 -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal-card" style="max-width:900px;">
+      <h2 data-i18n="reportTitle">采购与质检报表</h2>
+      <div class="rv-toolbar" style="align-items:flex-end;">
+        <div class="field" style="flex:0 1 150px;"><label for="repFrom" data-i18n="repFrom">从</label><input type="date" id="repFrom"></div>
+        <div class="field" style="flex:0 1 150px;"><label for="repTo" data-i18n="repTo">到</label><input type="date" id="repTo"></div>
+        <button class="export-btn" id="repExport" data-i18n="repExport">📄 导出 Excel</button>
+      </div>
+      <div id="reportBody"></div>
+      <div class="modal-btn-row"><button class="btn-secondary" id="repClose" data-i18n="closeBtn">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 新采购单（管理员） -->
+  <div class="modal-overlay" id="poModal">
+    <div class="modal-card" style="max-width:700px;">
+      <h2 data-i18n="poTitle">新采购单</h2>
+      <div class="sub" data-i18n="poSub">记录向供应商订购的货物。收货时选择这张采购单，系统会自动带出未收数量。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><label for="poDate" data-i18n="dateLabel">日期</label><input type="date" id="poDate"></div>
+        <div class="field"><label for="poSupplier" data-i18n="supplierLabel">供应商</label><input type="text" id="poSupplier" list="grnSupplierList" autocomplete="off"></div>
+        <div class="field"><label for="poExpected" data-i18n="poExpectedLabel">预计到货日</label><input type="date" id="poExpected"></div>
+        <div class="field"><label for="poNote" data-i18n="noteLabel">备注</label><input type="text" id="poNote" autocomplete="off"></div>
+      </div>
+      <div id="poLines"></div>
+      <button type="button" class="lock-alt-link" id="poAddLineBtn" style="margin-bottom:12px;" data-i18n="addItemBtn">+ Add item</button>
+      <div class="modal-error" id="poError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="poCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="poSave" data-i18n="saveBtn">保存</button>
+      </div>
     </div>
   </div>
 
@@ -1129,12 +1369,14 @@
       <div class="sub" data-i18n="grnSub">保存后，每一行会成为一条入库记录（带批次、到期日、库位），并关联到这张收货单。</div>
       <div class="edit-grid" style="margin-bottom:6px;">
         <div class="field"><label for="grnDate" data-i18n="dateLabel">日期</label><input type="date" id="grnDate"></div>
+        <div class="field"><label for="grnPo" data-i18n="grnPoLabel">对应采购单</label><select id="grnPo"></select></div>
         <div class="field"><label for="grnSupplier" data-i18n="supplierLabel">供应商</label><input type="text" id="grnSupplier" list="grnSupplierList" autocomplete="off"><datalist id="grnSupplierList"></datalist></div>
         <div class="field"><label for="grnRef" data-i18n="refLabel">采购单 / 送货单号</label><input type="text" id="grnRef" autocomplete="off"></div>
         <div class="field"><label for="grnNote" data-i18n="noteLabel">备注</label><input type="text" id="grnNote" autocomplete="off"></div>
       </div>
       <div id="grnLines"></div>
       <button type="button" class="lock-alt-link" id="grnAddLineBtn" style="margin-bottom:12px;" data-i18n="addItemBtn">+ Add item</button>
+      <button type="button" class="scan-btn" id="grnScanBtn" style="margin:0 0 12px 8px;" data-i18n="grnScanBtn">📷 扫码收货</button>
       <div class="modal-error" id="grnError"></div>
       <div class="modal-btn-row">
         <button class="btn-secondary" id="grnCancel" data-i18n="cancelBtn">取消</button>
@@ -1284,7 +1526,10 @@
           <input type="text" id="stNote" data-i18n-ph="optionalPlaceholder" autocomplete="off">
         </div>
       </div>
-      <input type="text" id="stFilter" data-i18n-ph="masterFilterPh" autocomplete="off">
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <input type="text" id="stFilter" data-i18n-ph="masterFilterPh" autocomplete="off" style="flex:1 1 180px;">
+        <button type="button" class="scan-btn" id="stScanBtn" style="margin:0;" data-i18n="stScanBtn">📷 扫码盘点</button>
+      </div>
       <div class="modal-status" id="stStatus"></div>
       <div id="stList" style="margin-bottom:14px;"></div>
       <div class="modal-error" id="stError"></div>
@@ -1471,6 +1716,7 @@
       <div class="field">
         <label for="manName" data-i18n="itemNameLabel">货物名称</label>
         <input type="text" id="manName" placeholder="例如：钢螺栓 M6" data-i18n-ph="itemNamePlaceholder" required autocomplete="off" list="itemNameList">
+        <button type="button" class="scan-btn" id="manScanBtn" data-i18n="scanBtn">📷 扫码</button>
         <datalist id="itemNameList"></datalist>
       </div>
       <div class="field">
@@ -1484,6 +1730,11 @@
       <div class="field">
         <label for="manUom" data-i18n="uomLabel">UOM</label>
         <input type="text" id="manUom" placeholder="例如：pcs, box, kg" data-i18n-ph="uomPlaceholder">
+      </div>
+      <div id="manConvHint" class="pl-item-meta" style="flex:1 1 100%; margin:0; display:none;"></div>
+      <div class="field" data-admin-only>
+        <label for="manPrice" data-i18n="priceLabel">单价</label>
+        <input type="number" id="manPrice" min="0" step="any" placeholder="0.00">
       </div>
       <div class="field">
         <label data-i18n="typeLabel">类型</label>
@@ -1526,6 +1777,7 @@
         <button class="export-btn" id="transferBtn" data-admin-only data-i18n="transferBtn">↔ Transfer</button>
         <button class="export-btn" id="masterBtn" data-admin-only data-i18n="masterBtn">🗂 Item master</button>
         <button class="export-btn" id="stockTakeBtn" data-admin-only data-i18n="stockTakeBtn">⚖ Stock take</button>
+        <button class="export-btn" id="stockReportBtn" data-admin-only data-i18n="srBtn">📊 Stock reports</button>
         <button class="export-btn" id="activityBtn" data-admin-only data-i18n="activityBtn">📜 Activity</button>
         <button class="export-btn" id="archiveBtn" data-admin-only data-i18n="archiveBtn">📦 Archive old records</button>
         <button class="danger-btn" id="clearAllStockBtn" data-admin-only data-i18n="clearAllStockBtn">🗑️ Clear All</button>
@@ -1533,6 +1785,7 @@
     </div>
     <div class="toolbar">
       <input type="text" id="search" placeholder="搜索货物名称或编号..." data-i18n-ph="searchPlaceholder" autocomplete="off" list="searchSuggestList">
+      <button type="button" class="export-btn" id="searchScanBtn" data-i18n="scanBtn">📷 扫码</button>
       <datalist id="searchSuggestList"></datalist>
       <div class="field">
         <label for="filterPlatform" data-i18n="platformLabel">Platform / Vessel</label>
@@ -1757,7 +2010,7 @@
       masterAddBtn: '＋ 新增货物',
       masterBtn: '🗂 货物主档',
       masterFilterPh: '搜索货物名称或编号…',
-      masterSub: '为每个货物设置分类、UOM、最低库存（库存低于或等于此数会提醒）和条码。',
+      masterSub: '为每个货物设置分类、基本 UOM、包装单位与换算（如 1 ctn = 24 btl，入库时填 ctn 会自动折成 btl）、最低库存（库存低于或等于此数会提醒）、条码（可用扫码枪输入）和默认库位。',
       masterTitle: '货物主档',
       minStockShort: '最低库存',
       noBatchStock: '该货物目前没有库存批次。',
@@ -1811,6 +2064,206 @@
       pickFromHint: '取货位置：{list}',
       receiptFilterPh: '搜索收货单号、供应商、货物…',
       receiptsEmpty: '还没有收货单。',
+      scanBtn: '📷 扫码',
+      scanTitle: '扫码',
+      scanDone: '完成',
+      scanHintSingle: '把条码或二维码对准镜头。',
+      scanHintLines: '连续扫码：每扫一次，该货物数量 +1（第一次从 1 开始，用来核对实收 / 实拣）。',
+      scanUnsupported: '这个浏览器不能使用摄像头，请改用扫码枪或手动输入。',
+      scanNoCamera: '无法打开摄像头。请在浏览器里允许摄像头权限（需要 https 网址）。',
+      scanNoLib: '这个浏览器没有内建条码识别，而且无法下载扫码组件（可能没有网络）。',
+      scanNoMatch: '找不到条码 {code} 对应的货物，请先在货物主档登记条码。',
+      scanGot: '✓ {item} × {qty}',
+      grnScanBtn: '📷 扫码收货',
+      doScanBtn: '📷 扫码拣货',
+      stScanBtn: '📷 扫码盘点',
+      priceLabel: '单价',
+      priceMasterLabel: '单价（每基本单位）',
+      srBtn: '📊 库存报表',
+      srTitle: '库存报表',
+      srTabVal: '库存估值',
+      srTabAge: '库存账龄',
+      srTabSum: '出入库汇总',
+      srBasis: '估值依据',
+      srBasisAvg: '采购均价优先',
+      srBasisMaster: '主档单价优先',
+      srCurrency: '币种符号',
+      srUnitCost: '单位成本',
+      srValue: '金额',
+      srSource: '单价来源',
+      srSrcAvg: '采购均价',
+      srSrcMaster: '主档单价',
+      srSrcNone: '没有单价',
+      srTotal: '合计',
+      srByCategory: '按分类',
+      srNoCategory: '未分类',
+      srNoPriceCount: '{n} 个货物没有单价，金额按 0 计算。可在收货单、手动入库或货物主档里补单价。',
+      srAge1: '0-30 天',
+      srAge2: '31-60 天',
+      srAge3: '61-90 天',
+      srAge4: '91-180 天',
+      srAge5: '180 天以上',
+      srAgeValue: '各库龄的库存金额',
+      srAgeOver90: '90 天以上金额',
+      srAgeNote: '库龄按先进先出估算：先入库的货先被出库，剩下的就是较新入库的货。库位转移不会重置库龄。',
+      srOpening: '期初',
+      srIn: '入库',
+      srOut: '出库',
+      srAdj: '调整',
+      srClosing: '期末',
+      srSumNote: '不含库位转移和待检/拒收的货；已归档的旧记录算入期初。调整指盘点、损耗等库存调整。',
+      srNone: '暂无数据。',
+      choiceDeliveryTitle: 'Delivery (DO)',
+      choiceDeliveryDesc: '销售订单、出库单与客户签收',
+      soPanelTitle: '销售订单 (SO)',
+      newSoBtn: '+ 新销售订单',
+      soTitle: '新销售订单',
+      soSub: '记录客户或船只要的货。发货时选择这张订单，系统会带出未发数量，可以分几次发。',
+      customerLabel: '客户',
+      soRequestedLabel: '要求交货日',
+      soNeedLine: '请填写日期，并至少一行货物和数量。',
+      soEmpty: '还没有销售订单。',
+      soStatusOpen: '待发货',
+      soStatusPartial: '部分发货',
+      soStatusShipped: '已发齐',
+      soStatusClosed: '已结案',
+      soStatusCancelled: '已取消',
+      soShippedOf: '已发 {got} / 订购 {qty}',
+      soBackorder: '欠发 {n}',
+      soShipBtn: '发货',
+      soCloseBtn: '结案（不再发货）',
+      soCancelBtn: '取消订单',
+      soCloseConfirm: '确定将 {no} 结案？结案后不能再对它发货，欠发的部分不再补发。',
+      soCancelConfirm: '确定取消 {no}？',
+      doPanelTitle: '出库单 (DO)',
+      newDoBtn: '+ 新出库单',
+      doFilterPh: '搜索出库单号、客户、船只、货物…',
+      doTitle: '新出库单',
+      doSub: '保存后按先到期先出自动选批次扣减库存，并生成出库单号。可只发订单的一部分，剩下的以后补发。',
+      doSoLabel: '对应销售订单',
+      doNoSo: '— 无订单（直接出库）—',
+      refLabel2: '客户单号 / 备注单号',
+      doNeedLine: '请填写日期，并至少一行货物和数量。',
+      doShort: '{item} 库存不足：需要 {need}，现有 {have}。',
+      doAvail: '库存 {n} {uom}',
+      doEmpty: '还没有出库单。',
+      doStatusShipped: '已发出',
+      doStatusDelivered: '已签收',
+      doPodBtn: '客户签收 (POD)',
+      doPrintBtn: '打印',
+      doDeleteBtn: '删除出库单',
+      doDeleteConfirm: '删除 {no}？它扣减的库存会放回。',
+      podTitle: '客户签收 (POD)',
+      podReceiverLabel: '签收人',
+      podNeedName: '请填写签收人姓名。',
+      podInfo: '已签收：{name} · {date}',
+      doPrintTitle: '送货单 Delivery Order',
+      printDeliveredBy: '发货人',
+      printReceivedBy: '收货人签名 / 盖章',
+      popupBlocked: '浏览器拦截了打印窗口，请允许弹出窗口后再试。',
+      actSoCreate: '销售订单 {no}：{n} 行，客户 {customer}',
+      actSoClose: '销售订单 {no} 结案',
+      actSoCancel: '销售订单 {no} 已取消',
+      actDoCreate: '出库单 {no}：{n} 行，客户 {customer}',
+      actDoPod: '出库单 {no} 已签收（{name}）',
+      actDoDelete: '删除出库单 {no}',
+      altUomLabel: '包装单位（如 ctn）',
+      factorLabel: '每包装数量',
+      convHint: '将按主档换算入账：{qty} {uom}',
+      convFrom: '原录入 {qty} {uom}',
+      masterNeedFactor: '{item}：填了包装单位就必须填大于 0 的“每包装数量”，且包装单位不能和基本单位相同。',
+      masterDupBarcode: '条码重复：{code}，每个条码只能对应一个货物。',
+      suppliersBtn: '🏭 供应商',
+      suppliersTitle: '供应商',
+      suppliersSub: '保存供应商的联系方式。新采购单或收货单里出现的新供应商会自动加入这里。',
+      supNameLabel: '供应商名称',
+      supContactLabel: '联系人',
+      supPhoneLabel: '电话',
+      supEmailLabel: '邮箱',
+      supSaveBtn: '＋ 保存供应商',
+      supEmpty: '还没有供应商。',
+      supExists: '这个供应商已经存在。',
+      supNameReq: '请填写供应商名称。',
+      supDeleteConfirm: '确定删除供应商 {name}？（历史单据不受影响）',
+      returnsPanelTitle: '退货单 (RTN)',
+      returnsEmpty: '还没有退货单。',
+      rtnBtn: '退货',
+      rtnTitle: '退货给供应商',
+      rtnStockNote: '合格品退货会从库存扣减；拒收品退货只做记录，不影响库存。',
+      rtnQtyLabel: '退货数量（最多 {max}）',
+      rtnR_damaged: '破损',
+      rtnR_wrong: '发错货',
+      rtnR_quality: '质量问题',
+      rtnR_expired: '临期/过期',
+      rtnR_other: '其他',
+      rtnNeedQty: '请填写日期和退货数量。',
+      rtnTooMany: '超过可退数量 {max}。',
+      rtnNoStock: '库存不足，无法退货。',
+      rtnReturnedTag: '已退 {n}',
+      rtnUndoBtn: '撤销退货',
+      rtnDeleteConfirm: '撤销退货单 {no}？合格品的退货会重新回到库存。',
+      reportBtn: '📊 报表',
+      reportTitle: '采购与质检报表',
+      repFrom: '从',
+      repTo: '到',
+      repExport: '📄 导出 Excel',
+      repSuppliers: '供应商表现',
+      repColSupplier: '供应商',
+      repColPO: '采购单',
+      repColReceived: '已收齐',
+      repColOnTime: '准时 / 延迟',
+      repColGrn: '收货单',
+      repColLines: '收货行',
+      repColReject: '拒收（率）',
+      repColHold: '待检',
+      repColReturns: '退货',
+      repPoProgress: '未完成的采购单',
+      repColExpected: '预计到货',
+      repColProgress: '进度',
+      repOverdue: '逾期',
+      repQcItems: '拒收最多的货物',
+      repColItem: '货物',
+      repColRejects: '拒收行',
+      repNone: '暂无数据。',
+      repNote: '拒收率按收货行数计算（不同货物单位不同，不能直接相加数量）。准时 = 已收齐且最后一次收货不晚于预计到货日。',
+      actSupSave: '供应商 {name}',
+      actSupDel: '删除供应商 {name}',
+      actRtn: '退货 {no}：{item} × {qty}，供应商 {supplier}',
+      actRtnDelete: '撤销退货 {no}',
+      poPanelTitle: '采购单 (PO)',
+      newPoBtn: '+ 新采购单',
+      poTitle: '新采购单',
+      poSub: '记录向供应商订购的货物。收货时选择这张采购单，系统会自动带出未收数量。',
+      poExpectedLabel: '预计到货日',
+      poNeedLine: '请填写日期，并至少一行货物和数量。',
+      poEmpty: '还没有采购单。',
+      poStatusOpen: '待收货',
+      poStatusPartial: '部分收货',
+      poStatusReceived: '已收齐',
+      poStatusClosed: '已结案',
+      poStatusCancelled: '已取消',
+      poReceivedOf: '已收 {got} / 订购 {qty}',
+      poReceiveBtn: '收货',
+      poCloseBtn: '结案（不再收货）',
+      poCancelBtn: '取消采购单',
+      poCloseConfirm: '确定将 {no} 结案？结案后不能再对它收货。',
+      poCancelConfirm: '确定取消 {no}？',
+      grnPoLabel: '对应采购单',
+      grnNoPo: '— 无采购单 —',
+      qcLabel: '质检',
+      qcPass: '合格',
+      qcHold: '待检',
+      qcReject: '拒收',
+      qcHoldTag: '⏸ 待检（不计入库存）',
+      qcRejectedTag: '⛔ 已拒收',
+      qcPassBtn: '放行',
+      qcRejectBtn: '拒收',
+      qcPending: '{n} 行待质检',
+      qcConfirm: '确定将 {item} 判定为「{result}」？',
+      actPoCreate: '采购单 {no}：{n} 行，供应商 {supplier}',
+      actPoClose: '采购单 {no} 结案',
+      actPoCancel: '采购单 {no} 已取消',
+      actQc: '质检 {no} · {item}：{result}',
       receivingPanelTitle: '收货单 (GRN)',
       refLabel: '采购单 / 送货单号',
       supplierLabel: '供应商',
@@ -2056,7 +2509,7 @@
       masterAddBtn: '＋ Add item',
       masterBtn: '🗂 Item master',
       masterFilterPh: 'Search item name or code…',
-      masterSub: 'Set a category, UOM, minimum stock (alert when stock is at or below it) and barcode for each item.',
+      masterSub: 'Set a category, base UOM, pack UOM with conversion (e.g. 1 ctn = 24 btl: entering ctn is converted to btl), minimum stock (alert when at or below it), barcode (a scanner can type it in) and default location for each item.',
       masterTitle: 'Item master',
       minStockShort: 'Min stock',
       noBatchStock: 'This item has no stock batches right now.',
@@ -2110,6 +2563,206 @@
       pickFromHint: 'Pick from: {list}',
       receiptFilterPh: 'Search receipt no., supplier, item…',
       receiptsEmpty: 'No receipts yet.',
+      scanBtn: '📷 Scan',
+      scanTitle: 'Scan',
+      scanDone: 'Done',
+      scanHintSingle: 'Point the camera at a barcode or QR code.',
+      scanHintLines: 'Continuous scan: each scan adds 1 to that item (the first scan starts at 1, so you can verify what was really received / picked).',
+      scanUnsupported: 'This browser cannot use the camera. Use a barcode scanner or type the code.',
+      scanNoCamera: 'Cannot open the camera. Allow camera permission in the browser (an https address is required).',
+      scanNoLib: 'This browser has no built-in barcode detection and the scanning component could not be downloaded (you may be offline).',
+      scanNoMatch: 'No item found for barcode {code}. Register the barcode in the item master first.',
+      scanGot: '✓ {item} × {qty}',
+      grnScanBtn: '📷 Scan to receive',
+      doScanBtn: '📷 Scan to pick',
+      stScanBtn: '📷 Scan to count',
+      priceLabel: 'Unit price',
+      priceMasterLabel: 'Unit price (per base UOM)',
+      srBtn: '📊 Stock reports',
+      srTitle: 'Stock reports',
+      srTabVal: 'Valuation',
+      srTabAge: 'Aging',
+      srTabSum: 'In / out summary',
+      srBasis: 'Valuation basis',
+      srBasisAvg: 'Purchase average first',
+      srBasisMaster: 'Item master price first',
+      srCurrency: 'Currency',
+      srUnitCost: 'Unit cost',
+      srValue: 'Value',
+      srSource: 'Cost source',
+      srSrcAvg: 'Purchase avg',
+      srSrcMaster: 'Item master',
+      srSrcNone: 'No price',
+      srTotal: 'Total',
+      srByCategory: 'By category',
+      srNoCategory: 'Uncategorised',
+      srNoPriceCount: '{n} item(s) have no unit price and are valued at 0. Add prices on receipts, manual entries or the item master.',
+      srAge1: '0-30 days',
+      srAge2: '31-60 days',
+      srAge3: '61-90 days',
+      srAge4: '91-180 days',
+      srAge5: 'Over 180 days',
+      srAgeValue: 'Stock value by age',
+      srAgeOver90: 'Value over 90 days',
+      srAgeNote: 'Age is estimated first-in-first-out: the oldest stock is assumed to leave first, so what remains is the newest. Location transfers do not reset age.',
+      srOpening: 'Opening',
+      srIn: 'In',
+      srOut: 'Out',
+      srAdj: 'Adjust',
+      srClosing: 'Closing',
+      srSumNote: 'Excludes location transfers and goods on QC hold / rejected. Archived old records are counted in the opening balance. Adjust = stock take, damage and similar adjustments.',
+      srNone: 'No data.',
+      choiceDeliveryTitle: 'Delivery (DO)',
+      choiceDeliveryDesc: 'Sales orders, delivery orders and proof of delivery',
+      soPanelTitle: 'Sales Orders (SO)',
+      newSoBtn: '+ New SO',
+      soTitle: 'New sales order',
+      soSub: 'Record what a customer or vessel ordered. Pick the SO when shipping to fill in outstanding quantities; you can ship in several parts.',
+      customerLabel: 'Customer',
+      soRequestedLabel: 'Requested date',
+      soNeedLine: 'Enter a date and at least one item with a quantity.',
+      soEmpty: 'No sales orders yet.',
+      soStatusOpen: 'Open',
+      soStatusPartial: 'Partly shipped',
+      soStatusShipped: 'Fully shipped',
+      soStatusClosed: 'Closed',
+      soStatusCancelled: 'Cancelled',
+      soShippedOf: 'shipped {got} / ordered {qty}',
+      soBackorder: 'backorder {n}',
+      soShipBtn: 'Ship',
+      soCloseBtn: 'Close (no more shipping)',
+      soCancelBtn: 'Cancel SO',
+      soCloseConfirm: 'Close {no}? You will not be able to ship against it any more and any backorder is dropped.',
+      soCancelConfirm: 'Cancel {no}?',
+      doPanelTitle: 'Delivery Orders (DO)',
+      newDoBtn: '+ New DO',
+      doFilterPh: 'Search DO no., customer, vessel, item…',
+      doTitle: 'New delivery order',
+      doSub: 'On save, batches are picked first-expiry-first-out, stock is deducted and a DO number is issued. You can ship only part of an order and ship the rest later.',
+      doSoLabel: 'Against SO',
+      doNoSo: '— No SO (direct delivery) —',
+      refLabel2: 'Customer ref / PO no.',
+      doNeedLine: 'Enter a date and at least one item with a quantity.',
+      doShort: 'Not enough stock for {item}: need {need}, have {have}.',
+      doAvail: 'In stock {n} {uom}',
+      doEmpty: 'No delivery orders yet.',
+      doStatusShipped: 'Shipped',
+      doStatusDelivered: 'Delivered (POD)',
+      doPodBtn: 'Proof of delivery (POD)',
+      doPrintBtn: 'Print',
+      doDeleteBtn: 'Delete DO',
+      doDeleteConfirm: 'Delete {no}? The stock it deducted will be put back.',
+      podTitle: 'Proof of delivery (POD)',
+      podReceiverLabel: 'Received by',
+      podNeedName: 'Enter the receiver name.',
+      podInfo: 'Received by {name} · {date}',
+      doPrintTitle: 'Delivery Order',
+      printDeliveredBy: 'Delivered by',
+      printReceivedBy: 'Received by (name / sign / stamp)',
+      popupBlocked: 'The browser blocked the print window. Allow pop-ups and try again.',
+      actSoCreate: 'SO {no}: {n} lines, customer {customer}',
+      actSoClose: 'SO {no} closed',
+      actSoCancel: 'SO {no} cancelled',
+      actDoCreate: 'DO {no}: {n} lines, customer {customer}',
+      actDoPod: 'DO {no} signed off by {name}',
+      actDoDelete: 'DO {no} deleted',
+      altUomLabel: 'Pack UOM (e.g. ctn)',
+      factorLabel: 'Units per pack',
+      convHint: 'Will be recorded as {qty} {uom} (converted via item master)',
+      convFrom: 'entered {qty} {uom}',
+      masterNeedFactor: '{item}: a pack UOM needs "units per pack" greater than 0, and it must differ from the base UOM.',
+      masterDupBarcode: 'Duplicate barcode: {code}. A barcode can belong to one item only.',
+      suppliersBtn: '🏭 Suppliers',
+      suppliersTitle: 'Suppliers',
+      suppliersSub: 'Keep supplier contact details. New suppliers typed into a PO or receipt are added here automatically.',
+      supNameLabel: 'Supplier name',
+      supContactLabel: 'Contact person',
+      supPhoneLabel: 'Phone',
+      supEmailLabel: 'Email',
+      supSaveBtn: '＋ Save supplier',
+      supEmpty: 'No suppliers yet.',
+      supExists: 'This supplier already exists.',
+      supNameReq: 'Enter a supplier name.',
+      supDeleteConfirm: 'Delete supplier {name}? (Past documents are not affected.)',
+      returnsPanelTitle: 'Returns (RTN)',
+      returnsEmpty: 'No returns yet.',
+      rtnBtn: 'Return',
+      rtnTitle: 'Return to supplier',
+      rtnStockNote: 'Returning accepted goods deducts them from stock; returning rejected goods is only recorded and does not affect stock.',
+      rtnQtyLabel: 'Return quantity (max {max})',
+      rtnR_damaged: 'Damaged',
+      rtnR_wrong: 'Wrong item',
+      rtnR_quality: 'Quality issue',
+      rtnR_expired: 'Near expiry / expired',
+      rtnR_other: 'Other',
+      rtnNeedQty: 'Enter a date and a return quantity.',
+      rtnTooMany: 'More than the returnable quantity {max}.',
+      rtnNoStock: 'Not enough stock to return.',
+      rtnReturnedTag: 'returned {n}',
+      rtnUndoBtn: 'Undo return',
+      rtnDeleteConfirm: 'Undo return {no}? Returned accepted goods go back into stock.',
+      reportBtn: '📊 Report',
+      reportTitle: 'Procurement & QC report',
+      repFrom: 'From',
+      repTo: 'To',
+      repExport: '📄 Export Excel',
+      repSuppliers: 'Supplier performance',
+      repColSupplier: 'Supplier',
+      repColPO: 'POs',
+      repColReceived: 'Fully received',
+      repColOnTime: 'On time / late',
+      repColGrn: 'GRNs',
+      repColLines: 'Lines received',
+      repColReject: 'Rejected (rate)',
+      repColHold: 'On hold',
+      repColReturns: 'Returns',
+      repPoProgress: 'Open purchase orders',
+      repColExpected: 'Expected',
+      repColProgress: 'Progress',
+      repOverdue: 'Overdue',
+      repQcItems: 'Most rejected items',
+      repColItem: 'Item',
+      repColRejects: 'Rejected lines',
+      repNone: 'No data.',
+      repNote: 'Reject rate is counted by receipt lines (items use different units, so quantities cannot be added). On time = fully received with the last receipt on or before the expected date.',
+      actSupSave: 'Supplier {name}',
+      actSupDel: 'Supplier {name} deleted',
+      actRtn: 'Return {no}: {item} x {qty}, supplier {supplier}',
+      actRtnDelete: 'Return {no} undone',
+      poPanelTitle: 'Purchase Orders (PO)',
+      newPoBtn: '+ New PO',
+      poTitle: 'New purchase order',
+      poSub: 'Record what you ordered from a supplier. Pick the PO when receiving and the outstanding quantities are filled in for you.',
+      poExpectedLabel: 'Expected date',
+      poNeedLine: 'Enter a date and at least one item with a quantity.',
+      poEmpty: 'No purchase orders yet.',
+      poStatusOpen: 'Open',
+      poStatusPartial: 'Partly received',
+      poStatusReceived: 'Fully received',
+      poStatusClosed: 'Closed',
+      poStatusCancelled: 'Cancelled',
+      poReceivedOf: 'received {got} / ordered {qty}',
+      poReceiveBtn: 'Receive',
+      poCloseBtn: 'Close (no more receiving)',
+      poCancelBtn: 'Cancel PO',
+      poCloseConfirm: 'Close {no}? You will not be able to receive against it any more.',
+      poCancelConfirm: 'Cancel {no}?',
+      grnPoLabel: 'Against PO',
+      grnNoPo: '— No PO —',
+      qcLabel: 'QC',
+      qcPass: 'Pass',
+      qcHold: 'On hold',
+      qcReject: 'Reject',
+      qcHoldTag: '⏸ QC hold (not in stock)',
+      qcRejectedTag: '⛔ Rejected',
+      qcPassBtn: 'Release',
+      qcRejectBtn: 'Reject',
+      qcPending: '{n} line(s) awaiting QC',
+      qcConfirm: 'Mark {item} as "{result}"?',
+      actPoCreate: 'PO {no}: {n} lines, supplier {supplier}',
+      actPoClose: 'PO {no} closed',
+      actPoCancel: 'PO {no} cancelled',
+      actQc: 'QC {no} · {item}: {result}',
       receivingPanelTitle: 'Receipts (GRN)',
       refLabel: 'PO / delivery note no.',
       supplierLabel: 'Supplier',
@@ -2355,7 +3008,7 @@
       masterAddBtn: '＋ Tambah barang',
       masterBtn: '🗂 Induk barang',
       masterFilterPh: 'Cari nama atau kod barang…',
-      masterSub: 'Tetapkan kategori, UOM, stok minimum (amaran apabila stok pada atau di bawahnya) dan kod bar bagi setiap barang.',
+      masterSub: 'Tetapkan kategori, UOM asas, UOM pek dengan penukaran (cth 1 ctn = 24 btl: memasukkan ctn ditukar kepada btl), stok minimum (amaran apabila pada atau di bawahnya), kod bar (boleh ditaip oleh pengimbas) dan lokasi lalai bagi setiap barang.',
       masterTitle: 'Induk barang',
       minStockShort: 'Stok min',
       noBatchStock: 'Barang ini tiada kelompok stok sekarang.',
@@ -2409,6 +3062,206 @@
       pickFromHint: 'Ambil dari: {list}',
       receiptFilterPh: 'Cari no. resit, pembekal, barang…',
       receiptsEmpty: 'Belum ada resit.',
+      scanBtn: '📷 Imbas',
+      scanTitle: 'Imbas',
+      scanDone: 'Selesai',
+      scanHintSingle: 'Halakan kamera ke kod bar atau kod QR.',
+      scanHintLines: 'Imbasan berterusan: setiap imbasan menambah 1 pada barang itu (imbasan pertama bermula dari 1, untuk mengesahkan penerimaan / pengambilan sebenar).',
+      scanUnsupported: 'Pelayar ini tidak boleh menggunakan kamera. Gunakan pengimbas kod bar atau taip kod.',
+      scanNoCamera: 'Tidak dapat membuka kamera. Benarkan kebenaran kamera dalam pelayar (alamat https diperlukan).',
+      scanNoLib: 'Pelayar ini tiada pengesanan kod bar terbina dalam dan komponen imbasan tidak dapat dimuat turun (mungkin tiada internet).',
+      scanNoMatch: 'Tiada barang untuk kod bar {code}. Daftarkan kod bar dalam induk barang dahulu.',
+      scanGot: '✓ {item} × {qty}',
+      grnScanBtn: '📷 Imbas untuk terima',
+      doScanBtn: '📷 Imbas untuk ambil',
+      stScanBtn: '📷 Imbas untuk kira',
+      priceLabel: 'Harga seunit',
+      priceMasterLabel: 'Harga seunit (setiap UOM asas)',
+      srBtn: '📊 Laporan stok',
+      srTitle: 'Laporan stok',
+      srTabVal: 'Penilaian',
+      srTabAge: 'Umur stok',
+      srTabSum: 'Ringkasan masuk / keluar',
+      srBasis: 'Asas penilaian',
+      srBasisAvg: 'Purata pembelian dahulu',
+      srBasisMaster: 'Harga induk barang dahulu',
+      srCurrency: 'Mata wang',
+      srUnitCost: 'Kos seunit',
+      srValue: 'Nilai',
+      srSource: 'Sumber kos',
+      srSrcAvg: 'Purata pembelian',
+      srSrcMaster: 'Induk barang',
+      srSrcNone: 'Tiada harga',
+      srTotal: 'Jumlah',
+      srByCategory: 'Mengikut kategori',
+      srNoCategory: 'Tiada kategori',
+      srNoPriceCount: '{n} barang tiada harga seunit dan dinilai sebagai 0. Tambah harga pada resit, kemasukan manual atau induk barang.',
+      srAge1: '0-30 hari',
+      srAge2: '31-60 hari',
+      srAge3: '61-90 hari',
+      srAge4: '91-180 hari',
+      srAge5: 'Lebih 180 hari',
+      srAgeValue: 'Nilai stok mengikut umur',
+      srAgeOver90: 'Nilai melebihi 90 hari',
+      srAgeNote: 'Umur dianggar masuk-dahulu-keluar-dahulu: stok paling lama dianggap keluar dahulu, jadi yang tinggal ialah yang terbaru. Pemindahan lokasi tidak menetapkan semula umur.',
+      srOpening: 'Awal',
+      srIn: 'Masuk',
+      srOut: 'Keluar',
+      srAdj: 'Pelarasan',
+      srClosing: 'Akhir',
+      srSumNote: 'Tidak termasuk pemindahan lokasi dan barang ditahan QC / ditolak. Rekod lama yang diarkibkan dikira dalam baki awal. Pelarasan = kiraan stok, kerosakan dan sebagainya.',
+      srNone: 'Tiada data.',
+      choiceDeliveryTitle: 'Penghantaran (DO)',
+      choiceDeliveryDesc: 'Pesanan jualan, pesanan penghantaran dan bukti penghantaran',
+      soPanelTitle: 'Pesanan Jualan (SO)',
+      newSoBtn: '+ SO baharu',
+      soTitle: 'Pesanan jualan baharu',
+      soSub: 'Rekod barang yang dipesan oleh pelanggan atau kapal. Pilih SO semasa menghantar untuk mengisi kuantiti tertunggak; boleh dihantar berperingkat.',
+      customerLabel: 'Pelanggan',
+      soRequestedLabel: 'Tarikh diminta',
+      soNeedLine: 'Isi tarikh dan sekurang-kurangnya satu barang dengan kuantiti.',
+      soEmpty: 'Belum ada pesanan jualan.',
+      soStatusOpen: 'Terbuka',
+      soStatusPartial: 'Dihantar sebahagian',
+      soStatusShipped: 'Dihantar penuh',
+      soStatusClosed: 'Ditutup',
+      soStatusCancelled: 'Dibatalkan',
+      soShippedOf: 'dihantar {got} / dipesan {qty}',
+      soBackorder: 'tertunggak {n}',
+      soShipBtn: 'Hantar',
+      soCloseBtn: 'Tutup (tiada penghantaran lagi)',
+      soCancelBtn: 'Batal SO',
+      soCloseConfirm: 'Tutup {no}? Anda tidak boleh menghantar terhadapnya lagi dan baki tertunggak digugurkan.',
+      soCancelConfirm: 'Batalkan {no}?',
+      doPanelTitle: 'Pesanan Penghantaran (DO)',
+      newDoBtn: '+ DO baharu',
+      doFilterPh: 'Cari no. DO, pelanggan, kapal, barang…',
+      doTitle: 'Pesanan penghantaran baharu',
+      doSub: 'Apabila disimpan, kelompok dipilih mengikut tarikh tamat paling awal dahulu, stok ditolak dan nombor DO dikeluarkan. Boleh hantar sebahagian sahaja dan baki kemudian.',
+      doSoLabel: 'Terhadap SO',
+      doNoSo: '— Tiada SO (hantar terus) —',
+      refLabel2: 'Rujukan pelanggan / no. PO',
+      doNeedLine: 'Isi tarikh dan sekurang-kurangnya satu barang dengan kuantiti.',
+      doShort: 'Stok {item} tidak mencukupi: perlu {need}, ada {have}.',
+      doAvail: 'Dalam stok {n} {uom}',
+      doEmpty: 'Belum ada pesanan penghantaran.',
+      doStatusShipped: 'Dihantar',
+      doStatusDelivered: 'Diterima (POD)',
+      doPodBtn: 'Bukti penghantaran (POD)',
+      doPrintBtn: 'Cetak',
+      doDeleteBtn: 'Padam DO',
+      doDeleteConfirm: 'Padam {no}? Stok yang ditolak akan dikembalikan.',
+      podTitle: 'Bukti penghantaran (POD)',
+      podReceiverLabel: 'Diterima oleh',
+      podNeedName: 'Isi nama penerima.',
+      podInfo: 'Diterima oleh {name} · {date}',
+      doPrintTitle: 'Delivery Order',
+      printDeliveredBy: 'Dihantar oleh',
+      printReceivedBy: 'Diterima oleh (nama / tandatangan / cop)',
+      popupBlocked: 'Pelayar menyekat tetingkap cetak. Benarkan pop timbul dan cuba lagi.',
+      actSoCreate: 'SO {no}: {n} baris, pelanggan {customer}',
+      actSoClose: 'SO {no} ditutup',
+      actSoCancel: 'SO {no} dibatalkan',
+      actDoCreate: 'DO {no}: {n} baris, pelanggan {customer}',
+      actDoPod: 'DO {no} disahkan oleh {name}',
+      actDoDelete: 'DO {no} dipadam',
+      altUomLabel: 'UOM pek (cth ctn)',
+      factorLabel: 'Unit setiap pek',
+      convHint: 'Akan direkodkan sebagai {qty} {uom} (ditukar melalui induk barang)',
+      convFrom: 'dimasukkan {qty} {uom}',
+      masterNeedFactor: '{item}: UOM pek memerlukan "unit setiap pek" lebih daripada 0 dan mesti berbeza daripada UOM asas.',
+      masterDupBarcode: 'Kod bar berganda: {code}. Satu kod bar hanya untuk satu barang.',
+      suppliersBtn: '🏭 Pembekal',
+      suppliersTitle: 'Pembekal',
+      suppliersSub: 'Simpan maklumat hubungan pembekal. Pembekal baharu dalam PO atau resit ditambah di sini secara automatik.',
+      supNameLabel: 'Nama pembekal',
+      supContactLabel: 'Orang dihubungi',
+      supPhoneLabel: 'Telefon',
+      supEmailLabel: 'E-mel',
+      supSaveBtn: '＋ Simpan pembekal',
+      supEmpty: 'Belum ada pembekal.',
+      supExists: 'Pembekal ini sudah wujud.',
+      supNameReq: 'Isi nama pembekal.',
+      supDeleteConfirm: 'Padam pembekal {name}? (Dokumen lama tidak terjejas.)',
+      returnsPanelTitle: 'Pemulangan (RTN)',
+      returnsEmpty: 'Belum ada pemulangan.',
+      rtnBtn: 'Pulang',
+      rtnTitle: 'Pulangkan kepada pembekal',
+      rtnStockNote: 'Memulangkan barang lulus akan menolak stok; memulangkan barang ditolak hanya direkodkan dan tidak menjejaskan stok.',
+      rtnQtyLabel: 'Kuantiti pemulangan (maks {max})',
+      rtnR_damaged: 'Rosak',
+      rtnR_wrong: 'Barang salah',
+      rtnR_quality: 'Masalah kualiti',
+      rtnR_expired: 'Hampir tamat / tamat tempoh',
+      rtnR_other: 'Lain-lain',
+      rtnNeedQty: 'Isi tarikh dan kuantiti pemulangan.',
+      rtnTooMany: 'Melebihi kuantiti yang boleh dipulangkan {max}.',
+      rtnNoStock: 'Stok tidak mencukupi untuk dipulangkan.',
+      rtnReturnedTag: 'dipulang {n}',
+      rtnUndoBtn: 'Batal pemulangan',
+      rtnDeleteConfirm: 'Batalkan pemulangan {no}? Barang lulus yang dipulangkan akan kembali ke stok.',
+      reportBtn: '📊 Laporan',
+      reportTitle: 'Laporan perolehan & QC',
+      repFrom: 'Dari',
+      repTo: 'Hingga',
+      repExport: '📄 Eksport Excel',
+      repSuppliers: 'Prestasi pembekal',
+      repColSupplier: 'Pembekal',
+      repColPO: 'PO',
+      repColReceived: 'Diterima penuh',
+      repColOnTime: 'Tepat masa / lewat',
+      repColGrn: 'Resit',
+      repColLines: 'Baris diterima',
+      repColReject: 'Ditolak (kadar)',
+      repColHold: 'Ditahan',
+      repColReturns: 'Pemulangan',
+      repPoProgress: 'PO terbuka',
+      repColExpected: 'Dijangka',
+      repColProgress: 'Kemajuan',
+      repOverdue: 'Lewat',
+      repQcItems: 'Barang paling banyak ditolak',
+      repColItem: 'Barang',
+      repColRejects: 'Baris ditolak',
+      repNone: 'Tiada data.',
+      repNote: 'Kadar tolak dikira mengikut baris resit (unit barang berbeza, kuantiti tidak boleh dicampur). Tepat masa = diterima penuh dengan resit terakhir pada atau sebelum tarikh dijangka.',
+      actSupSave: 'Pembekal {name}',
+      actSupDel: 'Pembekal {name} dipadam',
+      actRtn: 'Pemulangan {no}: {item} x {qty}, pembekal {supplier}',
+      actRtnDelete: 'Pemulangan {no} dibatalkan',
+      poPanelTitle: 'Pesanan Pembelian (PO)',
+      newPoBtn: '+ PO baharu',
+      poTitle: 'Pesanan pembelian baharu',
+      poSub: 'Rekod barang yang dipesan daripada pembekal. Pilih PO semasa menerima barang dan kuantiti tertunggak akan diisi.',
+      poExpectedLabel: 'Tarikh dijangka',
+      poNeedLine: 'Isi tarikh dan sekurang-kurangnya satu barang dengan kuantiti.',
+      poEmpty: 'Belum ada pesanan pembelian.',
+      poStatusOpen: 'Terbuka',
+      poStatusPartial: 'Diterima sebahagian',
+      poStatusReceived: 'Diterima penuh',
+      poStatusClosed: 'Ditutup',
+      poStatusCancelled: 'Dibatalkan',
+      poReceivedOf: 'diterima {got} / dipesan {qty}',
+      poReceiveBtn: 'Terima',
+      poCloseBtn: 'Tutup (tiada penerimaan lagi)',
+      poCancelBtn: 'Batal PO',
+      poCloseConfirm: 'Tutup {no}? Anda tidak boleh menerima barang terhadapnya lagi.',
+      poCancelConfirm: 'Batalkan {no}?',
+      grnPoLabel: 'Terhadap PO',
+      grnNoPo: '— Tiada PO —',
+      qcLabel: 'QC',
+      qcPass: 'Lulus',
+      qcHold: 'Tahan',
+      qcReject: 'Tolak',
+      qcHoldTag: '⏸ QC ditahan (bukan stok)',
+      qcRejectedTag: '⛔ Ditolak',
+      qcPassBtn: 'Lepaskan',
+      qcRejectBtn: 'Tolak',
+      qcPending: '{n} baris menunggu QC',
+      qcConfirm: 'Tandakan {item} sebagai "{result}"?',
+      actPoCreate: 'PO {no}: {n} baris, pembekal {supplier}',
+      actPoClose: 'PO {no} ditutup',
+      actPoCancel: 'PO {no} dibatalkan',
+      actQc: 'QC {no} · {item}: {result}',
       receivingPanelTitle: 'Resit (GRN)',
       refLabel: 'No. PO / nota hantar',
       supplierLabel: 'Pembekal',
@@ -2554,7 +3407,12 @@
   let auditLog = [];     // 操作日志（最近 AUDIT_MAX 条）
   let locations = [];    // 库位清单 [{id, code, note}]
   let receipts = [];     // 收货单（GRN）
-  let latestExtra = { itemMaster: [], auditLog: [], locations: [], receipts: [] }; // 最近一次读取到的附加数据，写回时原样带上
+  let purchaseOrders = []; // 采购单（PO）
+  let suppliers = [];    // 供应商清单
+  let returns = [];      // 退货单（退给供应商）
+  let salesOrders = [];  // 销售订单（SO）
+  let deliveries = [];   // 出库单（DO）
+  let latestExtra = { itemMaster: [], auditLog: [], locations: [], receipts: [], purchaseOrders: [], suppliers: [], returns: [], salesOrders: [], deliveries: [] }; // 最近一次读取到的附加数据，写回时原样带上
   const AUDIT_MAX = 1000;
 
   function actorName() {
@@ -2569,7 +3427,7 @@
   }
   function saveLocalCache() {
     try {
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists, itemMaster, auditLog, locations, receipts }));
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists, itemMaster, auditLog, locations, receipts, purchaseOrders, suppliers, returns, salesOrders, deliveries }));
     } catch (e) {}
   }
 
@@ -2804,9 +3662,14 @@
       itemMaster: Array.isArray(parsed.itemMaster) ? parsed.itemMaster : [],
       auditLog: Array.isArray(parsed.auditLog) ? parsed.auditLog : [],
       locations: Array.isArray(parsed.locations) ? parsed.locations : [],
-      receipts: Array.isArray(parsed.receipts) ? parsed.receipts : []
+      receipts: Array.isArray(parsed.receipts) ? parsed.receipts : [],
+      purchaseOrders: Array.isArray(parsed.purchaseOrders) ? parsed.purchaseOrders : [],
+      suppliers: Array.isArray(parsed.suppliers) ? parsed.suppliers : [],
+      returns: Array.isArray(parsed.returns) ? parsed.returns : [],
+      salesOrders: Array.isArray(parsed.salesOrders) ? parsed.salesOrders : [],
+      deliveries: Array.isArray(parsed.deliveries) ? parsed.deliveries : []
     };
-    latestExtra = { itemMaster: out.itemMaster, auditLog: out.auditLog, locations: out.locations, receipts: out.receipts };
+    latestExtra = { itemMaster: out.itemMaster, auditLog: out.auditLog, locations: out.locations, receipts: out.receipts, purchaseOrders: out.purchaseOrders, suppliers: out.suppliers, returns: out.returns, salesOrders: out.salesOrders, deliveries: out.deliveries };
     return out;
   }
 
@@ -2856,8 +3719,14 @@
     const newLog = latestExtra.auditLog.concat(opts.audit || []).slice(-AUDIT_MAX);
     const newLocs = opts.locations || latestExtra.locations;
     const newReceipts = opts.receipts || latestExtra.receipts;
+    const newPOs = opts.purchaseOrders || latestExtra.purchaseOrders;
+    const newSups = opts.suppliers || latestExtra.suppliers;
+    const newRets = opts.returns || latestExtra.returns;
+    const newSOs = opts.salesOrders || latestExtra.salesOrders;
+    const newDOs = opts.deliveries || latestExtra.deliveries;
     const done = () => {
-      latestExtra = { itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts };
+      latestExtra = { itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, returns: newRets, salesOrders: newSOs, deliveries: newDOs };
+      purchaseOrders = newPOs; suppliers = newSups; returns = newRets; salesOrders = newSOs; deliveries = newDOs;
       itemMaster = newMaster;
       auditLog = newLog;
       locations = newLocs;
@@ -2877,6 +3746,11 @@
         auditLog: newLog,
         locations: newLocs,
         receipts: newReceipts,
+        purchaseOrders: newPOs,
+        suppliers: newSups,
+        returns: newRets,
+        salesOrders: newSOs,
+        deliveries: newDOs,
         users: a.usersPayload,
         archiveKey: a.archiveKey || '',
         archiveKeyPrev: a.archiveKeyPrev || ''
@@ -2895,7 +3769,7 @@
       throw err;
     }
     const fileContent = await encryptPayload(
-      { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [], itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts },
+      { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [], itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, returns: newRets, salesOrders: newSOs, deliveries: newDOs },
       dataKey
     );
     await putRepoFile(REPO_PATH, fileContent, 'SRS: update stock records');
@@ -2962,6 +3836,11 @@
       auditLog = data.auditLog;
       locations = data.locations;
       receipts = data.receipts;
+      purchaseOrders = data.purchaseOrders;
+      suppliers = data.suppliers;
+      returns = data.returns;
+      salesOrders = data.salesOrders;
+      deliveries = data.deliveries;
       saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
     } catch (err) {
@@ -2981,6 +3860,11 @@
           auditLog = cached.auditLog || [];
           locations = cached.locations || [];
           receipts = cached.receipts || [];
+          purchaseOrders = cached.purchaseOrders || [];
+          suppliers = cached.suppliers || [];
+          returns = cached.returns || [];
+          salesOrders = cached.salesOrders || [];
+          deliveries = cached.deliveries || [];
           setSyncStatus((err.code === 'NEEDKEY' || err.code === 'BADKEY') ? err.message : t('offlineUsingCache'), 'err');
         } else {
           records = [];
@@ -3006,7 +3890,7 @@
     if (loginScreen.classList.contains('open')) return; // 已显示时不要清掉用户正在输入的内容
     if (wipe) {
       clearSession();
-      records = []; packingLists = []; adminKeyHash = ''; itemMaster = []; auditLog = []; locations = []; receipts = [];
+      records = []; packingLists = []; adminKeyHash = ''; itemMaster = []; auditLog = []; locations = []; receipts = []; purchaseOrders = []; suppliers = []; returns = []; salesOrders = []; deliveries = [];
       localStorage.removeItem(LOCAL_CACHE_KEY);
       isAdmin = false;
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
@@ -3193,6 +4077,19 @@
     manTypeOut.classList.toggle('active', type === 'OUT');
   }
 
+  function updManHint() {
+    const h = document.getElementById('manConvHint');
+    const txt = convHintText(manName.value.trim(), manCode.value.trim(), parseFloat(manQty.value), manUom.value);
+    h.textContent = txt; h.style.display = txt ? 'block' : 'none';
+  }
+  manName.addEventListener('input', () => {
+    const bm = masterByBarcode(manName.value);   // 扫码枪输入条码 → 自动换成货物
+    if (bm) { manName.value = bm.item; manCode.value = bm.itemCode || ''; if (!manUom.value && bm.uom) manUom.value = bm.uom; }
+    updManHint();
+  });
+  [manCode, manQty, manUom].forEach(el => el.addEventListener('input', updManHint));
+  manualForm.addEventListener('reset', () => setTimeout(updManHint, 0));
+
   manualForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!isAdmin) return;
@@ -3207,6 +4104,9 @@
     const loc = document.getElementById('manLoc').value.trim();
 
     if (!item || !qty || qty <= 0 || !date) return;
+    const conv = convertQty(item, itemCode, qty, uom);
+    let priceVal = parseFloat(document.getElementById('manPrice').value) || 0;
+    if (priceVal > 0 && conv.origQty != null) priceVal = Math.round(priceVal / conv.factor * 10000) / 10000;
 
     const submitBtn = manualForm.querySelector('.add-btn');
     submitBtn.disabled = true;
@@ -3215,14 +4115,15 @@
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       item,
       itemCode,
-      qty,
-      uom,
+      qty: conv.qty,
+      uom: conv.uom,
       type: manualType,
       date,
       platform,
       expiryDate,
       batch,
-      loc
+      loc,
+      ...(priceVal > 0 && manualType === 'IN' ? { price: priceVal } : {})
     }], { a: 'add', d: { item, qty, type: manualType, date } });
 
     submitBtn.disabled = false;
@@ -3243,6 +4144,47 @@
     const name = (item || '').trim().toLowerCase();
     return itemMaster.find(m => code && (m.itemCode || '').trim().toLowerCase() === code)
         || itemMaster.find(m => (m.item || '').trim().toLowerCase() === name) || null;
+  }
+
+  const normU = x => (x || '').trim().toLowerCase();
+  // UOM 换算：录入的单位等于主档“包装单位”时，按“每包装数量”折算成基本单位
+  function convertQty(item, itemCode, qty, uom) {
+    const m = findMaster(item, itemCode);
+    if (m && m.altUom && Number(m.factor) > 0 && m.uom && normU(uom) === normU(m.altUom) && normU(m.altUom) !== normU(m.uom)) {
+      return { qty: r4(qty * Number(m.factor)), uom: m.uom, origQty: qty, origUom: (uom || '').trim(), factor: Number(m.factor) };
+    }
+    return { qty, uom, origQty: null, origUom: '' };
+  }
+  function convHintText(item, itemCode, qty, uom) {
+    if (!(qty > 0)) return '';
+    const c = convertQty(item, itemCode, qty, uom);
+    return c.origQty != null ? t('convHint', { qty: c.qty, uom: c.uom }) : '';
+  }
+  function masterByBarcode(v) {
+    v = normU(v);
+    return v ? (itemMaster.find(m => normU(m.barcode) === v) || null) : null;
+  }
+
+  // 单位成本：采购入库记录里带单价的行，按数量加权平均（不含待检/拒收、转移、调整）
+  function unitCostMap(recs) {
+    const acc = {};
+    (recs || records).forEach(r => {
+      if (r.type !== 'IN' || !(r.price > 0) || r.qc || r.transfer || r.adjustment) return;
+      const k = groupKey(r);
+      const a = acc[k] || (acc[k] = { v: 0, q: 0 });
+      a.v += r.qty * r.price; a.q += r.qty;
+    });
+    const out = {};
+    Object.keys(acc).forEach(k => { if (acc[k].q > 0) out[k] = acc[k].v / acc[k].q; });
+    return out;
+  }
+  function unitCostFor(g, avgMap, basis) {
+    const m = findMaster(g.item, g.itemCode);
+    const mp = m && Number(m.price) > 0 ? Number(m.price) : 0;
+    const ap = avgMap[g.key] || 0;
+    const A = { cost: ap, src: 'avg' }, M = { cost: mp, src: 'master' };
+    const first = basis === 'master' ? M : A, second = basis === 'master' ? A : M;
+    return first.cost ? first : second.cost ? second : { cost: 0, src: 'none' };
   }
 
   // 低库存 / 已过期 / 临近到期（仅统计仍有库存的批次）
@@ -3443,11 +4385,18 @@
           itemCode: r.itemCode || '',
           uom: r.uom || '',
           balance: 0,
+          held: 0,
           platforms: new Set(),
           transactions: []
         };
       }
       const g = groups[key];
+      if (r.qc) {   // 待检 / 拒收：不计入可用库存
+        if (r.qc === 'hold') g.held = r4(g.held + r.qty);
+        if (r.uom) g.uom = r.uom;
+        g.transactions.push({ ...r, runningBalance: g.balance });
+        return;
+      }
       g.balance = r4(g.balance + (r.type === 'IN' ? r.qty : -r.qty));
       if (r.uom) g.uom = r.uom;
       if (r.platform) g.platforms.add(r.platform);
@@ -3456,7 +4405,7 @@
 
     // nearest (soonest) expiry per group, ignoring blanks
     Object.values(groups).forEach(g => {
-      const bc = computeBatches(g.transactions);   // transactions 此时为日期升序
+      const bc = computeBatches(g.transactions.filter(x => !x.qc));   // transactions 此时为日期升序
       g.batches = bc.batches;
       g.overdrawn = bc.deficit;
       const exps = bc.batches.map(b => b.expiry).filter(Boolean).sort();
@@ -3565,7 +4514,7 @@
       row.innerHTML = `
         <td data-label="${t('colCode')}">${escapeHtml(g.itemCode)}</td>
         <td class="name-cell"><span class="chevron">▶</span>${escapeHtml(g.item)}${g.category ? `<span class="cat-tag">${escapeHtml(g.category)}</span>` : ''}</td>
-        <td data-label="${t('colBalance')}" class="balance-cell">${g.balance}${(g.minStock > 0 && g.balance <= g.minStock) ? `<span class="low-flag" title="${t('minStockShort')} ${g.minStock}">⚠</span>` : ''}</td>
+        <td data-label="${t('colBalance')}" class="balance-cell">${g.balance}${g.held > 0 ? `<span class="qc-tag" title="${t('qcHoldTag')}">⏸ ${g.held}</span>` : ''}${(g.minStock > 0 && g.balance <= g.minStock) ? `<span class="low-flag" title="${t('minStockShort')} ${g.minStock}">⚠</span>` : ''}</td>
         <td data-label="${t('colUom')}">${escapeHtml(g.uom)}</td>
         <td data-label="${t('colExpiry')}">${expiryLabel(g.nearestExpiry)}</td>
       `;
@@ -3584,7 +4533,7 @@
             <td data-label="${t('colDate')}">${t2.date}</td>
             <td data-label="${t('colType')}"><span class="badge ${t2.type === 'IN' ? 'in' : 'out'}">${t2.type === 'IN' ? t('typeIn') : t('typeOut')}</span></td>
             <td data-label="${t('colQty')}" class="qty">${t2.type === 'IN' ? '+' : '-'}${t2.qty}</td>
-            <td data-label="${t('colPlatform')}"><span class="cell-value">${escapeHtml(t2.platform || '—')}${t2.sourcePackingList ? ` <span class="pill">📋 ${escapeHtml(t2.sourcePackingList)}</span>` : ''}${t2.isOpening ? ` <span class="pill">📦 ${t('openingBalanceLabel')}</span>` : ''}${t2.batch ? ` <span class="pill">🏷 ${escapeHtml(t2.batch)}</span>` : ''}${t2.loc ? ` <span class="pill">📍 ${escapeHtml(t2.loc)}</span>` : ''}${t2.transfer ? ` <span class="pill">↔ ${escapeHtml(t2.fromLoc || '—')} → ${escapeHtml(t2.toLoc || '—')}</span>` : ''}${t2.grnNo ? ` <span class="pill">📥 ${escapeHtml(t2.grnNo)}</span>` : ''}${t2.adjustment ? ` <span class="pill">⚖ ${escapeHtml(adjReasonLabel(t2.reason))}${t2.note ? ' · ' + escapeHtml(t2.note) : ''}</span>` : ''}</span></td>
+            <td data-label="${t('colPlatform')}"><span class="cell-value">${escapeHtml(t2.platform || '—')}${t2.sourcePackingList ? ` <span class="pill">📋 ${escapeHtml(t2.sourcePackingList)}</span>` : ''}${t2.isOpening ? ` <span class="pill">📦 ${t('openingBalanceLabel')}</span>` : ''}${t2.batch ? ` <span class="pill">🏷 ${escapeHtml(t2.batch)}</span>` : ''}${t2.loc ? ` <span class="pill">📍 ${escapeHtml(t2.loc)}</span>` : ''}${t2.transfer ? ` <span class="pill">↔ ${escapeHtml(t2.fromLoc || '—')} → ${escapeHtml(t2.toLoc || '—')}</span>` : ''}${t2.grnNo ? ` <span class="pill">📥 ${escapeHtml(t2.grnNo)}</span>` : ''}${t2.doNo ? ` <span class="pill">🚚 ${escapeHtml(t2.doNo)}</span>` : ''}${t2.returnNo ? ` <span class="pill">↩ ${escapeHtml(t2.returnNo)}</span>` : ''}${t2.qc ? ` <span class="pill">${t2.qc === 'hold' ? t('qcHoldTag') : t('qcRejectedTag')}</span>` : ''}${t2.adjustment ? ` <span class="pill">⚖ ${escapeHtml(adjReasonLabel(t2.reason))}${t2.note ? ' · ' + escapeHtml(t2.note) : ''}</span>` : ''}</span></td>
             <td data-label="${t('colExpiry')}">${expiryLabel(t2.expiryDate)}</td>
             <td data-label="${t('colBalance')}" class="qty">${t2.runningBalance}</td>
             <td data-label="${t('colBy')}" title="${escapeHtml(t2.at || '')}">${escapeHtml(t2.by || '—')}</td>
@@ -3988,6 +4937,7 @@
   const packingDetailView = document.getElementById('packingDetailView');
   const stockView = document.getElementById('stockView');
   const receivingView = document.getElementById('receivingView');
+  const deliveryView = document.getElementById('deliveryView');
   const homeBtn = document.getElementById('homeBtn');
 
   function renderCurrentView() {
@@ -3996,6 +4946,7 @@
     packingDetailView.style.display = currentView === 'packingDetail' ? 'block' : 'none';
     stockView.style.display = currentView === 'stock' ? 'block' : 'none';
     receivingView.style.display = currentView === 'receiving' ? 'block' : 'none';
+    deliveryView.style.display = currentView === 'delivery' ? 'block' : 'none';
     homeBtn.style.display = currentView === 'choice' ? 'none' : 'flex';
 
     if (currentView === 'stock') render();
@@ -4003,10 +4954,15 @@
     else if (currentView === 'packing') renderPackingListView();
     else if (currentView === 'packingDetail') renderPackingDetail();
     else if (currentView === 'receiving') renderReceivingView();
+    else if (currentView === 'delivery') renderDeliveryView();
   }
 
   document.getElementById('gotoPackingBtn').addEventListener('click', () => {
     currentView = 'packing';
+    renderCurrentView();
+  });
+  document.getElementById('gotoDeliveryBtn').addEventListener('click', () => {
+    currentView = 'delivery';
     renderCurrentView();
   });
   document.getElementById('gotoReceivingBtn').addEventListener('click', () => {
@@ -4722,12 +5678,1169 @@
     }
   });
 
+  // ================= 出库：销售订单 SO / 出库单 DO / 客户签收 POD =================
+  function soShipped(so) {   // 每行已发数量（按订单单位累计；换算过的行用原始录入数量）
+    const got = {};
+    const uomOf = {};
+    so.lines.forEach(x => { uomOf[x.id] = x.uom; });
+    deliveries.forEach(d => {
+      if (d.soId !== so.id) return;
+      d.lines.forEach(l => {
+        if (!l.soLineId) return;
+        const q = (l.origQty != null && normU(l.origUom) === normU(uomOf[l.soLineId])) ? l.origQty : l.qty;
+        got[l.soLineId] = r4((got[l.soLineId] || 0) + q);
+      });
+    });
+    return got;
+  }
+  function soStatus(so) {
+    if (so.status === 'cancelled') return 'cancelled';
+    if (so.status === 'closed') return 'closed';
+    const got = soShipped(so);
+    const all = so.lines.every(l => (got[l.id] || 0) >= l.qty);
+    const any = so.lines.some(l => (got[l.id] || 0) > 0);
+    return all ? 'shipped' : any ? 'partial' : 'open';
+  }
+  const soStatusKey = { open: 'soStatusOpen', partial: 'soStatusPartial', shipped: 'soStatusShipped', closed: 'soStatusClosed', cancelled: 'soStatusCancelled' };
+  const expandedSOs = new Set();
+  const expandedDOs = new Set();
+  const doFilter = document.getElementById('doFilter');
+
+  function refreshCustomerList() {
+    const m = new Map();
+    salesOrders.concat(deliveries).map(x => x.customer).filter(Boolean).forEach(n => { const k = n.toLowerCase(); if (!m.has(k)) m.set(k, n); });
+    document.getElementById('customerList').innerHTML = Array.from(m.values()).sort().map(x => `<option value="${escapeHtml(x)}">`).join('');
+  }
+  function stockAvail(item, itemCode) {
+    const g = buildGroups().find(x => x.key === groupKey({ item, itemCode }));
+    return g ? { n: g.balance, uom: g.uom } : { n: 0, uom: '' };
+  }
+  function nextNo(prefix, list, year) {
+    let seq = 0;
+    const re = new RegExp('^' + prefix + '-(\\d{4})-(\\d+)$');
+    list.forEach(x => { const m = re.exec(x.no || ''); if (m && m[1] === year) seq = Math.max(seq, Number(m[2])); });
+    return prefix + '-' + year + '-' + String(seq + 1).padStart(4, '0');
+  }
+  async function updateSOs(fn, auditEntry) {
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { alert(t('ghConfigMissing')); return false; }
+    try {
+      const latest = await fetchSharedData();
+      await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
+        { salesOrders: fn(latest.salesOrders.map(x => Object.assign({}, x))), audit: [auditEntry] });
+      records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      return true;
+    } catch (err) { console.error(err); alert(t('syncFailed') + ': ' + err.message); return false; }
+  }
+
+  function renderDeliveryView() {
+    renderSalesOrders();
+    renderDeliveries();
+  }
+
+  function renderSalesOrders() {
+    const box = document.getElementById('soContainer');
+    const list = salesOrders.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''));
+    document.getElementById('soEmpty').style.display = list.length ? 'none' : 'block';
+    box.innerHTML = '';
+    list.forEach(so => {
+      const st = soStatus(so);
+      const open = expandedSOs.has(so.id);
+      const got = soShipped(so);
+      const card = document.createElement('div');
+      card.className = 'grn-card';
+      card.innerHTML = `
+        <div class="grn-top"><span class="grn-no">🧾 ${escapeHtml(so.no)}</span><span class="po-status ${st}">${t(soStatusKey[st])}</span></div>
+        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(so.customer || '—')}${so.platform ? ' · 🚢 ' + escapeHtml(so.platform) : ''} · ${escapeHtml(so.date || '')}${so.requested ? ' · ' + t('soRequestedLabel') + ' ' + escapeHtml(so.requested) : ''} · ${t('grnLinesCount', { n: so.lines.length })}</div>
+        ${open ? `<div class="grn-lines">
+          ${so.lines.map(l => { const left = r4(l.qty - (got[l.id] || 0)); return `<div class="grn-l">${escapeHtml((l.itemCode ? l.itemCode + ' · ' : '') + l.item)} — ${t('soShippedOf', { got: got[l.id] || 0, qty: l.qty })} ${escapeHtml(l.uom || '')}${left > 0 && st !== 'cancelled' ? ` <span class="qc-tag">${t('soBackorder', { n: left })}</span>` : ''}</div>`; }).join('')}
+          ${so.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(so.note)}</div>` : ''}
+          ${isAdmin ? `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            ${(st === 'open' || st === 'partial') ? `<button class="export-btn so-ship">🚚 ${t('soShipBtn')}</button><button class="export-btn so-close">✔ ${t('soCloseBtn')}</button>` : ''}
+            ${st === 'open' ? `<button class="danger-btn so-cancel">✖ ${t('soCancelBtn')}</button>` : ''}
+          </div>` : ''}</div>` : ''}`;
+      card.addEventListener('click', () => {
+        if (expandedSOs.has(so.id)) expandedSOs.delete(so.id); else expandedSOs.add(so.id);
+        renderSalesOrders();
+      });
+      box.appendChild(card);
+      const on = (sel, fn) => card.querySelectorAll(sel).forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); fn(b); }));
+      on('.so-ship', () => openDoModal(so.id));
+      on('.so-close', async (b) => {
+        if (!confirm(t('soCloseConfirm', { no: so.no }))) return;
+        b.disabled = true;
+        await updateSOs(l => l.map(x => x.id === so.id ? Object.assign(x, { status: 'closed' }) : x), mkAudit('soClose', { no: so.no }));
+        renderSalesOrders();
+      });
+      on('.so-cancel', async (b) => {
+        if (!confirm(t('soCancelConfirm', { no: so.no }))) return;
+        b.disabled = true;
+        await updateSOs(l => l.map(x => x.id === so.id ? Object.assign(x, { status: 'cancelled' }) : x), mkAudit('soCancel', { no: so.no }));
+        renderSalesOrders();
+      });
+    });
+  }
+
+  // ---- 新销售订单 ----
+  const soModal = document.getElementById('soModal');
+  const soLines = document.getElementById('soLines');
+  function wireItemFill(row, sel) {   // sel: {name, code, uom}  —— 货物名称 / 条码 / 编码 / UOM 自动补全
+    const nameIn = row.querySelector(sel.name), codeIn = row.querySelector(sel.code), uomIn = row.querySelector(sel.uom);
+    return () => {
+      const bm = masterByBarcode(nameIn.value);
+      if (bm) { nameIn.value = bm.item; codeIn.value = bm.itemCode || ''; }
+      const name = nameIn.value.trim();
+      const code = getNameToCodeMap()[name.toLowerCase()];
+      if (code && !codeIn.value) codeIn.value = code;
+      const m = findMaster(name, codeIn.value);
+      const known = records.find(r => r.uom && r.item.trim().toLowerCase() === name.toLowerCase());
+      if (!uomIn.value) { const u = (m && m.uom) || (known && known.uom) || ''; if (u) uomIn.value = u; }
+    };
+  }
+  function addSoLine() {
+    const row = document.createElement('div');
+    row.className = 'grn-line';
+    row.innerHTML = `
+      <div class="field wide"><label>${t('itemNameLabel')}</label><input type="text" class="sl-name" list="itemNameList" autocomplete="off"></div>
+      <div class="field"><label>${t('itemCodeLabel')}</label><input type="text" class="sl-code" autocomplete="off"></div>
+      <div class="field"><label>${t('qtyLabel')}</label><input type="number" class="sl-qty" min="0" step="any"></div>
+      <div class="field"><label>${t('uomLabel')}</label><input type="text" class="sl-uom" autocomplete="off"></div>
+      <button type="button" class="grn-remove" title="${t('deleteBtn')}">✕</button>`;
+    soLines.appendChild(row);
+    const fill = wireItemFill(row, { name: '.sl-name', code: '.sl-code', uom: '.sl-uom' });
+    row.querySelector('.sl-name').addEventListener('input', fill);
+    row.querySelector('.sl-name').addEventListener('change', fill);
+    row.querySelector('.grn-remove').addEventListener('click', () => row.remove());
+  }
+  document.getElementById('newSoBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    document.getElementById('soDate').value = new Date().toISOString().slice(0, 10);
+    ['soCustomer', 'soPlatform', 'soRequested', 'soNote'].forEach(id => { document.getElementById(id).value = ''; });
+    refreshCustomerList();
+    document.getElementById('soError').textContent = '';
+    soLines.innerHTML = '';
+    addSoLine();
+    soModal.classList.add('open');
+  });
+  document.getElementById('soAddLineBtn').addEventListener('click', addSoLine);
+  document.getElementById('soCancel').addEventListener('click', () => soModal.classList.remove('open'));
+  document.getElementById('soSave').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const err = document.getElementById('soError');
+    const date = document.getElementById('soDate').value;
+    const customer = document.getElementById('soCustomer').value.trim();
+    const lines = [];
+    soLines.querySelectorAll('.grn-line').forEach((row, i) => {
+      const l = { id: 'sl' + Date.now().toString(36) + i, item: row.querySelector('.sl-name').value.trim(), itemCode: row.querySelector('.sl-code').value.trim(),
+        qty: parseFloat(row.querySelector('.sl-qty').value), uom: row.querySelector('.sl-uom').value.trim() };
+      if (l.item && l.qty > 0) lines.push(l);
+    });
+    if (!date || !lines.length) { err.textContent = t('soNeedLine'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('soSave');
+    btn.disabled = true; err.textContent = '';
+    try {
+      const latest = await fetchSharedData();
+      const no = nextNo('SO', latest.salesOrders, date.slice(0, 4));
+      const so = { id: 'so_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), no, date, customer,
+        platform: document.getElementById('soPlatform').value.trim(), requested: document.getElementById('soRequested').value,
+        note: document.getElementById('soNote').value.trim(), status: 'open', lines, by: actorName(), at: new Date().toISOString() };
+      await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
+        { salesOrders: latest.salesOrders.concat([so]), audit: [mkAudit('soCreate', { no, n: lines.length, customer: customer || '—' })] });
+      records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      soModal.classList.remove('open');
+      expandedSOs.add(so.id);
+      renderCurrentView();
+    } catch (e) { console.error(e); err.textContent = t('syncFailed') + ': ' + e.message; }
+    btn.disabled = false;
+  });
+
+  // ---- 新出库单 ----
+  const doModal = document.getElementById('doModal');
+  const doLines = document.getElementById('doLines');
+  function addDoLine(pre) {
+    pre = pre || {};
+    const row = document.createElement('div');
+    row.className = 'grn-line';
+    row.dataset.soLineId = pre.soLineId || '';
+    row.innerHTML = `
+      <div class="field wide"><label>${t('itemNameLabel')}</label><input type="text" class="dl-name" list="itemNameList" autocomplete="off" value="${escapeHtml(pre.item || '')}"></div>
+      <div class="field"><label>${t('itemCodeLabel')}</label><input type="text" class="dl-code" autocomplete="off" value="${escapeHtml(pre.itemCode || '')}"></div>
+      <div class="field"><label>${t('qtyLabel')}</label><input type="number" class="dl-qty" min="0" step="any" value="${pre.qty || ''}"></div>
+      <div class="field"><label>${t('uomLabel')}</label><input type="text" class="dl-uom" autocomplete="off" value="${escapeHtml(pre.uom || '')}"></div>
+      <div class="dl-hint pl-item-meta" style="flex:1 1 100%; margin:0;"></div>
+      <button type="button" class="grn-remove" title="${t('deleteBtn')}">✕</button>`;
+    doLines.appendChild(row);
+    const q = sel => row.querySelector(sel);
+    const hint = () => {
+      const name = q('.dl-name').value.trim();
+      const parts = [];
+      if (name) { const a = stockAvail(name, q('.dl-code').value.trim()); parts.push(t('doAvail', { n: a.n, uom: a.uom })); }
+      const c = convHintText(name, q('.dl-code').value.trim(), parseFloat(q('.dl-qty').value), q('.dl-uom').value);
+      if (c) parts.push(c);
+      q('.dl-hint').textContent = parts.join(' · ');
+    };
+    const fill0 = wireItemFill(row, { name: '.dl-name', code: '.dl-code', uom: '.dl-uom' });
+    const fill = () => { fill0(); hint(); };
+    q('.dl-name').addEventListener('input', fill);
+    q('.dl-name').addEventListener('change', fill);
+    ['.dl-code', '.dl-qty', '.dl-uom'].forEach(sel => q(sel).addEventListener('input', hint));
+    q('.grn-remove').addEventListener('click', () => row.remove());
+    hint();
+  }
+  function fillDoSoSelect(selId) {
+    const sel = document.getElementById('doSo');
+    sel.innerHTML = `<option value="">${t('doNoSo')}</option>` + salesOrders
+      .filter(so => ['open', 'partial'].includes(soStatus(so)))
+      .map(so => `<option value="${escapeHtml(so.id)}">${escapeHtml(so.no)} · ${escapeHtml(so.customer || '—')}</option>`).join('');
+    sel.value = selId || '';
+  }
+  document.getElementById('doSo').addEventListener('change', (e) => {
+    const so = salesOrders.find(x => x.id === e.target.value);
+    if (!so) return;
+    document.getElementById('doCustomer').value = so.customer || '';
+    document.getElementById('doPlatform').value = so.platform || '';
+    document.getElementById('doRef').value = so.no;
+    doLines.innerHTML = '';
+    const got = soShipped(so);
+    let n = 0;
+    so.lines.forEach(l => {
+      const left = r4(l.qty - (got[l.id] || 0));
+      if (left > 0) { addDoLine({ item: l.item, itemCode: l.itemCode, qty: left, uom: l.uom, soLineId: l.id }); n++; }
+    });
+    if (!n) addDoLine();
+  });
+  function openDoModal(soId) {
+    if (!isAdmin) return;
+    document.getElementById('doDate').value = new Date().toISOString().slice(0, 10);
+    ['doCustomer', 'doPlatform', 'doRef', 'doNote'].forEach(id => { document.getElementById(id).value = ''; });
+    refreshCustomerList();
+    document.getElementById('doError').textContent = '';
+    doLines.innerHTML = '';
+    fillDoSoSelect(soId || '');
+    if (soId) document.getElementById('doSo').dispatchEvent(new Event('change')); else addDoLine();
+    doModal.classList.add('open');
+  }
+  document.getElementById('newDoBtn').addEventListener('click', () => openDoModal(''));
+  document.getElementById('doAddLineBtn').addEventListener('click', () => addDoLine());
+  document.getElementById('doCancel').addEventListener('click', () => doModal.classList.remove('open'));
+
+  document.getElementById('doSave').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const err = document.getElementById('doError');
+    const date = document.getElementById('doDate').value;
+    const soId = document.getElementById('doSo').value;
+    const customer = document.getElementById('doCustomer').value.trim();
+    const platform = document.getElementById('doPlatform').value.trim();
+    const lines = [];
+    doLines.querySelectorAll('.grn-line').forEach(row => {
+      const l = { item: row.querySelector('.dl-name').value.trim(), itemCode: row.querySelector('.dl-code').value.trim(),
+        qty: parseFloat(row.querySelector('.dl-qty').value), uom: row.querySelector('.dl-uom').value.trim(), soLineId: row.dataset.soLineId || '' };
+      if (!(l.item && l.qty > 0)) return;
+      const c = convertQty(l.item, l.itemCode, l.qty, l.uom);
+      if (c.origQty != null) { l.origQty = c.origQty; l.origUom = c.origUom; l.qty = c.qty; l.uom = c.uom; }
+      lines.push(l);
+    });
+    if (!date || !lines.length) { err.textContent = t('doNeedLine'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('doSave');
+    btn.disabled = true; err.textContent = '';
+    try {
+      const latest = await fetchSharedData();
+      // 库存检查：同一货物的多行合并计算
+      const need = new Map();
+      lines.forEach(l => { const k = groupKey(l); need.set(k, r4((need.get(k) || 0) + l.qty)); });
+      const groups = buildGroups(latest.records);
+      for (const [k, n] of need) {
+        const g = groups.find(x => x.key === k);
+        const have = g ? g.balance : 0;
+        if (n > have) {
+          const l = lines.find(x => groupKey(x) === k);
+          err.textContent = t('doShort', { item: l.item, need: n, have });
+          btn.disabled = false; return;
+        }
+      }
+      const so = soId ? latest.salesOrders.find(x => x.id === soId) : null;
+      const no = nextNo('DO', latest.deliveries, date.slice(0, 4));
+      const doId = 'do_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      const alloc = makeAllocator(latest.records);
+      const newRecs = [];
+      const dlines = lines.map(l => {
+        const pieces = alloc(l.item, l.itemCode, l.qty).map(x => {
+          const rec = stampNew({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + newRecs.length,
+            item: l.item, itemCode: l.itemCode, qty: x.qty, uom: l.uom, type: 'OUT', date, platform,
+            expiryDate: x.expiryDate, batch: x.batch, loc: x.loc || '', customer, doId, doNo: no
+          });
+          newRecs.push(rec);
+          return { batch: x.batch, expiryDate: x.expiryDate, loc: x.loc || '', qty: x.qty, recId: rec.id };
+        });
+        const out = { item: l.item, itemCode: l.itemCode, qty: l.qty, uom: l.uom, pieces };
+        if (l.soLineId) out.soLineId = l.soLineId;
+        if (l.origQty != null) { out.origQty = l.origQty; out.origUom = l.origUom; }
+        return out;
+      });
+      const d = { id: doId, no, date, soId: so ? so.id : '', soNo: so ? so.no : '', customer, platform,
+        ref: document.getElementById('doRef').value.trim(), note: document.getElementById('doNote').value.trim(),
+        status: 'shipped', pod: null, lines: dlines, by: actorName(), at: new Date().toISOString() };
+      const merged = latest.records.concat(newRecs);
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+        { deliveries: latest.deliveries.concat([d]), audit: [mkAudit('doCreate', { no, n: lines.length, customer: customer || '—' })] });
+      records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      doModal.classList.remove('open');
+      expandedDOs.add(doId);
+      renderCurrentView();
+    } catch (e) { console.error(e); err.textContent = t('syncFailed') + ': ' + e.message; }
+    btn.disabled = false;
+  });
+
+  // ---- 出库单列表 / 签收 / 打印 ----
+  function doLineText(l) {
+    const lots = (l.pieces || []).filter(p => p.batch || p.expiryDate).map(p => (p.batch ? '🏷 ' + p.batch : '') + (p.expiryDate ? ' ' + p.expiryDate : '') + ' × ' + p.qty).join('; ');
+    return (l.itemCode ? l.itemCode + ' · ' : '') + l.item + ' × ' + l.qty + ' ' + (l.uom || '')
+      + (l.origQty != null ? ' (' + t('convFrom', { qty: l.origQty, uom: l.origUom || '' }) + ')' : '') + (lots ? ' — ' + lots : '');
+  }
+  function renderDeliveries() {
+    const q = doFilter.value.trim().toLowerCase();
+    const list = deliveries.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''))
+      .filter(d => !q || (d.no + ' ' + (d.customer || '') + ' ' + (d.platform || '') + ' ' + (d.soNo || '') + ' ' + (d.ref || '') + ' ' + d.lines.map(l => l.item + ' ' + (l.itemCode || '')).join(' ')).toLowerCase().includes(q));
+    const box = document.getElementById('doContainer');
+    document.getElementById('doEmpty').style.display = list.length ? 'none' : 'block';
+    box.innerHTML = '';
+    list.forEach(d => {
+      const open = expandedDOs.has(d.id);
+      const st = d.pod ? 'delivered' : 'shipped';
+      const card = document.createElement('div');
+      card.className = 'grn-card';
+      card.innerHTML = `
+        <div class="grn-top"><span class="grn-no">🚚 ${escapeHtml(d.no)}</span><span class="po-status ${st}">${t(d.pod ? 'doStatusDelivered' : 'doStatusShipped')}</span></div>
+        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(d.customer || '—')}${d.platform ? ' · 🚢 ' + escapeHtml(d.platform) : ''} · ${escapeHtml(d.date || '')}${d.soNo ? ' · ' + escapeHtml(d.soNo) : ''} · ${t('grnLinesCount', { n: d.lines.length })}${d.by ? ' · ' + escapeHtml(d.by) : ''}</div>
+        ${open ? `<div class="grn-lines">
+          ${d.lines.map(l => `<div class="grn-l">${escapeHtml(doLineText(l))}</div>`).join('')}
+          ${d.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(d.note)}</div>` : ''}
+          ${d.pod ? `<div class="pl-item-meta" style="margin-top:6px;">✅ ${t('podInfo', { name: d.pod.name, date: d.pod.date })}${d.pod.note ? ' · ' + escapeHtml(d.pod.note) : ''}</div>` : ''}
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            ${d.pod ? '' : `<button class="export-btn do-pod">✍ ${t('doPodBtn')}</button>`}
+            <button class="export-btn do-print">🖨 ${t('doPrintBtn')}</button>
+            <button class="export-btn do-export">📄 ${t('grnExportBtn')}</button>
+            ${isAdmin ? `<button class="danger-btn do-del">🗑 ${t('doDeleteBtn')}</button>` : ''}
+          </div></div>` : ''}`;
+      card.addEventListener('click', () => {
+        if (expandedDOs.has(d.id)) expandedDOs.delete(d.id); else expandedDOs.add(d.id);
+        renderDeliveries();
+      });
+      box.appendChild(card);
+      const on = (sel, fn) => card.querySelectorAll(sel).forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); fn(b); }));
+      on('.do-pod', () => openPod(d));
+      on('.do-print', () => printDelivery(d));
+      on('.do-export', () => exportDeliveryExcel(d));
+      on('.do-del', async (b) => {
+        if (!isAdmin || !confirm(t('doDeleteConfirm', { no: d.no }))) return;
+        b.disabled = true;
+        try {
+          const latest = await fetchSharedData();
+          const merged = latest.records.filter(r => r.doId !== d.id);
+          await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+            { deliveries: latest.deliveries.filter(x => x.id !== d.id), audit: [mkAudit('doDelete', { no: d.no })] });
+          records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+          saveLocalCache();
+          setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+        } catch (e) { console.error(e); alert(t('syncFailed') + ': ' + e.message); }
+        renderCurrentView();
+      });
+    });
+  }
+  doFilter.addEventListener('input', renderDeliveries);
+
+  const podModal = document.getElementById('podModal');
+  let podTarget = null;
+  function openPod(d) {
+    podTarget = d.id;
+    document.getElementById('podInfo').textContent = d.no + ' · ' + (d.customer || '—') + (d.platform ? ' · ' + d.platform : '');
+    document.getElementById('podReceiver').value = '';
+    document.getElementById('podDate').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('podNote').value = '';
+    document.getElementById('podError').textContent = '';
+    podModal.classList.add('open');
+  }
+  document.getElementById('podCancel').addEventListener('click', () => podModal.classList.remove('open'));
+  document.getElementById('podSave').addEventListener('click', async () => {
+    const err = document.getElementById('podError');
+    const name = document.getElementById('podReceiver').value.trim();
+    if (!name) { err.textContent = t('podNeedName'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('podSave');
+    btn.disabled = true; err.textContent = '';
+    try {
+      const latest = await fetchSharedData();
+      const target = latest.deliveries.find(x => x.id === podTarget);
+      if (!target) throw new Error('delivery not found');
+      const pod = { name, date: document.getElementById('podDate').value, note: document.getElementById('podNote').value.trim(), by: actorName(), at: new Date().toISOString() };
+      const list = latest.deliveries.map(x => x.id === podTarget ? Object.assign({}, x, { pod, status: 'delivered' }) : x);
+      await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
+        { deliveries: list, audit: [mkAudit('doPod', { no: target.no, name })] });
+      records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      podModal.classList.remove('open');
+      renderCurrentView();
+    } catch (e) { console.error(e); err.textContent = t('syncFailed') + ': ' + e.message; }
+    btn.disabled = false;
+  });
+
+  function exportDeliveryExcel(d) {
+    if (typeof XLSX === 'undefined') { alert(t('xlsxLibFailed')); return; }
+    const aoa = [['DO', d.no], ['Date', d.date || ''], ['Customer', d.customer || ''], ['Vessel/Platform', d.platform || ''], ['SO', d.soNo || ''], ['Ref', d.ref || ''],
+      ['POD', d.pod ? d.pod.name + ' · ' + d.pod.date : ''], [], ['Code', 'Item', 'Qty', 'UOM', 'Batch', 'Expiry']];
+    d.lines.forEach(l => {
+      const ps = (l.pieces && l.pieces.length) ? l.pieces : [{ batch: '', expiryDate: '', qty: l.qty }];
+      ps.forEach(p => aoa.push([l.itemCode || '', l.item, p.qty, l.uom || '', p.batch || '', p.expiryDate || '']));
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'DO');
+    XLSX.writeFile(wb, d.no + '.xlsx');
+  }
+  function printDelivery(d) {
+    const e = escapeHtml;
+    const rows = d.lines.map((l, i) => {
+      const lots = (l.pieces || []).filter(p => p.batch || p.expiryDate).map(p => e((p.batch || '') + (p.expiryDate ? ' / ' + p.expiryDate : ''))).join('<br>');
+      return `<tr><td>${i + 1}</td><td>${e(l.itemCode || '')}</td><td>${e(l.item)}</td><td style="text-align:right">${l.qty}</td><td>${e(l.uom || '')}</td><td>${lots}</td></tr>`;
+    }).join('');
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${e(d.no)}</title><style>
+      body{font-family:Arial,Helvetica,sans-serif;font-size:13px;margin:28px;color:#111}
+      h1{font-size:20px;margin:0}h2{font-size:16px;margin:2px 0 14px}
+      table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top}th{background:#f0f0f0}
+      .meta td{border:none;padding:2px 8px 2px 0}.sig{display:flex;gap:40px;margin-top:60px}.sig div{flex:1;border-top:1px solid #000;padding-top:6px}
+      @media print{body{margin:12mm}}</style></head><body>
+      <h1>FU SHENG ENTERPRISE</h1><h2>${e(t('doPrintTitle'))} ${e(d.no)}</h2>
+      <table class="meta"><tr><td><b>${e(t('dateLabel'))}</b></td><td>${e(d.date || '')}</td><td><b>${e(t('customerLabel'))}</b></td><td>${e(d.customer || '')}</td></tr>
+      <tr><td><b>${e(t('platformLabel'))}</b></td><td>${e(d.platform || '')}</td><td><b>SO / Ref</b></td><td>${e([d.soNo, d.ref].filter(Boolean).join(' / '))}</td></tr></table>
+      <table><thead><tr><th>#</th><th>${e(t('itemCodeLabel'))}</th><th>${e(t('itemNameLabel'))}</th><th>${e(t('qtyLabel'))}</th><th>${e(t('uomLabel'))}</th><th>${e(t('batchLabel'))} / ${e(t('expiryDateLabel'))}</th></tr></thead><tbody>${rows}</tbody></table>
+      ${d.note ? `<p>${e(d.note)}</p>` : ''}
+      <div class="sig"><div>${e(t('printDeliveredBy'))}</div><div>${e(t('printReceivedBy'))}${d.pod ? '<br>' + e(d.pod.name + ' · ' + d.pod.date) : ''}</div></div>
+      <script>window.onload=function(){window.print()}<\/script></body></html>`;
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    const w = window.open(url, '_blank');
+    if (!w) alert(t('popupBlocked'));
+  }
+
+  // ================= 扫码（摄像头）=================
+  const scanModal = document.getElementById('scanModal');
+  const scanVideo = document.getElementById('scanVideo');
+  let scanSession = null;
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const el = document.createElement('script');
+      el.src = src; el.onload = res; el.onerror = () => rej(new Error('load failed'));
+      document.head.appendChild(el);
+    });
+  }
+  function scanBeep() {
+    try {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (C) { const c = new C(), o = c.createOscillator(); o.frequency.value = 1100; o.connect(c.destination); o.start(); setTimeout(() => { o.stop(); c.close(); }, 90); }
+      if (navigator.vibrate) navigator.vibrate(40);
+    } catch (e) {}
+  }
+  function closeScanner() {
+    if (scanSession) {
+      scanSession.stopped = true;
+      clearTimeout(scanSession.timer);
+      if (scanSession.stream) scanSession.stream.getTracks().forEach(x => x.stop());
+      scanSession = null;
+    }
+    scanVideo.srcObject = null;
+    scanModal.classList.remove('open');
+  }
+  document.getElementById('scanDone').addEventListener('click', closeScanner);
+
+  // opts: { continuous, hint, onCode(code, log) }
+  async function openScanner(opts) {
+    const err = document.getElementById('scanError');
+    const logEl = document.getElementById('scanLog');
+    err.textContent = ''; logEl.innerHTML = '';
+    document.getElementById('scanHint').textContent = opts.hint || '';
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { alert(t('scanUnsupported')); return; }
+    closeScanner();
+    const sess = scanSession = { stopped: false, stream: null, timer: 0, last: '', lastAt: 0 };
+    scanModal.classList.add('open');
+    const log = (msg, bad) => {
+      const line = document.createElement('div');
+      line.textContent = msg; if (bad) line.style.color = 'var(--out)';
+      logEl.insertBefore(line, logEl.firstChild);
+      while (logEl.children.length > 5) logEl.removeChild(logEl.lastChild);
+    };
+    try {
+      sess.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    } catch (e) { err.textContent = t('scanNoCamera'); return; }
+    if (sess.stopped) { sess.stream.getTracks().forEach(x => x.stop()); return; }
+    scanVideo.srcObject = sess.stream;
+    try { await scanVideo.play(); } catch (e) {}
+    let detect;
+    try {
+      if ('BarcodeDetector' in window) {
+        const det = new window.BarcodeDetector();
+        detect = async () => { const r = await det.detect(scanVideo); return r && r[0] ? r[0].rawValue : ''; };
+      } else {
+        if (typeof ZXing === 'undefined') await loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js');
+        const reader = new ZXing.BrowserMultiFormatReader();
+        const canvas = document.createElement('canvas');
+        detect = async () => {
+          if (!scanVideo.videoWidth) return '';
+          canvas.width = scanVideo.videoWidth; canvas.height = scanVideo.videoHeight;
+          canvas.getContext('2d').drawImage(scanVideo, 0, 0);
+          try {
+            const bmp = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(canvas)));
+            return reader.decodeBitmap(bmp).getText();
+          } catch (e) { return ''; }
+        };
+      }
+    } catch (e) { err.textContent = t('scanNoLib'); return; }
+    const tick = async () => {
+      if (sess.stopped) return;
+      let code = '';
+      try { code = await detect(); } catch (e) { code = ''; }
+      const now = Date.now();
+      if (code && !(code === sess.last && now - sess.lastAt < 1500)) {
+        sess.last = code; sess.lastAt = now;
+        scanBeep();
+        try { opts.onCode(code, log); } catch (e) { console.error(e); }
+        if (!opts.continuous) { closeScanner(); return; }
+      } else if (code) sess.lastAt = now;
+      sess.timer = setTimeout(tick, 200);
+    };
+    tick();
+  }
+
+  // 单次扫码，把结果放进输入框（并触发 input / change，让条码自动换成货物）
+  function scanInto(input, afterFn) {
+    openScanner({ continuous: false, hint: t('scanHintSingle'), onCode: (code) => {
+      input.value = code;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      if (afterFn) afterFn(code);
+    } });
+  }
+  document.getElementById('manScanBtn').addEventListener('click', () => scanInto(document.getElementById('manName'), (code) => {
+    if (!masterByBarcode(code)) alert(t('scanNoMatch', { code }));
+  }));
+  document.getElementById('searchScanBtn').addEventListener('click', () => scanInto(document.getElementById('search')));
+
+  // 连续扫码：每扫一次该货物数量 +1（第一次扫到某行时数量从 1 开始，用于核对实收 / 实拣）
+  function makeLineScanner(container, nameSel, qtySel, addLine) {
+    const seen = new WeakSet();
+    return (code, log) => {
+      const m = masterByBarcode(code);
+      if (!m) { log(t('scanNoMatch', { code }), true); return; }
+      const rows = Array.from(container.querySelectorAll('.grn-line'));
+      let row = rows.find(r => normU(r.querySelector(nameSel).value) === normU(m.item));
+      if (!row) {
+        row = rows.find(r => !r.querySelector(nameSel).value.trim());
+        if (row) {
+          row.querySelector(nameSel).value = m.item;
+          row.querySelector(nameSel).dispatchEvent(new Event('change'));
+        } else {
+          addLine({ item: m.item, itemCode: m.itemCode || '', uom: m.uom || '', loc: m.loc || '' });
+          row = Array.from(container.querySelectorAll('.grn-line')).pop();
+          row.querySelector(nameSel).dispatchEvent(new Event('change'));
+        }
+      }
+      const q = row.querySelector(qtySel);
+      q.value = seen.has(row) ? r4((parseFloat(q.value) || 0) + 1) : 1;
+      seen.add(row);
+      q.dispatchEvent(new Event('input'));
+      log(t('scanGot', { item: m.item, qty: q.value }));
+    };
+  }
+  document.getElementById('grnScanBtn').addEventListener('click', () => {
+    openScanner({ continuous: true, hint: t('scanHintLines'), onCode: makeLineScanner(grnLines, '.gl-name', '.gl-qty', addGrnLine) });
+  });
+  document.getElementById('doScanBtn').addEventListener('click', () => {
+    openScanner({ continuous: true, hint: t('scanHintLines'), onCode: makeLineScanner(doLines, '.dl-name', '.dl-qty', addDoLine) });
+  });
+  document.getElementById('stScanBtn').addEventListener('click', () => {
+    const seen = new Set();
+    openScanner({ continuous: true, hint: t('scanHintLines'), onCode: (code, log) => {
+      const m = masterByBarcode(code);
+      const g = m && buildGroups().find(x => x.key === groupKey({ item: m.item, itemCode: m.itemCode }));
+      if (!g) { log(t('scanNoMatch', { code }), true); return; }
+      const n = seen.has(g.key) ? r4((stCounts.get(g.key) || 0) + 1) : 1;
+      seen.add(g.key); stCounts.set(g.key, n);
+      stFilter.value = g.item;
+      renderStockTakeList();
+      log(t('scanGot', { item: g.item, qty: n }));
+    } });
+  });
+
+  // ================= 库存报表：估值 / 账龄 / 出入库汇总 =================
+  const srModal = document.getElementById('stockReportModal');
+  let srTab = 'val';
+  const r2 = n => Math.round(n * 100) / 100;
+  const srCurEl = document.getElementById('srCurrency');
+  try { srCurEl.value = localStorage.getItem('srsCurrency') || ''; } catch (e) {}
+  const money = n => (srCurEl.value.trim() ? srCurEl.value.trim() + ' ' : '') + r2(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function srValuation(basis) {
+    const avg = unitCostMap();
+    return buildGroups().filter(g => g.balance > 0).map(g => {
+      const m = findMaster(g.item, g.itemCode);
+      const c = unitCostFor(g, avg, basis);
+      return { code: g.itemCode, item: g.item, category: (m && m.category) || '', qty: g.balance, uom: g.uom, cost: c.cost, src: c.src, value: r2(g.balance * c.cost) };
+    }).sort((a, b) => a.item.localeCompare(b.item));
+  }
+  const AGE_BUCKETS = [[0, 30], [31, 60], [61, 90], [91, 180], [181, 99999]];
+  function srAging(basis) {
+    const avg = unitCostMap();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const rows = [];
+    buildGroups().forEach(g => {
+      if (g.balance <= 0) return;
+      const layers = [];
+      g.transactions.slice().reverse().forEach(x => {   // 从旧到新；转移不重置库龄；待检/拒收不计
+        if (x.qc || x.transfer) return;
+        if (x.type === 'IN') layers.push({ date: x.date, qty: x.qty });
+        else {
+          let left = x.qty;
+          while (left > 0 && layers.length) {
+            const l = layers[0], take = Math.min(l.qty, left);
+            l.qty = r4(l.qty - take); left = r4(left - take);
+            if (l.qty <= 0) layers.shift();
+          }
+        }
+      });
+      const b = AGE_BUCKETS.map(() => 0);
+      layers.forEach(l => {
+        const days = Math.max(0, Math.floor((today - new Date(l.date)) / 86400000));
+        const i = AGE_BUCKETS.findIndex(([lo, hi]) => days >= lo && days <= hi);
+        b[i < 0 ? b.length - 1 : i] = r4(b[i < 0 ? b.length - 1 : i] + l.qty);
+      });
+      const c = unitCostFor(g, avg, basis);
+      rows.push({ code: g.itemCode, item: g.item, uom: g.uom, buckets: b, cost: c.cost, total: r4(b.reduce((a, x) => a + x, 0)) });
+    });
+    return rows.sort((a, b) => a.item.localeCompare(b.item));
+  }
+  function srSummary(from, to) {
+    const map = {};
+    records.forEach(r => {
+      if (r.qc || r.transfer) return;
+      const k = groupKey(r);
+      const g = map[k] || (map[k] = { code: r.itemCode || '', item: r.item, uom: r.uom || '', opening: 0, inn: 0, out: 0, adj: 0 });
+      if (r.uom) g.uom = r.uom;
+      const sign = r.type === 'IN' ? 1 : -1;
+      if (to && r.date > to) return;
+      if (r.isOpening || (from && r.date < from)) g.opening = r4(g.opening + sign * r.qty);
+      else if (r.adjustment) g.adj = r4(g.adj + sign * r.qty);
+      else if (r.type === 'IN') g.inn = r4(g.inn + r.qty);
+      else g.out = r4(g.out + r.qty);
+    });
+    return Object.values(map).map(g => Object.assign(g, { closing: r4(g.opening + g.inn - g.out + g.adj) }))
+      .filter(g => g.opening || g.inn || g.out || g.adj).sort((a, b) => a.item.localeCompare(b.item));
+  }
+
+  function renderStockReport() {
+    const e = escapeHtml;
+    const basis = document.getElementById('srBasis').value;
+    document.getElementById('srBasisWrap').style.display = srTab === 'sum' ? 'none' : '';
+    document.getElementById('srFromWrap').style.display = document.getElementById('srToWrap').style.display = srTab === 'sum' ? '' : 'none';
+    srModal.querySelectorAll('.sr-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === srTab));
+    const tbl = (head, rows, foot) => `<div class="report-wrap"><table class="report-table"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}${foot ? `<tr style="font-weight:700">${foot.map(c => `<td>${c}</td>`).join('')}</tr>` : ''}</tbody></table></div>`;
+    const none = `<div class="pl-item-meta">${t('srNone')}</div>`;
+    const srcLabel = { avg: t('srSrcAvg'), master: t('srSrcMaster'), none: t('srSrcNone') };
+    let html = '';
+    if (srTab === 'val') {
+      const rows = srValuation(basis);
+      if (!rows.length) html = none; else {
+        const total = r2(rows.reduce((a, x) => a + x.value, 0));
+        const cats = {};
+        rows.forEach(x => { const k = x.category || t('srNoCategory'); cats[k] = r2((cats[k] || 0) + x.value); });
+        const missing = rows.filter(x => x.src === 'none').length;
+        html = `<h3 style="margin:0 0 8px;">${t('srByCategory')}</h3>` + tbl([t('categoryLabel'), t('srValue')], Object.keys(cats).sort().map(k => [e(k), money(cats[k])]), [t('srTotal'), money(total)])
+          + `<h3 style="margin:0 0 8px;">${t('srTabVal')}</h3>` + tbl([t('itemCodeLabel'), t('itemNameLabel'), t('categoryLabel'), t('qtyLabel'), t('uomLabel'), t('srUnitCost'), t('srValue'), t('srSource')],
+            rows.map(x => [e(x.code), e(x.item), e(x.category), x.qty, e(x.uom), x.cost ? money(x.cost) : '—', money(x.value), srcLabel[x.src]]))
+          + (missing ? `<div class="sr-sub" style="margin-top:6px;">${t('srNoPriceCount', { n: missing })}</div>` : '');
+      }
+    } else if (srTab === 'age') {
+      const rows = srAging(basis);
+      if (!rows.length) html = none; else {
+        const names = [t('srAge1'), t('srAge2'), t('srAge3'), t('srAge4'), t('srAge5')];
+        const bv = AGE_BUCKETS.map((_, i) => r2(rows.reduce((a, x) => a + x.buckets[i] * x.cost, 0)));
+        html = `<h3 style="margin:0 0 8px;">${t('srAgeValue')}</h3>` + tbl(names, [bv.map(money)])
+          + `<h3 style="margin:0 0 8px;">${t('srTabAge')}</h3>` + tbl([t('itemCodeLabel'), t('itemNameLabel'), t('uomLabel')].concat(names, [t('srAgeOver90')]),
+            rows.map(x => [e(x.code), e(x.item), e(x.uom)].concat(x.buckets.map(q => q || ''), [money(r2((x.buckets[3] + x.buckets[4]) * x.cost))])))
+          + `<div class="sr-sub" style="margin-top:6px;">${t('srAgeNote')}</div>`;
+      }
+    } else {
+      const rows = srSummary(document.getElementById('srFrom').value, document.getElementById('srTo').value);
+      html = rows.length ? tbl([t('itemCodeLabel'), t('itemNameLabel'), t('uomLabel'), t('srOpening'), t('srIn'), t('srOut'), t('srAdj'), t('srClosing')],
+        rows.map(x => [e(x.code), e(x.item), e(x.uom), x.opening, x.inn, x.out, x.adj, x.closing])) + `<div class="sr-sub" style="margin-top:6px;">${t('srSumNote')}</div>` : none;
+    }
+    document.getElementById('srBody').innerHTML = html;
+  }
+  document.getElementById('stockReportBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    const now = new Date();
+    document.getElementById('srFrom').value = new Date(now.getFullYear(), now.getMonth(), 2).toISOString().slice(0, 10).slice(0, 8) + '01';
+    document.getElementById('srTo').value = now.toISOString().slice(0, 10);
+    renderStockReport();
+    srModal.classList.add('open');
+  });
+  document.getElementById('srClose').addEventListener('click', () => srModal.classList.remove('open'));
+  srModal.querySelectorAll('.sr-tab').forEach(b => b.addEventListener('click', () => { srTab = b.dataset.tab; renderStockReport(); }));
+  ['srBasis', 'srFrom', 'srTo'].forEach(id => document.getElementById(id).addEventListener('change', renderStockReport));
+  srCurEl.addEventListener('input', () => { try { localStorage.setItem('srsCurrency', srCurEl.value.trim()); } catch (e) {} renderStockReport(); });
+  document.getElementById('srExport').addEventListener('click', () => {
+    if (typeof XLSX === 'undefined') { alert(t('xlsxLibFailed')); return; }
+    const basis = document.getElementById('srBasis').value;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Code', 'Item', 'Category', 'Qty', 'UOM', 'Unit cost', 'Value', 'Cost source']]
+      .concat(srValuation(basis).map(x => [x.code, x.item, x.category, x.qty, x.uom, x.cost, x.value, x.src]))), 'Valuation');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Code', 'Item', 'UOM', '0-30', '31-60', '61-90', '91-180', '181+', 'Unit cost']]
+      .concat(srAging(basis).map(x => [x.code, x.item, x.uom].concat(x.buckets, [x.cost])))), 'Aging');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Code', 'Item', 'UOM', 'Opening', 'In', 'Out', 'Adjust', 'Closing']]
+      .concat(srSummary(document.getElementById('srFrom').value, document.getElementById('srTo').value).map(x => [x.code, x.item, x.uom, x.opening, x.inn, x.out, x.adj, x.closing]))), 'In-Out');
+    XLSX.writeFile(wb, 'stock-report.xlsx');
+  });
+
+  // ================= 供应商 / 退货 / 报表 =================
+  function supplierNames() {
+    const m = new Map();
+    suppliers.map(x => x.name).concat(receipts.map(x => x.supplier), purchaseOrders.map(x => x.supplier)).filter(Boolean)
+      .forEach(n => { const k = n.toLowerCase(); if (!m.has(k)) m.set(k, n); });
+    return Array.from(m.values()).sort();
+  }
+  function refreshSupplierList() {
+    document.getElementById('grnSupplierList').innerHTML = supplierNames().map(x => `<option value="${escapeHtml(x)}">`).join('');
+  }
+  function withSupplier(list, name) {   // 供应商不在清单里时返回加入后的新清单，否则 null
+    if (!name || list.some(x => x.name.toLowerCase() === name.toLowerCase())) return null;
+    return list.concat([{ id: 'sup_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name, contact: '', phone: '', email: '', note: '' }]);
+  }
+
+  const suppliersModal = document.getElementById('suppliersModal');
+  const supError = document.getElementById('supError');
+  let supEditingId = '';
+  const supFields = ['supName', 'supContact', 'supPhone', 'supEmail', 'supNote'];
+  function supClearForm() { supFields.forEach(id => { document.getElementById(id).value = ''; }); supEditingId = ''; }
+  function renderSuppliersModal() {
+    const rows = suppliers.slice().sort((a, b) => a.name.localeCompare(b.name)).map(x => `<div class="user-row">
+      <span>🏭 <b>${escapeHtml(x.name)}</b> <span class="me">${escapeHtml([x.contact, x.phone, x.email].filter(Boolean).join(' · '))}</span>${x.note ? ' <i>' + escapeHtml(x.note) + '</i>' : ''}</span>
+      <span><button class="edit-btn sup-edit" data-id="${escapeHtml(x.id)}">${t('editBtn')}</button><button class="del-btn sup-del" data-id="${escapeHtml(x.id)}">✕</button></span></div>`);
+    const el = document.getElementById('supList');
+    el.innerHTML = rows.join('') || `<div class="pl-item-meta">${t('supEmpty')}</div>`;
+    el.querySelectorAll('.sup-edit').forEach(b => b.addEventListener('click', () => {
+      const x = suppliers.find(y => y.id === b.dataset.id); if (!x) return;
+      supEditingId = x.id;
+      document.getElementById('supName').value = x.name; document.getElementById('supContact').value = x.contact || '';
+      document.getElementById('supPhone').value = x.phone || ''; document.getElementById('supEmail').value = x.email || '';
+      document.getElementById('supNote').value = x.note || '';
+    }));
+    el.querySelectorAll('.sup-del').forEach(b => b.addEventListener('click', async () => {
+      const x = suppliers.find(y => y.id === b.dataset.id); if (!x || !confirm(t('supDeleteConfirm', { name: x.name }))) return;
+      supError.textContent = '';
+      try { await pushExtra({ suppliers: suppliers.filter(y => y.id !== x.id), audit: [mkAudit('supDel', { name: x.name })] }); }
+      catch (e) { supError.textContent = t('syncFailed') + ': ' + e.message; }
+      renderSuppliersModal();
+    }));
+  }
+  document.getElementById('suppliersBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    supError.textContent = ''; supClearForm(); renderSuppliersModal(); suppliersModal.classList.add('open');
+  });
+  document.getElementById('supClose').addEventListener('click', () => suppliersModal.classList.remove('open'));
+  document.getElementById('supSaveBtn').addEventListener('click', async () => {
+    const v = id => document.getElementById(id).value.trim();
+    const name = v('supName');
+    if (!name) { supError.textContent = t('supNameReq'); return; }
+    if (suppliers.some(x => x.id !== supEditingId && x.name.toLowerCase() === name.toLowerCase())) { supError.textContent = t('supExists'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { supError.textContent = t('ghConfigMissing'); return; }
+    supError.textContent = '';
+    const rec = { id: supEditingId || 'sup_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name, contact: v('supContact'), phone: v('supPhone'), email: v('supEmail'), note: v('supNote') };
+    try {
+      await pushExtra({
+        suppliers: supEditingId ? suppliers.map(x => x.id === supEditingId ? rec : x) : suppliers.concat([rec]),
+        audit: [mkAudit('supSave', { name })]
+      });
+      supClearForm();
+    } catch (e) { supError.textContent = t('syncFailed') + ': ' + e.message; }
+    renderSuppliersModal();
+  });
+
+  // ---- 退货 ----
+  const rtnModal = document.getElementById('rtnModal');
+  let rtnCtx = null;
+  function rtnQtyOf(recId, list) {
+    return (list || returns).filter(x => x.recId === recId).reduce((n, x) => r4(n + x.qty), 0);
+  }
+  function openReturn(receipt, line) {
+    if (!isAdmin) return;
+    rtnCtx = { receiptId: receipt.id, recId: line.recId };
+    const max = r4(line.qty - rtnQtyOf(line.recId));
+    document.getElementById('rtnInfo').textContent = receipt.no + ' · ' + receiptLineText(line);
+    document.getElementById('rtnQtyLbl').textContent = t('rtnQtyLabel', { max });
+    document.getElementById('rtnQty').value = max;
+    document.getElementById('rtnDate').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('rtnReason').value = line.qc === 'reject' ? 'quality' : 'damaged';
+    document.getElementById('rtnNote').value = '';
+    document.getElementById('rtnError').textContent = '';
+    rtnModal.classList.add('open');
+  }
+  document.getElementById('rtnCancel').addEventListener('click', () => rtnModal.classList.remove('open'));
+  document.getElementById('rtnSave').addEventListener('click', async () => {
+    if (!isAdmin || !rtnCtx) return;
+    const err = document.getElementById('rtnError');
+    const qty = parseFloat(document.getElementById('rtnQty').value);
+    const date = document.getElementById('rtnDate').value;
+    if (!date || !(qty > 0)) { err.textContent = t('rtnNeedQty'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('rtnSave');
+    btn.disabled = true; err.textContent = '';
+    try {
+      const latest = await fetchSharedData();
+      const receipt = latest.receipts.find(x => x.id === rtnCtx.receiptId);
+      const line = receipt && receipt.lines.find(x => x.recId === rtnCtx.recId);
+      if (!line) throw new Error('receipt not found');
+      const max = r4(line.qty - rtnQtyOf(line.recId, latest.returns));
+      if (qty > max) { err.textContent = t('rtnTooMany', { max }); btn.disabled = false; return; }
+      const wasQc = line.qc === 'reject' ? 'reject' : 'pass';
+      const rid = 'rtn_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      const year = date.slice(0, 4);
+      let seq = 0;
+      latest.returns.forEach(x => { const m = /^RTN-(\d{4})-(\d+)$/.exec(x.no || ''); if (m && m[1] === year) seq = Math.max(seq, Number(m[2])); });
+      const no = 'RTN-' + year + '-' + String(seq + 1).padStart(4, '0');
+      let outRec = null;
+      if (wasQc === 'pass') {
+        const g = buildGroups(latest.records).find(x => x.key === groupKey(line));
+        if (!g || g.balance < qty) { err.textContent = t('rtnNoStock'); btn.disabled = false; return; }
+        outRec = stampNew({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), item: line.item, itemCode: line.itemCode || '', qty,
+          uom: line.uom || '', type: 'OUT', date, platform: '', expiryDate: line.expiryDate || '', batch: line.batch || '', loc: line.loc || '',
+          supplier: receipt.supplier || '', returnId: rid, returnNo: no
+        });
+      }
+      const sel = document.getElementById('rtnReason');
+      const ret = {
+        id: rid, no, date, supplier: receipt.supplier || '', grnId: receipt.id, grnNo: receipt.no, recId: line.recId,
+        item: line.item, itemCode: line.itemCode || '', qty, uom: line.uom || '', batch: line.batch || '', expiryDate: line.expiryDate || '', loc: line.loc || '',
+        reason: sel.value, note: document.getElementById('rtnNote').value.trim(), wasQc, outRecId: outRec ? outRec.id : '',
+        by: actorName(), at: new Date().toISOString()
+      };
+      const merged = outRec ? latest.records.concat([outRec]) : latest.records;
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+        { returns: latest.returns.concat([ret]), audit: [mkAudit('rtn', { no, item: line.item, qty, supplier: receipt.supplier || '—' })] });
+      records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      rtnModal.classList.remove('open');
+      renderCurrentView();
+    } catch (e) {
+      console.error(e);
+      err.textContent = t('syncFailed') + ': ' + e.message;
+    }
+    btn.disabled = false;
+  });
+
+  function renderReturns() {
+    const box = document.getElementById('returnsContainer');
+    const list = returns.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''));
+    document.getElementById('returnsEmpty').style.display = list.length ? 'none' : 'block';
+    box.innerHTML = '';
+    list.forEach(x => {
+      const card = document.createElement('div');
+      card.className = 'grn-card';
+      card.style.cursor = 'default';
+      card.innerHTML = `
+        <div class="grn-top"><span class="grn-no">↩ ${escapeHtml(x.no)}</span><span class="pl-card-meta" style="margin:0;">${escapeHtml(x.date || '')}</span></div>
+        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(x.supplier || '—')} · ${escapeHtml(x.grnNo || '')} · ${escapeHtml((x.itemCode ? x.itemCode + ' · ' : '') + x.item)} × ${x.qty} ${escapeHtml(x.uom || '')} · ${t('rtnR_' + x.reason)}${x.note ? ' · ' + escapeHtml(x.note) : ''}${x.wasQc === 'reject' ? ' · ' + t('qcRejectedTag') : ''}</div>
+        ${isAdmin ? `<div style="margin-top:8px;"><button class="danger-btn rtn-del">🗑 ${t('rtnUndoBtn')}</button></div>` : ''}`;
+      box.appendChild(card);
+      card.querySelectorAll('.rtn-del').forEach(b => b.addEventListener('click', async () => {
+        if (!isAdmin || !confirm(t('rtnDeleteConfirm', { no: x.no }))) return;
+        b.disabled = true;
+        try {
+          const latest = await fetchSharedData();
+          const merged = latest.records.filter(r => r.id !== x.outRecId);
+          await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+            { returns: latest.returns.filter(r => r.id !== x.id), audit: [mkAudit('rtnDelete', { no: x.no })] });
+          records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+          saveLocalCache();
+          setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+        } catch (e) { console.error(e); alert(t('syncFailed') + ': ' + e.message); }
+        renderCurrentView();
+      }));
+    });
+  }
+
+  // ---- 报表 ----
+  function buildReport(from, to) {
+    const inR = d => (!from || (d || '') >= from) && (!to || (d || '') <= to);
+    const sup = {};
+    const S = name => { const k = (name || '—').toLowerCase(); return sup[k] || (sup[k] = { name: name || '—', pos: 0, received: 0, onTime: 0, late: 0, grns: 0, lines: 0, pass: 0, hold: 0, reject: 0, returns: 0 }); };
+    const today = new Date().toISOString().slice(0, 10);
+    const progress = [];
+    purchaseOrders.filter(p => inR(p.date)).forEach(p => {
+      const s = S(p.supplier); s.pos++;
+      const st = poStatus(p);
+      if (st === 'received') {
+        s.received++;
+        if (p.expected) {
+          const last = receipts.filter(r => r.poId === p.id).map(r => r.date || '').sort().pop() || '';
+          if (last && last <= p.expected) s.onTime++; else s.late++;
+        }
+      }
+      if (st === 'open' || st === 'partial') {
+        const got = poReceived(p);
+        const pct = p.lines.length ? Math.round(100 * p.lines.reduce((n, l) => n + Math.min(1, (got[l.id] || 0) / l.qty), 0) / p.lines.length) : 0;
+        progress.push({ no: p.no, supplier: p.supplier || '—', expected: p.expected || '', pct, status: st, overdue: !!(p.expected && p.expected < today) });
+      }
+    });
+    progress.sort((a, b) => (b.overdue - a.overdue) || (a.expected || '9999').localeCompare(b.expected || '9999'));
+    const items = {};
+    receipts.filter(r => inR(r.date)).forEach(r => {
+      const s = S(r.supplier); s.grns++;
+      r.lines.forEach(l => {
+        s.lines++;
+        const q = l.qc || 'pass';
+        if (q === 'hold') s.hold++; else if (q === 'reject') s.reject++; else s.pass++;
+        const k = (l.item || '').toLowerCase();
+        const it = items[k] || (items[k] = { item: l.item, lines: 0, rejects: 0, holds: 0 });
+        it.lines++; if (q === 'reject') it.rejects++; if (q === 'hold') it.holds++;
+      });
+    });
+    returns.filter(x => inR(x.date)).forEach(x => { S(x.supplier).returns++; });
+    const rate = s => s.lines ? Math.round(1000 * s.reject / s.lines) / 10 : 0;
+    const suppliersRows = Object.values(sup).map(s => Object.assign(s, { rejectRate: rate(s) })).sort((a, b) => a.name.localeCompare(b.name));
+    const qcItems = Object.values(items).filter(x => x.rejects > 0).sort((a, b) => b.rejects - a.rejects).slice(0, 10);
+    return { suppliersRows, progress, qcItems };
+  }
+
+  const reportModal = document.getElementById('reportModal');
+  function renderReport() {
+    const rp = buildReport(document.getElementById('repFrom').value, document.getElementById('repTo').value);
+    const none = `<div class="pl-item-meta" style="margin-bottom:14px;">${t('repNone')}</div>`;
+    const tbl = (head, rows) => `<div class="report-wrap"><table class="report-table"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const e = escapeHtml;
+    let html = `<h3 style="margin:0 0 8px;">${t('repSuppliers')}</h3>` + (rp.suppliersRows.length ? tbl(
+      [t('repColSupplier'), t('repColPO'), t('repColReceived'), t('repColOnTime'), t('repColGrn'), t('repColLines'), t('repColReject'), t('repColHold'), t('repColReturns')],
+      rp.suppliersRows.map(s => [e(s.name), s.pos, s.received, s.onTime + ' / ' + s.late, s.grns, s.lines, s.reject + ' (' + s.rejectRate + '%)', s.hold, s.returns])) : none);
+    html += `<h3 style="margin:0 0 8px;">${t('repPoProgress')}</h3>` + (rp.progress.length ? tbl(
+      [t('repColPO'), t('repColSupplier'), t('repColExpected'), t('repColProgress'), ''],
+      rp.progress.map(x => [e(x.no), e(x.supplier), e(x.expected || '—'), x.pct + '%', x.overdue ? `<span class="qc-tag rej">${t('repOverdue')}</span>` : ''])) : none);
+    html += `<h3 style="margin:0 0 8px;">${t('repQcItems')}</h3>` + (rp.qcItems.length ? tbl(
+      [t('repColItem'), t('repColLines'), t('repColRejects'), t('repColHold')],
+      rp.qcItems.map(x => [e(x.item), x.lines, x.rejects, x.holds])) : none);
+    html += `<div class="pl-item-meta">${t('repNote')}</div>`;
+    document.getElementById('reportBody').innerHTML = html;
+    return rp;
+  }
+  document.getElementById('reportBtn').addEventListener('click', () => { renderReport(); reportModal.classList.add('open'); });
+  document.getElementById('repClose').addEventListener('click', () => reportModal.classList.remove('open'));
+  ['repFrom', 'repTo'].forEach(id => document.getElementById(id).addEventListener('change', renderReport));
+  document.getElementById('repExport').addEventListener('click', () => {
+    if (typeof XLSX === 'undefined') { alert(t('xlsxLibFailed')); return; }
+    const rp = buildReport(document.getElementById('repFrom').value, document.getElementById('repTo').value);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Supplier', 'POs', 'Fully received', 'On time', 'Late', 'GRNs', 'Lines', 'Pass', 'Hold', 'Reject', 'Reject %', 'Returns']]
+      .concat(rp.suppliersRows.map(s => [s.name, s.pos, s.received, s.onTime, s.late, s.grns, s.lines, s.pass, s.hold, s.reject, s.rejectRate, s.returns]))), 'Suppliers');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['PO', 'Supplier', 'Expected', 'Progress %', 'Status', 'Overdue']]
+      .concat(rp.progress.map(x => [x.no, x.supplier, x.expected, x.pct, x.status, x.overdue ? 'Y' : '']))), 'Open POs');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Item', 'Lines', 'Rejects', 'Holds']]
+      .concat(rp.qcItems.map(x => [x.item, x.lines, x.rejects, x.holds]))), 'QC');
+    XLSX.writeFile(wb, 'procurement-report.xlsx');
+  });
+
+  // ================= 采购单 PO =================
+  function poReceived(po) {   // 每行已收数量（拒收的不算已收）
+    const got = {};
+    const uomOf = {};
+    po.lines.forEach(x => { uomOf[x.id] = x.uom; });
+    receipts.forEach(r => {
+      if (r.poId !== po.id) return;
+      r.lines.forEach(l => {
+        if (!l.poLineId || l.qc === 'reject') return;
+        // 按采购单的单位累计：换算过的行用原始录入数量
+        const q = (l.origQty != null && normU(l.origUom) === normU(uomOf[l.poLineId])) ? l.origQty : l.qty;
+        got[l.poLineId] = r4((got[l.poLineId] || 0) + q);
+      });
+    });
+    return got;
+  }
+  function poStatus(po) {
+    if (po.status === 'cancelled') return 'cancelled';
+    if (po.status === 'closed') return 'closed';
+    const got = poReceived(po);
+    const all = po.lines.every(l => (got[l.id] || 0) >= l.qty);
+    const any = po.lines.some(l => (got[l.id] || 0) > 0);
+    return all ? 'received' : any ? 'partial' : 'open';
+  }
+  const expandedPOs = new Set();
+  const poStatusKey = { open: 'poStatusOpen', partial: 'poStatusPartial', received: 'poStatusReceived', closed: 'poStatusClosed', cancelled: 'poStatusCancelled' };
+
+  async function updatePOs(fn, auditEntry) {
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { alert(t('ghConfigMissing')); return false; }
+    try {
+      const latest = await fetchSharedData();
+      const list = fn(latest.purchaseOrders.map(x => Object.assign({}, x)));
+      await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
+        { purchaseOrders: list, audit: [auditEntry] });
+      records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      return true;
+    } catch (err) {
+      console.error(err);
+      alert(t('syncFailed') + ': ' + err.message);
+      return false;
+    }
+  }
+
+  function renderPurchaseOrders() {
+    const box = document.getElementById('poContainer');
+    const list = purchaseOrders.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''));
+    document.getElementById('poEmpty').style.display = list.length ? 'none' : 'block';
+    box.innerHTML = '';
+    list.forEach(po => {
+      const st = poStatus(po);
+      const open = expandedPOs.has(po.id);
+      const got = poReceived(po);
+      const card = document.createElement('div');
+      card.className = 'grn-card';
+      card.innerHTML = `
+        <div class="grn-top"><span class="grn-no">🧾 ${escapeHtml(po.no)}</span><span class="po-status ${st}">${t(poStatusKey[st])}</span></div>
+        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(po.supplier || '—')} · ${escapeHtml(po.date || '')}${po.expected ? ' · ' + t('poExpectedLabel') + ' ' + escapeHtml(po.expected) : ''} · ${t('grnLinesCount', { n: po.lines.length })}</div>
+        ${open ? `<div class="grn-lines">
+          ${po.lines.map(l => `<div class="grn-l">${escapeHtml((l.itemCode ? l.itemCode + ' · ' : '') + l.item)} — ${t('poReceivedOf', { got: got[l.id] || 0, qty: l.qty })} ${escapeHtml(l.uom || '')}</div>`).join('')}
+          ${po.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(po.note)}</div>` : ''}
+          ${isAdmin ? `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            ${(st === 'open' || st === 'partial') ? `<button class="export-btn po-receive">📥 ${t('poReceiveBtn')}</button><button class="export-btn po-close">✔ ${t('poCloseBtn')}</button>` : ''}
+            ${st === 'open' ? `<button class="danger-btn po-cancel">✖ ${t('poCancelBtn')}</button>` : ''}
+          </div>` : ''}</div>` : ''}`;
+      card.addEventListener('click', () => {
+        if (expandedPOs.has(po.id)) expandedPOs.delete(po.id); else expandedPOs.add(po.id);
+        renderPurchaseOrders();
+      });
+      box.appendChild(card);
+      const on = (sel, fn) => card.querySelectorAll(sel).forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); fn(b); }));
+      on('.po-receive', () => openGrnForPo(po.id));
+      on('.po-close', async (b) => {
+        if (!confirm(t('poCloseConfirm', { no: po.no }))) return;
+        b.disabled = true;
+        await updatePOs(l => l.map(x => x.id === po.id ? Object.assign(x, { status: 'closed' }) : x), mkAudit('poClose', { no: po.no }));
+        renderPurchaseOrders();
+      });
+      on('.po-cancel', async (b) => {
+        if (!confirm(t('poCancelConfirm', { no: po.no }))) return;
+        b.disabled = true;
+        await updatePOs(l => l.map(x => x.id === po.id ? Object.assign(x, { status: 'cancelled' }) : x), mkAudit('poCancel', { no: po.no }));
+        renderPurchaseOrders();
+      });
+    });
+  }
+
+  const poModal = document.getElementById('poModal');
+  const poLines = document.getElementById('poLines');
+  function addPoLine() {
+    const row = document.createElement('div');
+    row.className = 'grn-line';
+    row.innerHTML = `
+      <div class="field wide"><label>${t('itemNameLabel')}</label><input type="text" class="pl-name" list="itemNameList" autocomplete="off"></div>
+      <div class="field"><label>${t('itemCodeLabel')}</label><input type="text" class="pl-code" autocomplete="off"></div>
+      <div class="field"><label>${t('qtyLabel')}</label><input type="number" class="pl-qty" min="0" step="any"></div>
+      <div class="field"><label>${t('uomLabel')}</label><input type="text" class="pl-uom" autocomplete="off"></div>
+      <button type="button" class="grn-remove" title="${t('deleteBtn')}">✕</button>`;
+    poLines.appendChild(row);
+    const nameIn = row.querySelector('.pl-name');
+    const fill = () => {
+      const bm = masterByBarcode(nameIn.value);
+      if (bm) { nameIn.value = bm.item; row.querySelector('.pl-code').value = bm.itemCode || ''; }
+      const name = nameIn.value.trim();
+      const code = getNameToCodeMap()[name.toLowerCase()];
+      const codeIn = row.querySelector('.pl-code');
+      if (code && !codeIn.value) codeIn.value = code;
+      const m = findMaster(name, codeIn.value);
+      const known = records.find(r => r.uom && r.item.trim().toLowerCase() === name.toLowerCase());
+      const u = row.querySelector('.pl-uom');
+      if (!u.value) { const v = (m && m.uom) || (known && known.uom) || ''; if (v) u.value = v; }
+    };
+    nameIn.addEventListener('input', fill); nameIn.addEventListener('change', fill);
+    row.querySelector('.grn-remove').addEventListener('click', () => row.remove());
+  }
+  document.getElementById('newPoBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    document.getElementById('poDate').value = new Date().toISOString().slice(0, 10);
+    ['poSupplier', 'poExpected', 'poNote'].forEach(id => { document.getElementById(id).value = ''; });
+    refreshSupplierList();
+    document.getElementById('poError').textContent = '';
+    poLines.innerHTML = '';
+    addPoLine();
+    poModal.classList.add('open');
+  });
+  document.getElementById('poAddLineBtn').addEventListener('click', addPoLine);
+  document.getElementById('poCancel').addEventListener('click', () => poModal.classList.remove('open'));
+  document.getElementById('poSave').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const err = document.getElementById('poError');
+    const date = document.getElementById('poDate').value;
+    const supplier = document.getElementById('poSupplier').value.trim();
+    const lines = [];
+    poLines.querySelectorAll('.grn-line').forEach((row, i) => {
+      const l = {
+        id: 'pl' + Date.now().toString(36) + i,
+        item: row.querySelector('.pl-name').value.trim(),
+        itemCode: row.querySelector('.pl-code').value.trim(),
+        qty: parseFloat(row.querySelector('.pl-qty').value),
+        uom: row.querySelector('.pl-uom').value.trim()
+      };
+      if (l.item && l.qty > 0) lines.push(l);
+    });
+    if (!date || !lines.length) { err.textContent = t('poNeedLine'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('poSave');
+    btn.disabled = true; err.textContent = '';
+    try {
+      const latest = await fetchSharedData();
+      const year = date.slice(0, 4);
+      let seq = 0;
+      latest.purchaseOrders.forEach(p => { const m = /^PO-(\d{4})-(\d+)$/.exec(p.no || ''); if (m && m[1] === year) seq = Math.max(seq, Number(m[2])); });
+      const no = 'PO-' + year + '-' + String(seq + 1).padStart(4, '0');
+      const po = {
+        id: 'po_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), no, date, supplier,
+        expected: document.getElementById('poExpected').value, note: document.getElementById('poNote').value.trim(),
+        status: 'open', lines, by: actorName(), at: new Date().toISOString()
+      };
+      await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
+        { purchaseOrders: latest.purchaseOrders.concat([po]), suppliers: withSupplier(latest.suppliers, supplier) || undefined, audit: [mkAudit('poCreate', { no, n: lines.length, supplier: supplier || '—' })] });
+      records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      poModal.classList.remove('open');
+      expandedPOs.add(po.id);
+      renderCurrentView();
+    } catch (e) {
+      console.error(e);
+      err.textContent = t('syncFailed') + ': ' + e.message;
+    }
+    btn.disabled = false;
+  });
+
   // ================= 收货单 GRN =================
   const expandedReceipts = new Set();
   const receiptFilter = document.getElementById('receiptFilter');
 
   function receiptLineText(l) {
-    return (l.itemCode ? l.itemCode + ' · ' : '') + l.item + ' × ' + l.qty + ' ' + (l.uom || '')
+    return (l.itemCode ? l.itemCode + ' · ' : '') + l.item + ' × ' + l.qty + ' ' + (l.uom || '') + (l.origQty != null ? ' (' + t('convFrom', { qty: l.origQty, uom: l.origUom || '' }) + ')' : '')
       + (l.batch ? ' · 🏷 ' + l.batch : '') + (l.expiryDate ? ' · ' + l.expiryDate : '') + (l.loc ? ' · 📍' + l.loc : '');
   }
 
@@ -4736,6 +6849,12 @@
     const list = receipts.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''))
       .filter(r => !q || (r.no + ' ' + (r.supplier || '') + ' ' + (r.ref || '') + ' ' + r.lines.map(l => l.item + ' ' + (l.itemCode || '')).join(' ')).toLowerCase().includes(q));
     const box = document.getElementById('receiptsContainer');
+    const pend = receipts.reduce((n, r) => n + r.lines.filter(l => l.qc === 'hold').length, 0);
+    const pn = document.getElementById('qcPendingNote');
+    pn.style.display = pend ? 'inline-block' : 'none';
+    pn.textContent = '⏸ ' + t('qcPending', { n: pend });
+    renderPurchaseOrders();
+    renderReturns();
     document.getElementById('receiptsEmpty').style.display = list.length ? 'none' : 'block';
     box.innerHTML = '';
     list.forEach(r => {
@@ -4744,9 +6863,9 @@
       card.className = 'grn-card';
       card.innerHTML = `
         <div class="grn-top"><span class="grn-no">📥 ${escapeHtml(r.no)}</span><span class="pl-card-meta" style="margin:0;">${escapeHtml(r.date || '')}</span></div>
-        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(r.supplier || '—')}${r.ref ? ' · ' + escapeHtml(r.ref) : ''} · ${t('grnLinesCount', { n: r.lines.length })}${r.by ? ' · ' + escapeHtml(r.by) : ''}</div>
+        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(r.supplier || '—')}${r.ref ? ' · ' + escapeHtml(r.ref) : ''}${r.poNo && r.poNo !== r.ref ? ' · ' + escapeHtml(r.poNo) : ''} · ${t('grnLinesCount', { n: r.lines.length })}${r.by ? ' · ' + escapeHtml(r.by) : ''}</div>
         ${open ? `<div class="grn-lines">
-          ${r.lines.map(l => `<div class="grn-l">${escapeHtml(receiptLineText(l))}</div>`).join('')}
+          ${r.lines.map(l => `<div class="grn-l">${escapeHtml(receiptLineText(l))}${l.qc === 'hold' ? ` <span class="qc-tag">${t('qcHoldTag')}</span>` : ''}${l.qc === 'reject' ? ` <span class="qc-tag rej">${t('qcRejectedTag')}</span>` : ''}${(l.qc === 'hold' && isAdmin) ? `<span class="qc-btns"><button class="qc-pass" data-rec="${escapeHtml(l.recId)}">✅ ${t('qcPassBtn')}</button><button class="qc-rej" data-rec="${escapeHtml(l.recId)}">⛔ ${t('qcRejectBtn')}</button></span>` : ''}${rtnQtyOf(l.recId) > 0 ? ` <span class="qc-tag">${t('rtnReturnedTag', { n: rtnQtyOf(l.recId) })}</span>` : ''}${(isAdmin && l.qc !== 'hold' && r4(l.qty - rtnQtyOf(l.recId)) > 0) ? `<span class="qc-btns"><button class="rtn-btn" data-rec="${escapeHtml(l.recId)}">↩ ${t('rtnBtn')}</button></span>` : ''}</div>`).join('')}
           ${r.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(r.note)}</div>` : ''}
           <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
             <button class="export-btn grn-export" data-id="${escapeHtml(r.id)}">📄 ${t('grnExportBtn')}</button>
@@ -4757,6 +6876,40 @@
         renderReceivingView();
       });
       box.appendChild(card);
+      card.querySelectorAll('.rtn-btn').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const line = r.lines.find(x => x.recId === b.dataset.rec);
+        if (line) openReturn(r, line);
+      }));
+      card.querySelectorAll('.qc-pass, .qc-rej').forEach(b => b.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!isAdmin) return;
+        const result = b.classList.contains('qc-pass') ? 'pass' : 'reject';
+        const line = r.lines.find(x => x.recId === b.dataset.rec);
+        if (!line || !confirm(t('qcConfirm', { item: line.item, result: result === 'pass' ? t('qcPass') : t('qcReject') }))) return;
+        b.disabled = true;
+        try {
+          const latest = await fetchSharedData();
+          const merged = latest.records.map(x => {
+            if (x.id !== line.recId) return x;
+            const y = Object.assign({}, x);
+            if (result === 'pass') delete y.qc; else y.qc = 'reject';
+            return y;
+          });
+          const rcs = latest.receipts.map(x => x.id !== r.id ? x : Object.assign({}, x, {
+            lines: x.lines.map(l => l.recId !== line.recId ? l : Object.assign({}, l, { qc: result, qcBy: actorName(), qcAt: new Date().toISOString() }))
+          }));
+          await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+            { receipts: rcs, audit: [mkAudit('qcRelease', { no: r.no, item: line.item, result: result === 'pass' ? t('qcPass') : t('qcReject') })] });
+          records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+          saveLocalCache();
+          setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+        } catch (err) {
+          console.error(err);
+          alert(t('syncFailed') + ': ' + err.message);
+        }
+        renderReceivingView();
+      }));
       card.querySelectorAll('.grn-export').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); exportReceiptExcel(r); }));
       card.querySelectorAll('.grn-del').forEach(b => b.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -4764,9 +6917,11 @@
         b.disabled = true;
         try {
           const latest = await fetchSharedData();
-          const merged = latest.records.filter(x => x.grnId !== r.id);
+          const goneRet = latest.returns.filter(x => x.grnId === r.id);
+          const goneOut = new Set(goneRet.map(x => x.outRecId).filter(Boolean));
+          const merged = latest.records.filter(x => x.grnId !== r.id && !goneOut.has(x.id));
           await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
-            { receipts: latest.receipts.filter(x => x.id !== r.id), audit: [mkAudit('grnDelete', { no: r.no })] });
+            { receipts: latest.receipts.filter(x => x.id !== r.id), returns: latest.returns.filter(x => x.grnId !== r.id), audit: [mkAudit('grnDelete', { no: r.no })] });
           records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
           saveLocalCache();
           setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
@@ -4783,9 +6938,9 @@
   function exportReceiptExcel(r) {
     if (typeof XLSX === 'undefined') { alert(t('xlsxLibFailed')); return; }
     const aoa = [
-      ['GRN', r.no], ['Date', r.date || ''], ['Supplier', r.supplier || ''], ['Ref', r.ref || ''], ['Note', r.note || ''], [],
-      ['Code', 'Item', 'Qty', 'UOM', 'Batch', 'Expiry', 'Location']
-    ].concat(r.lines.map(l => [l.itemCode || '', l.item, l.qty, l.uom || '', l.batch || '', l.expiryDate || '', l.loc || '']));
+      ['GRN', r.no], ['Date', r.date || ''], ['Supplier', r.supplier || ''], ['Ref', r.ref || ''], ['PO', r.poNo || ''], ['Note', r.note || ''], [],
+      ['Code', 'Item', 'Qty', 'UOM', 'Batch', 'Expiry', 'Location', 'QC']
+    ].concat(r.lines.map(l => [l.itemCode || '', l.item, l.qty, l.uom || '', l.batch || '', l.expiryDate || '', l.loc || '', l.qc || 'pass']));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'GRN');
     XLSX.writeFile(wb, r.no + '.xlsx');
@@ -4799,6 +6954,7 @@
     pre = pre || {};
     const row = document.createElement('div');
     row.className = 'grn-line';
+    row.dataset.poLineId = pre.poLineId || '';
     row.innerHTML = `
       <div class="field wide"><label>${t('itemNameLabel')}</label><input type="text" class="gl-name" list="itemNameList" autocomplete="off" value="${escapeHtml(pre.item || '')}"></div>
       <div class="field"><label>${t('itemCodeLabel')}</label><input type="text" class="gl-code" autocomplete="off" value="${escapeHtml(pre.itemCode || '')}"></div>
@@ -4807,10 +6963,24 @@
       <div class="field"><label>${t('batchLabel')}</label><input type="text" class="gl-batch" autocomplete="off" value="${escapeHtml(pre.batch || '')}"></div>
       <div class="field"><label>${t('expiryDateLabel')}</label><input type="date" class="gl-exp" value="${escapeHtml(pre.expiryDate || '')}"></div>
       <div class="field"><label>${t('locationLabel')}</label><input type="text" class="gl-loc" list="locList" autocomplete="off" value="${escapeHtml(pre.loc || '')}"></div>
+      <div class="field" data-admin-only><label>${t('priceLabel')}</label><input type="number" class="gl-price" min="0" step="any" value="${pre.price || ''}"></div>
+      <div class="field"><label>${t('qcLabel')}</label><select class="gl-qc">
+        <option value="pass"${(pre.qc || 'pass') === 'pass' ? ' selected' : ''}>${t('qcPass')}</option>
+        <option value="hold"${pre.qc === 'hold' ? ' selected' : ''}>${t('qcHold')}</option>
+        <option value="reject"${pre.qc === 'reject' ? ' selected' : ''}>${t('qcReject')}</option></select></div>
+      <div class="conv-hint pl-item-meta" style="flex:1 1 100%; margin:0; display:none;"></div>
       <button type="button" class="grn-remove" title="${t('deleteBtn')}">✕</button>`;
     grnLines.appendChild(row);
     const nameIn = row.querySelector('.gl-name');
+    const updHint = () => {
+      const h = row.querySelector('.conv-hint');
+      const txt = convHintText(nameIn.value.trim(), row.querySelector('.gl-code').value.trim(), parseFloat(row.querySelector('.gl-qty').value), row.querySelector('.gl-uom').value);
+      h.textContent = txt; h.style.display = txt ? 'block' : 'none';
+    };
+    ['.gl-code', '.gl-qty', '.gl-uom'].forEach(sel => row.querySelector(sel).addEventListener('input', updHint));
     const fill = () => {
+      const bm = masterByBarcode(nameIn.value);
+      if (bm) { nameIn.value = bm.item; row.querySelector('.gl-code').value = bm.itemCode || ''; }
       const name = nameIn.value.trim();
       const code = getNameToCodeMap()[name.toLowerCase()];
       if (code && !row.querySelector('.gl-code').value) row.querySelector('.gl-code').value = code;
@@ -4820,6 +6990,7 @@
       if (!uomIn.value) { const u = (m && m.uom) || (known && known.uom) || ''; if (u) uomIn.value = u; }
       const locIn = row.querySelector('.gl-loc');
       if (m && m.loc && !locIn.value) locIn.value = m.loc;   // 上架建议：主档里的默认库位
+      updHint();
     };
     nameIn.addEventListener('input', fill);
     nameIn.addEventListener('change', fill);
@@ -4830,13 +7001,40 @@
     if (!isAdmin) return;
     document.getElementById('grnDate').value = new Date().toISOString().slice(0, 10);
     ['grnSupplier', 'grnRef', 'grnNote'].forEach(id => { document.getElementById(id).value = ''; });
-    document.getElementById('grnSupplierList').innerHTML = Array.from(new Set(receipts.map(r => r.supplier).filter(Boolean)))
-      .sort().map(x => `<option value="${escapeHtml(x)}">`).join('');
+    refreshSupplierList();
     document.getElementById('grnError').textContent = '';
     grnLines.innerHTML = '';
+    fillGrnPoSelect('');
     addGrnLine();
     grnModal.classList.add('open');
   });
+  function fillGrnPoSelect(selId) {
+    const sel = document.getElementById('grnPo');
+    sel.innerHTML = `<option value="">${t('grnNoPo')}</option>` + purchaseOrders
+      .filter(po => ['open', 'partial'].includes(poStatus(po)))
+      .map(po => `<option value="${escapeHtml(po.id)}">${escapeHtml(po.no)} · ${escapeHtml(po.supplier || '—')}</option>`).join('');
+    sel.value = selId || '';
+  }
+  document.getElementById('grnPo').addEventListener('change', (e) => {
+    const po = purchaseOrders.find(x => x.id === e.target.value);
+    if (!po) return;
+    document.getElementById('grnSupplier').value = po.supplier || '';
+    document.getElementById('grnRef').value = po.no;
+    grnLines.innerHTML = '';
+    const got = poReceived(po);
+    let n = 0;
+    po.lines.forEach(l => {
+      const left = r4(l.qty - (got[l.id] || 0));
+      if (left > 0) { addGrnLine({ item: l.item, itemCode: l.itemCode, qty: left, uom: l.uom, poLineId: l.id }); n++; }
+    });
+    if (!n) addGrnLine();
+    grnLines.querySelectorAll('.gl-name').forEach(i => i.dispatchEvent(new Event('change')));
+  });
+  function openGrnForPo(poId) {
+    document.getElementById('newReceiptBtn').click();
+    fillGrnPoSelect(poId);
+    document.getElementById('grnPo').dispatchEvent(new Event('change'));
+  }
   document.getElementById('grnAddLineBtn').addEventListener('click', () => addGrnLine());
   document.getElementById('grnCancel').addEventListener('click', () => grnModal.classList.remove('open'));
 
@@ -4847,6 +7045,7 @@
     const supplier = document.getElementById('grnSupplier').value.trim();
     const ref = document.getElementById('grnRef').value.trim();
     const note = document.getElementById('grnNote').value.trim();
+    const poId = document.getElementById('grnPo').value;
     const lines = [];
     grnLines.querySelectorAll('.grn-line').forEach(row => {
       const l = {
@@ -4856,9 +7055,16 @@
         uom: row.querySelector('.gl-uom').value.trim(),
         batch: row.querySelector('.gl-batch').value.trim(),
         expiryDate: row.querySelector('.gl-exp').value,
-        loc: row.querySelector('.gl-loc').value.trim()
+        loc: row.querySelector('.gl-loc').value.trim(),
+        qc: row.querySelector('.gl-qc').value,
+        poLineId: row.dataset.poLineId || '',
+        price: parseFloat(row.querySelector('.gl-price').value) || 0
       };
-      if (l.item && l.qty > 0) lines.push(l);
+      if (l.item && l.qty > 0) {
+        const c = convertQty(l.item, l.itemCode, l.qty, l.uom);
+        if (c.origQty != null) { l.origQty = c.origQty; l.origUom = c.origUom; l.qty = c.qty; l.uom = c.uom; if (l.price > 0) l.price = Math.round(l.price / c.factor * 10000) / 10000; }
+        lines.push(l);
+      }
     });
     if (!date || !lines.length) { err.textContent = t('grnNeedLine'); return; }
     const cfg = getGhConfig();
@@ -4877,19 +7083,25 @@
         if (l.loc && !newLocs.some(x => x.code.toLowerCase() === l.loc.toLowerCase())) {
           newLocs.push({ id: 'loc_' + Date.now().toString(36) + i, code: l.loc, note: '' });
         }
-        return stampNew({
+        const rec = {
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + i,
           item: l.item, itemCode: l.itemCode, qty: l.qty, uom: l.uom, type: 'IN', date, platform: '',
           expiryDate: l.expiryDate, batch: l.batch, loc: l.loc, supplier, grnId, grnNo: no
-        });
+        };
+        if (l.qc === 'hold' || l.qc === 'reject') rec.qc = l.qc;
+        if (l.price > 0) rec.price = l.price;
+        return stampNew(rec);
       });
+      const po = poId ? latest.purchaseOrders.find(x => x.id === poId) : null;
       const receipt = {
         id: grnId, no, date, supplier, ref, note, by: actorName(), at: new Date().toISOString(),
         lines: lines.map((l, i) => Object.assign({}, l, { recId: recs[i].id }))
       };
+      if (po) { receipt.poId = po.id; receipt.poNo = po.no; receipt.lines.forEach(l => { if (!l.poLineId) delete l.poLineId; }); }
+      else receipt.lines.forEach(l => { delete l.poLineId; });
       const merged = latest.records.concat(recs);
       await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
-        { receipts: latest.receipts.concat([receipt]), locations: newLocs, audit: [mkAudit('grn', { no, n: lines.length, supplier: supplier || '—' })] });
+        { receipts: latest.receipts.concat([receipt]), locations: newLocs, suppliers: withSupplier(latest.suppliers, supplier) || undefined, audit: [mkAudit('grn', { no, n: lines.length, supplier: supplier || '—' })] });
       records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
       saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
@@ -5202,6 +7414,9 @@
         <div class="mfields">
           <input data-f="category" list="masterCatList" placeholder="${t('categoryLabel')}" value="${escapeHtml(String(masterVal(r, 'category')))}">
           <input data-f="uom" placeholder="${t('uomLabel')}" value="${escapeHtml(String(masterVal(r, 'uom')))}">
+          <input data-f="altUom" placeholder="${t('altUomLabel')}" value="${escapeHtml(String(masterVal(r, 'altUom')))}">
+          <input data-f="factor" type="number" min="0" step="any" placeholder="${t('factorLabel')}" value="${masterVal(r, 'factor') || ''}">
+          <input data-f="price" type="number" min="0" step="any" placeholder="${t('priceMasterLabel')}" value="${masterVal(r, 'price') || ''}">
           <input data-f="minStock" type="number" min="0" step="any" placeholder="${t('minStockShort')}" value="${masterVal(r, 'minStock') || ''}">
           <input data-f="barcode" placeholder="${t('barcodeLabel')}" value="${escapeHtml(String(masterVal(r, 'barcode')))}">
           <input data-f="loc" list="locList" placeholder="${t('defaultLocLabel')}" value="${escapeHtml(String(masterVal(r, 'loc')))}">
@@ -5211,7 +7426,7 @@
       div.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
         const key = div.dataset.key;
         const d = masterDraft.get(key) || {};
-        d[inp.dataset.f] = inp.dataset.f === 'minStock' ? (parseFloat(inp.value) || 0) : inp.value.trim();
+        d[inp.dataset.f] = (inp.dataset.f === 'minStock' || inp.dataset.f === 'factor' || inp.dataset.f === 'price') ? (parseFloat(inp.value) || 0) : inp.value.trim();
         masterDraft.set(key, d);
       }));
     });
@@ -5255,11 +7470,20 @@
       const rows = masterRows();
       const out = [];
       rows.forEach(r => {
-        const v = { category: masterVal(r, 'category'), uom: masterVal(r, 'uom'), minStock: Number(masterVal(r, 'minStock')) || 0, barcode: masterVal(r, 'barcode'), loc: masterVal(r, 'loc') };
-        const hasAny = v.category || v.minStock > 0 || v.barcode || v.loc || (r.m && r.m.uom) || (masterDraft.get(r.key) || {}).uom;
+        const v = { category: masterVal(r, 'category'), uom: masterVal(r, 'uom'), minStock: Number(masterVal(r, 'minStock')) || 0, barcode: masterVal(r, 'barcode'), loc: masterVal(r, 'loc'), altUom: masterVal(r, 'altUom'), factor: Number(masterVal(r, 'factor')) || 0, price: Number(masterVal(r, 'price')) || 0 };
+        const hasAny = v.category || v.minStock > 0 || v.barcode || v.loc || v.altUom || v.factor > 0 || v.price > 0 || (r.m && r.m.uom) || (masterDraft.get(r.key) || {}).uom;
         if (!hasAny && !r.isNew) return;
         out.push(Object.assign({ id: (r.m && r.m.id) || r.id || ('im_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), item: r.item, itemCode: r.itemCode }, v));
       });
+      const seenBc = new Map();
+      for (const v of out) {
+        if (v.altUom && (!(v.factor > 0) || normU(v.altUom) === normU(v.uom))) { err.textContent = t('masterNeedFactor', { item: v.item }); btn.disabled = false; return; }
+        if (v.barcode) {
+          const k = normU(v.barcode);
+          if (seenBc.has(k) && seenBc.get(k) !== v.id) { err.textContent = t('masterDupBarcode', { code: v.barcode }); btn.disabled = false; return; }
+          seenBc.set(k, v.id);
+        }
+      }
       await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
         { itemMaster: out, audit: [mkAudit('master', { n: out.length })] });
       records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
@@ -5280,7 +7504,10 @@
     plCreate: 'actPlCreate', plDelete: 'actPlDelete', plTake: 'actPlTake', plUndo: 'actPlUndo',
     clearAll: 'actClearAll', archive: 'actArchive', adjust: 'actAdjust', master: 'actMaster',
     userAdd: 'actUserAdd', userRemove: 'actUserRemove', enable: 'actEnable',
-    locAdd: 'actLocAdd', locDel: 'actLocDel', transfer: 'actTransfer', grn: 'actGrn', grnDelete: 'actGrnDelete'
+    locAdd: 'actLocAdd', locDel: 'actLocDel', transfer: 'actTransfer', grn: 'actGrn', grnDelete: 'actGrnDelete',
+    poCreate: 'actPoCreate', poClose: 'actPoClose', poCancel: 'actPoCancel', qcRelease: 'actQc',
+    supSave: 'actSupSave', supDel: 'actSupDel', rtn: 'actRtn', rtnDelete: 'actRtnDelete',
+    soCreate: 'actSoCreate', soClose: 'actSoClose', soCancel: 'actSoCancel', doCreate: 'actDoCreate', doPod: 'actDoPod', doDelete: 'actDoDelete'
   };
   function auditText(e) {
     const key = AUDIT_KEYS[e.a];
@@ -5441,16 +7668,18 @@
   // 归档规则：日期 <= 截止日期 且 没有关联 Packing List 的记录 → 移入 archive.json；
   // 每个货物在 data.json 中留一条“期初结余”记录，所以库存总数保持不变。
   function archiveEligible(recs, cutoff) {
-    return recs.filter(r => r.date && r.date <= cutoff && !r.sourcePackingListItemId);
+    return recs.filter(r => r.date && r.date <= cutoff && !r.sourcePackingListItemId && !r.qc && !r.doId);
   }
 
   // 为被归档的记录生成“期初结余”：每个货物每个批次一条；超库存出库部分留一条 OUT
   function makeOpenings(eligible, cutoff) {
     const out = [];
+    const cm = unitCostMap(eligible);
     const mk = (g, qty, type, batch, expiry, loc) => ({
       id: 'open_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + out.length,
       item: g.item, itemCode: g.itemCode, qty, uom: g.uom, type, date: cutoff,
       platform: '', expiryDate: expiry || '', batch: batch || '', loc: loc || '', isOpening: true,
+      ...(type === 'IN' && cm[g.key] > 0 ? { price: Math.round(cm[g.key] * 10000) / 10000 } : {}),
       by: actorName(), at: new Date().toISOString()
     });
     buildGroups(eligible).forEach(g => {
