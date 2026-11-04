@@ -342,6 +342,37 @@
   }
   .edit-btn:hover { background: #e8edfc; color: var(--accent); }
   .balance-cell { font-size: 16px; font-weight: 700; }
+  .grn-line { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding: 10px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; background: #fafbfc; }
+  .grn-line .field { flex: 1 1 110px; min-width: 90px; }
+  .grn-line .field.wide { flex: 2 1 200px; }
+  .grn-line .field input { width: 100%; margin: 0; min-width: 0; }
+  .grn-line .field label { font-size: 11px; }
+  .grn-line .grn-remove { border: none; background: transparent; color: var(--out); cursor: pointer; font-size: 16px; padding: 8px; }
+  .grn-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; }
+  .grn-card:hover { border-color: var(--accent); }
+  .grn-card .grn-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+  .grn-card .grn-no { font-weight: 700; font-size: 15px; }
+  .grn-lines { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; font-size: 13px; }
+  .grn-lines .grn-l { padding: 6px 0; border-bottom: 1px dashed var(--border); }
+  .mrow { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .mrow .mname { font-size: 14px; margin-bottom: 6px; }
+  .mrow .mfields { display: grid; grid-template-columns: 1.1fr 0.7fr 0.7fr 1fr 1fr; gap: 8px; }
+  .mrow .mfields input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; margin: 0; }
+  @media (max-width: 560px) { .mrow .mfields { grid-template-columns: 1fr 1fr; } }
+  .alert-chip { border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .alert-chip.low { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+  .alert-chip.expired { color: var(--out); background: var(--out-bg); border-color: transparent; }
+  .alert-chip.soon { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+  .alert-chip.active { outline: 2px solid var(--accent); }
+  .alert-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer; }
+  .alert-row:hover { background: var(--row-hover); }
+  .batch-block { padding: 10px 4px 8px; }
+  .batch-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 6px; }
+  .batch-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .batch-chip { background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+  .batch-warn { color: var(--out); font-size: 12px; font-weight: 600; margin-top: 6px; }
+  .cat-tag { display: inline-block; margin-left: 6px; font-size: 11px; color: var(--accent); background: #e8edfc; border-radius: 999px; padding: 1px 8px; }
+  .low-flag { color: var(--out); font-weight: 700; margin-left: 4px; }
 
   .detail-row td {
     background: var(--sub-bg);
@@ -1064,18 +1095,58 @@
         <div class="choice-title" data-i18n="choicePackingTitle">Packing List</div>
         <div class="choice-desc" data-i18n="choicePackingDesc">领料清单，勾选后自动扣减库存</div>
       </button>
+      <button class="choice-card" id="gotoReceivingBtn">
+        <div class="choice-icon">📥</div>
+        <div class="choice-title" data-i18n="choiceReceivingTitle">Receiving (GRN)</div>
+        <div class="choice-desc" data-i18n="choiceReceivingDesc">收货入库，生成收货单</div>
+      </button>
       <button class="choice-card" id="gotoStockBtn">
         <div class="choice-icon">📦</div>
         <div class="choice-title" data-i18n="choiceStockTitle">Stock Balance</div>
         <div class="choice-desc" data-i18n="choiceStockDesc">查看库存总览与进出记录</div>
+        <div id="stockAlertBadge" class="expiry-tag expired" style="display:none; margin-top:8px;"></div>
       </button>
+    </div>
+  </div>
+
+  <!-- 收货单 GRN 列表页 -->
+  <div id="receivingView" style="display:none;">
+    <div class="panel">
+      <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
+        <h2 style="margin:0;" data-i18n="receivingPanelTitle">收货单 (GRN)</h2>
+        <button class="admin-btn" id="newReceiptBtn" data-admin-only data-i18n="newReceiptBtn">+ 新收货单</button>
+      </div>
+      <input type="text" id="receiptFilter" data-i18n-ph="receiptFilterPh" autocomplete="off" style="margin:10px 0; width:100%;">
+      <div id="receiptsContainer"></div>
+      <div class="empty" id="receiptsEmpty" style="display:none;" data-i18n="receiptsEmpty">还没有收货单。</div>
+    </div>
+  </div>
+
+  <!-- 新收货单（管理员） -->
+  <div class="modal-overlay" id="grnModal">
+    <div class="modal-card" style="max-width:760px;">
+      <h2 data-i18n="grnTitle">新收货单</h2>
+      <div class="sub" data-i18n="grnSub">保存后，每一行会成为一条入库记录（带批次、到期日、库位），并关联到这张收货单。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><label for="grnDate" data-i18n="dateLabel">日期</label><input type="date" id="grnDate"></div>
+        <div class="field"><label for="grnSupplier" data-i18n="supplierLabel">供应商</label><input type="text" id="grnSupplier" list="grnSupplierList" autocomplete="off"><datalist id="grnSupplierList"></datalist></div>
+        <div class="field"><label for="grnRef" data-i18n="refLabel">采购单 / 送货单号</label><input type="text" id="grnRef" autocomplete="off"></div>
+        <div class="field"><label for="grnNote" data-i18n="noteLabel">备注</label><input type="text" id="grnNote" autocomplete="off"></div>
+      </div>
+      <div id="grnLines"></div>
+      <button type="button" class="lock-alt-link" id="grnAddLineBtn" style="margin-bottom:12px;" data-i18n="addItemBtn">+ Add item</button>
+      <div class="modal-error" id="grnError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="grnCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="grnSave" data-i18n="saveBtn">保存</button>
+      </div>
     </div>
   </div>
 
   <!-- Packing List 列表页 -->
   <div id="packingListView" style="display:none;">
     <div class="panel">
-      <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0;">
+      <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="packingListPanelTitle">Packing Lists</h2>
         <button class="admin-btn" id="newPackingListBtn" data-admin-only data-i18n="newPackingListBtn">+ New</button>
       </div>
@@ -1137,6 +1208,125 @@
       <div class="modal-btn-row">
         <button class="btn-secondary" id="archiveCancel" data-i18n="cancelBtn">取消</button>
         <button class="btn-primary" id="archiveConfirm" data-i18n="archiveConfirmBtn">确认归档</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 库位管理（管理员） -->
+  <div class="modal-overlay" id="locationsModal">
+    <div class="modal-card" style="max-width:520px;">
+      <h2 data-i18n="locationsTitle">库位管理</h2>
+      <div class="sub" data-i18n="locationsSub">例如 A-01-02（区-架-层）。点“查看”可只看该库位里的货物。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><input type="text" id="locNewCode" data-i18n-ph="locationCodePh" autocomplete="off"></div>
+        <div class="field"><input type="text" id="locNewNote" data-i18n-ph="noteLabel" autocomplete="off"></div>
+      </div>
+      <button class="export-btn" id="locAddBtn" style="margin-bottom:10px;" data-i18n="locAddBtn">＋ 新增库位</button>
+      <div id="locList2" style="margin-bottom:14px;"></div>
+      <div class="modal-error" id="locError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="locClose" data-i18n="closeBtn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 库位转移 / 上架（管理员） -->
+  <div class="modal-overlay" id="transferModal">
+    <div class="modal-card" style="max-width:520px;">
+      <h2 data-i18n="transferTitle">库位转移</h2>
+      <div class="sub" data-i18n="transferSub">把某一批货从一个库位移到另一个库位（也可用于给没有库位的库存上架）。库存总数不变。</div>
+      <div class="field" style="margin-bottom:10px;">
+        <label for="tfItem" data-i18n="itemNameLabel">货物名称</label>
+        <input type="text" id="tfItem" list="tfItemList" autocomplete="off" data-i18n-ph="masterFilterPh">
+        <datalist id="tfItemList"></datalist>
+      </div>
+      <div class="field" style="margin-bottom:10px;">
+        <label for="tfLot" data-i18n="transferFromLabel">从（库位 / 批次）</label>
+        <select id="tfLot"></select>
+      </div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field">
+          <label for="tfQty" data-i18n="qtyLabel">数量</label>
+          <input type="number" id="tfQty" min="0" step="any">
+        </div>
+        <div class="field">
+          <label for="tfTo" data-i18n="transferToLabel">转到库位</label>
+          <input type="text" id="tfTo" list="locList" autocomplete="off">
+        </div>
+      </div>
+      <div class="modal-error" id="tfError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="tfCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="tfApply" data-i18n="transferApplyBtn">确认转移</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 盘点 / 库存调整（管理员） -->
+  <div class="modal-overlay" id="stockTakeModal">
+    <div class="modal-card" style="max-width:720px;">
+      <h2 data-i18n="stockTakeTitle">盘点 / 库存调整</h2>
+      <div class="sub" data-i18n="stockTakeSub">填写实际点到的数量，系统会按差额生成调整记录。出库调整会按 FEFO 从最早到期的批次扣除。不填的货物不会改动。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field">
+          <label for="stReason" data-i18n="reasonLabel">原因</label>
+          <select id="stReason">
+            <option value="count" data-i18n="reasonCount">盘点差异</option>
+            <option value="damaged" data-i18n="reasonDamaged">损坏</option>
+            <option value="expired" data-i18n="reasonExpired">过期报废</option>
+            <option value="lost" data-i18n="reasonLost">遗失</option>
+            <option value="found" data-i18n="reasonFound">找回 / 多出</option>
+            <option value="other" data-i18n="reasonOther">其他</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="stNote" data-i18n="noteLabel">备注</label>
+          <input type="text" id="stNote" data-i18n-ph="optionalPlaceholder" autocomplete="off">
+        </div>
+      </div>
+      <input type="text" id="stFilter" data-i18n-ph="masterFilterPh" autocomplete="off">
+      <div class="modal-status" id="stStatus"></div>
+      <div id="stList" style="margin-bottom:14px;"></div>
+      <div class="modal-error" id="stError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="stCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="stApply" data-i18n="stApplyBtn">应用调整</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 货物主档（管理员） -->
+  <div class="modal-overlay" id="masterModal">
+    <div class="modal-card" style="max-width:720px;">
+      <h2 data-i18n="masterTitle">货物主档</h2>
+      <div class="sub" data-i18n="masterSub">为每个货物设置分类、UOM、最低库存（低于或等于此数会提醒）和条码。</div>
+      <input type="text" id="masterFilter" data-i18n-ph="masterFilterPh" autocomplete="off">
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><input type="text" id="masterNewName" data-i18n-ph="itemNameLabel" autocomplete="off"></div>
+        <div class="field"><input type="text" id="masterNewCode" data-i18n-ph="itemCodeLabel" autocomplete="off"></div>
+      </div>
+      <button class="export-btn" id="masterAddBtn" style="margin-bottom:10px;" data-i18n="masterAddBtn">＋ 新增货物</button>
+      <datalist id="masterCatList"></datalist>
+      <div class="modal-status" id="masterStatus"></div>
+      <div id="masterList" style="margin-bottom:14px;"></div>
+      <div class="modal-error" id="masterError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="masterCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="masterSave" data-i18n="saveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 操作日志（管理员） -->
+  <div class="modal-overlay" id="activityModal">
+    <div class="modal-card" style="max-width:720px;">
+      <h2 data-i18n="activityTitle">操作日志</h2>
+      <div class="sub" data-i18n="activitySub">记录谁在什么时候做了什么（最近 1000 条）。</div>
+      <input type="text" id="activityFilter" data-i18n-ph="activityFilterPh" autocomplete="off">
+      <div class="modal-status" id="activityStatus"></div>
+      <div id="activityList" style="margin-bottom:14px;"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="activityClose" data-i18n="closeBtn">关闭</button>
       </div>
     </div>
   </div>
@@ -1206,6 +1396,14 @@
             <label for="editExpiry" data-i18n="expiryDateLabel">过期日期</label>
             <input type="date" id="editExpiry">
           </div>
+          <div class="field">
+            <label for="editBatch" data-i18n="batchLabel">批次 / Lot</label>
+            <input type="text" id="editBatch" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="editLoc" data-i18n="locationLabel">库位</label>
+            <input type="text" id="editLoc" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off" list="locList">
+          </div>
         </div>
         <div class="modal-error" id="editRecordError"></div>
         <div class="modal-btn-row">
@@ -1232,6 +1430,14 @@
 
   <!-- 库存页 -->
   <div id="stockView" style="display:none;">
+
+  <div class="panel" id="alertsPanel" style="display:none;">
+    <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
+      <h2 style="margin:0;" data-i18n="alertsTitle">⚠ 提醒</h2>
+      <div id="alertChips" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+    </div>
+    <div id="alertDetail" style="margin-top:10px;"></div>
+  </div>
 
   <div class="admin-notice" id="adminNotice" data-i18n="adminRequiredNotice">仅管理员可新增或删除记录。点击右上角"管理员"登录以进行操作。</div>
 
@@ -1299,14 +1505,28 @@
         <label for="manExpiry" data-i18n="expiryDateLabel">过期日期</label>
         <input type="date" id="manExpiry">
       </div>
+      <div class="field">
+        <label for="manBatch" data-i18n="batchLabel">批次 / Lot</label>
+        <input type="text" id="manBatch" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="manLoc" data-i18n="locationLabel">库位</label>
+        <input type="text" id="manLoc" placeholder="选填" data-i18n-ph="optionalPlaceholder" autocomplete="off" list="locList">
+        <datalist id="locList"></datalist>
+      </div>
       <button type="submit" class="add-btn" data-i18n="addRecordBtn">新增记录</button>
     </form>
   </div>
 
   <div class="panel">
-    <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0;">
+    <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
       <h2 style="margin:0;" data-i18n="overviewPanelTitle">货物库存总览</h2>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="export-btn" id="locationsBtn" data-admin-only data-i18n="locationsBtn">📍 Locations</button>
+        <button class="export-btn" id="transferBtn" data-admin-only data-i18n="transferBtn">↔ Transfer</button>
+        <button class="export-btn" id="masterBtn" data-admin-only data-i18n="masterBtn">🗂 Item master</button>
+        <button class="export-btn" id="stockTakeBtn" data-admin-only data-i18n="stockTakeBtn">⚖ Stock take</button>
+        <button class="export-btn" id="activityBtn" data-admin-only data-i18n="activityBtn">📜 Activity</button>
         <button class="export-btn" id="archiveBtn" data-admin-only data-i18n="archiveBtn">📦 Archive old records</button>
         <button class="danger-btn" id="clearAllStockBtn" data-admin-only data-i18n="clearAllStockBtn">🗑️ Clear All</button>
       </div>
@@ -1318,6 +1538,18 @@
         <label for="filterPlatform" data-i18n="platformLabel">Platform / Vessel</label>
         <select id="filterPlatform">
           <option value="all" data-i18n="allPlatforms">全部平台/船只</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filterCategory" data-i18n="categoryLabel">分类</label>
+        <select id="filterCategory">
+          <option value="all" data-i18n="allCategories">全部分类</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filterLocation" data-i18n="locationLabel">库位</label>
+        <select id="filterLocation">
+          <option value="all" data-i18n="allLocations">全部库位</option>
         </select>
       </div>
       <div class="field">
@@ -1489,6 +1721,109 @@
       userYou: '您',
       userPwTooShort: '请填写 ID，密码至少 6 位。',
       userCantRemoveSelf: '不能删除自己当前登录的账号。',
+      actAdd: '新增记录：{item} {type} {qty}（{date}）',
+      actImport: 'Excel 导入 {n} 条（{type}）',
+      actEdit: '编辑记录：{item} {type} {qty}（{date}）',
+      actDelete: '删除记录：{item} {type} {qty}（{date}）',
+      actPlCreate: '创建 Packing List「{title}」（{n} 项）',
+      actPlDelete: '删除 Packing List「{title}」',
+      actPlTake: 'Packing List「{pl}」领取：{item} × {qty}',
+      actPlUndo: '撤销领取：{item}（{pl}）',
+      actClearAll: '清空全部库存记录（{n} 条）',
+      actArchive: '归档 {n} 条记录（截止 {cutoff}）',
+      actAdjust: '盘点调整 {n} 个货物（{reason}{note}）',
+      actMaster: '保存货物主档（{n} 项）',
+      actUserAdd: '添加 / 重设用户：{id}',
+      actUserRemove: '删除用户：{id}',
+      actEnable: '启用用户账号（首个用户：{id}）',
+      activityBtn: '📜 操作日志',
+      activityTitle: '操作日志',
+      activitySub: '记录谁在什么时候做了什么（最近 1000 条）。',
+      activityFilterPh: '搜索操作人或内容…',
+      activityEmpty: '暂无日志。',
+      alertsTitle: '⚠ 提醒',
+      alertBadge: '{n} 项提醒',
+      alertExpired: '已过期批次',
+      alertSoon: '30 天内到期',
+      alertLow: '低库存',
+      allCategories: '全部分类',
+      categoryLabel: '分类',
+      barcodeLabel: '条码',
+      batchLabel: '批次 / Lot',
+      batchesTitle: '批次（先到期先出）',
+      colBy: '操作人',
+      countAdjustBtn: '盘点 / 调整',
+      fefoHint: 'FEFO 先出：{list}',
+      masterAddBtn: '＋ 新增货物',
+      masterBtn: '🗂 货物主档',
+      masterFilterPh: '搜索货物名称或编号…',
+      masterSub: '为每个货物设置分类、UOM、最低库存（库存低于或等于此数会提醒）和条码。',
+      masterTitle: '货物主档',
+      minStockShort: '最低库存',
+      noBatchStock: '该货物目前没有库存批次。',
+      noteLabel: '备注',
+      overdrawnWarn: '出库数量超过库存 {qty}，请核对或做盘点调整。',
+      reasonLabel: '原因',
+      reasonCount: '盘点差异',
+      reasonDamaged: '损坏',
+      reasonExpired: '过期报废',
+      reasonFound: '找回 / 多出',
+      reasonLost: '遗失',
+      reasonOther: '其他',
+      stApplyBtn: '应用调整',
+      stConfirm: '将为 {n} 个货物生成调整记录，确定吗？',
+      stCountedPh: '实点数量',
+      stNothing: '没有需要调整的差额，请先填写实点数量。',
+      stSystemQty: '系统库存',
+      stockTakeBtn: '⚖ 盘点',
+      stockTakeSub: '填写实际点到的数量，系统会按差额生成调整记录。减少时按 FEFO 从最早到期的批次扣除。不填的货物不会改动。',
+      stockTakeTitle: '盘点 / 库存调整',
+      actGrn: '收货单 {no}：{n} 行，供应商 {supplier}',
+      actGrnDelete: '删除收货单 {no}（对应入库记录一并删除）',
+      actLocAdd: '新增库位：{code}',
+      actLocDel: '删除库位：{code}',
+      actTransfer: '库位转移：{item} × {qty}，{from} → {to}',
+      allLocations: '全部库位',
+      choiceReceivingTitle: 'Receiving (GRN)',
+      choiceReceivingDesc: '收货入库，生成收货单',
+      defaultLocLabel: '默认库位',
+      grnDeleteBtn: '删除收货单',
+      grnDeleteConfirm: '删除收货单 {no}？它生成的入库记录也会一并删除，库存会相应减少。',
+      grnExportBtn: '导出 Excel',
+      grnLinesCount: '{n} 行',
+      grnNeedLine: '请填写日期，并至少填写一行货物（名称和数量）。',
+      grnSub: '保存后，每一行会成为一条入库记录（带批次、到期日、库位），并关联到这张收货单。',
+      grnTitle: '新收货单',
+      locAddBtn: '＋ 新增库位',
+      locDeleteConfirm: '删除这个库位？',
+      locEmpty: '还没有库位。',
+      locExists: '这个库位已存在。',
+      locInUse: '这个库位里还有库存，请先把货转移走。',
+      locItemsCount: '{n} 种货物',
+      locationCodePh: '库位编号，如 A-01-02',
+      locationLabel: '库位',
+      locationsBtn: '📍 库位',
+      locationsSub: '例如 A-01-02（区-架-层）。点“查看”可只看该库位里的货物。',
+      locationsTitle: '库位管理',
+      moveBtn: '转移',
+      newReceiptBtn: '+ 新收货单',
+      noLocation: '无库位',
+      pickFromHint: '取货位置：{list}',
+      receiptFilterPh: '搜索收货单号、供应商、货物…',
+      receiptsEmpty: '还没有收货单。',
+      receivingPanelTitle: '收货单 (GRN)',
+      refLabel: '采购单 / 送货单号',
+      supplierLabel: '供应商',
+      transferApplyBtn: '确认转移',
+      transferBtn: '↔ 转移',
+      transferFill: '请选择货物和批次，填写数量和目标库位。',
+      transferFromLabel: '从（库位 / 批次）',
+      transferInsufficient: '该批次库存不足（现有 {qty}）。',
+      transferSame: '目标库位与原库位相同。',
+      transferSub: '把某一批货从一个库位移到另一个库位（也可用于给没有库位的库存上架）。库存总数不变。',
+      transferTitle: '库位转移',
+      transferToLabel: '转到库位',
+      viewBtn: '查看',
       syncing: '同步中...',
       syncedAt: '已同步 · {time}',
       syncFailed: '同步失败',
@@ -1685,6 +2020,109 @@
       userYou: 'you',
       userPwTooShort: 'Enter an ID and a password of at least 6 characters.',
       userCantRemoveSelf: 'You cannot remove the account you are signed in with.',
+      actAdd: 'Added record: {item} {type} {qty} ({date})',
+      actImport: 'Imported {n} rows from Excel ({type})',
+      actEdit: 'Edited record: {item} {type} {qty} ({date})',
+      actDelete: 'Deleted record: {item} {type} {qty} ({date})',
+      actPlCreate: 'Created packing list "{title}" ({n} items)',
+      actPlDelete: 'Deleted packing list "{title}"',
+      actPlTake: 'Packing list "{pl}" taken: {item} x {qty}',
+      actPlUndo: 'Undid taking: {item} ({pl})',
+      actClearAll: 'Cleared all stock records ({n})',
+      actArchive: 'Archived {n} records (up to {cutoff})',
+      actAdjust: 'Stock take adjusted {n} items ({reason}{note})',
+      actMaster: 'Saved item master ({n} items)',
+      actUserAdd: 'Added / reset user: {id}',
+      actUserRemove: 'Removed user: {id}',
+      actEnable: 'Enabled user accounts (first user: {id})',
+      activityBtn: '📜 Activity',
+      activityTitle: 'Activity log',
+      activitySub: 'Who did what and when (latest 1000 entries).',
+      activityFilterPh: 'Search by user or text…',
+      activityEmpty: 'No activity yet.',
+      alertsTitle: '⚠ Alerts',
+      alertBadge: '{n} alerts',
+      alertExpired: 'Expired batches',
+      alertSoon: 'Expiring in 30 days',
+      alertLow: 'Low stock',
+      allCategories: 'All categories',
+      categoryLabel: 'Category',
+      barcodeLabel: 'Barcode',
+      batchLabel: 'Batch / Lot',
+      batchesTitle: 'Batches (first expiry, first out)',
+      colBy: 'By',
+      countAdjustBtn: 'Count / adjust',
+      fefoHint: 'FEFO: {list}',
+      masterAddBtn: '＋ Add item',
+      masterBtn: '🗂 Item master',
+      masterFilterPh: 'Search item name or code…',
+      masterSub: 'Set a category, UOM, minimum stock (alert when stock is at or below it) and barcode for each item.',
+      masterTitle: 'Item master',
+      minStockShort: 'Min stock',
+      noBatchStock: 'This item has no stock batches right now.',
+      noteLabel: 'Note',
+      overdrawnWarn: 'Stock out exceeds stock by {qty}. Please check or adjust with a stock take.',
+      reasonLabel: 'Reason',
+      reasonCount: 'Stock take variance',
+      reasonDamaged: 'Damaged',
+      reasonExpired: 'Expired write-off',
+      reasonFound: 'Found / surplus',
+      reasonLost: 'Lost',
+      reasonOther: 'Other',
+      stApplyBtn: 'Apply adjustments',
+      stConfirm: 'Create adjustment records for {n} items?',
+      stCountedPh: 'Counted qty',
+      stNothing: 'No differences to adjust. Enter counted quantities first.',
+      stSystemQty: 'System',
+      stockTakeBtn: '⚖ Stock take',
+      stockTakeSub: 'Enter the quantity you actually counted; adjustment records are created for the difference. Reductions come out of the earliest-expiring batch first (FEFO). Items left blank are not changed.',
+      stockTakeTitle: 'Stock take / adjustments',
+      actGrn: 'Receipt {no}: {n} lines, supplier {supplier}',
+      actGrnDelete: 'Deleted receipt {no} (its stock-in records were removed too)',
+      actLocAdd: 'Added location: {code}',
+      actLocDel: 'Deleted location: {code}',
+      actTransfer: 'Transferred {item} x {qty}: {from} -> {to}',
+      allLocations: 'All locations',
+      choiceReceivingTitle: 'Receiving (GRN)',
+      choiceReceivingDesc: 'Receive goods and create a receipt note',
+      defaultLocLabel: 'Default location',
+      grnDeleteBtn: 'Delete receipt',
+      grnDeleteConfirm: 'Delete receipt {no}? The stock-in records it created are removed too and stock goes down accordingly.',
+      grnExportBtn: 'Export Excel',
+      grnLinesCount: '{n} lines',
+      grnNeedLine: 'Enter a date and at least one line (item name and quantity).',
+      grnSub: 'On save, each line becomes a stock-in record (with batch, expiry and location) linked to this receipt.',
+      grnTitle: 'New receipt',
+      locAddBtn: '＋ Add location',
+      locDeleteConfirm: 'Delete this location?',
+      locEmpty: 'No locations yet.',
+      locExists: 'That location already exists.',
+      locInUse: 'There is still stock in this location. Transfer it out first.',
+      locItemsCount: '{n} items',
+      locationCodePh: 'Location code, e.g. A-01-02',
+      locationLabel: 'Location',
+      locationsBtn: '📍 Locations',
+      locationsSub: 'For example A-01-02 (zone-rack-level). Tap View to see only what is in that location.',
+      locationsTitle: 'Locations',
+      moveBtn: 'Move',
+      newReceiptBtn: '+ New receipt',
+      noLocation: 'No location',
+      pickFromHint: 'Pick from: {list}',
+      receiptFilterPh: 'Search receipt no., supplier, item…',
+      receiptsEmpty: 'No receipts yet.',
+      receivingPanelTitle: 'Receipts (GRN)',
+      refLabel: 'PO / delivery note no.',
+      supplierLabel: 'Supplier',
+      transferApplyBtn: 'Confirm transfer',
+      transferBtn: '↔ Transfer',
+      transferFill: 'Choose an item and lot, then enter a quantity and target location.',
+      transferFromLabel: 'From (location / batch)',
+      transferInsufficient: 'Not enough in that lot (available: {qty}).',
+      transferSame: 'The target location is the same as the current one.',
+      transferSub: 'Move a lot from one location to another (also use it to put away stock that has no location). Total stock does not change.',
+      transferTitle: 'Transfer between locations',
+      transferToLabel: 'Move to location',
+      viewBtn: 'View',
       syncing: 'Syncing...',
       syncedAt: 'Synced · {time}',
       syncFailed: 'Sync failed',
@@ -1881,6 +2319,109 @@
       userYou: 'anda',
       userPwTooShort: 'Masukkan ID dan kata laluan sekurang-kurangnya 6 aksara.',
       userCantRemoveSelf: 'Anda tidak boleh membuang akaun yang sedang anda gunakan.',
+      actAdd: 'Rekod ditambah: {item} {type} {qty} ({date})',
+      actImport: 'Import {n} baris dari Excel ({type})',
+      actEdit: 'Rekod diedit: {item} {type} {qty} ({date})',
+      actDelete: 'Rekod dipadam: {item} {type} {qty} ({date})',
+      actPlCreate: 'Cipta senarai pembungkusan "{title}" ({n} item)',
+      actPlDelete: 'Padam senarai pembungkusan "{title}"',
+      actPlTake: 'Senarai pembungkusan "{pl}" diambil: {item} x {qty}',
+      actPlUndo: 'Batal pengambilan: {item} ({pl})',
+      actClearAll: 'Kosongkan semua rekod stok ({n})',
+      actArchive: 'Arkib {n} rekod (sehingga {cutoff})',
+      actAdjust: 'Pelarasan kiraan stok {n} barang ({reason}{note})',
+      actMaster: 'Simpan induk barang ({n} item)',
+      actUserAdd: 'Tambah / tetap semula pengguna: {id}',
+      actUserRemove: 'Buang pengguna: {id}',
+      actEnable: 'Aktifkan akaun pengguna (pengguna pertama: {id})',
+      activityBtn: '📜 Aktiviti',
+      activityTitle: 'Log aktiviti',
+      activitySub: 'Siapa buat apa dan bila (1000 entri terkini).',
+      activityFilterPh: 'Cari pengguna atau teks…',
+      activityEmpty: 'Belum ada aktiviti.',
+      alertsTitle: '⚠ Amaran',
+      alertBadge: '{n} amaran',
+      alertExpired: 'Kelompok tamat tempoh',
+      alertSoon: 'Tamat dalam 30 hari',
+      alertLow: 'Stok rendah',
+      allCategories: 'Semua kategori',
+      categoryLabel: 'Kategori',
+      barcodeLabel: 'Kod bar',
+      batchLabel: 'Kelompok / Lot',
+      batchesTitle: 'Kelompok (tamat dahulu, keluar dahulu)',
+      colBy: 'Oleh',
+      countAdjustBtn: 'Kira / laras',
+      fefoHint: 'FEFO: {list}',
+      masterAddBtn: '＋ Tambah barang',
+      masterBtn: '🗂 Induk barang',
+      masterFilterPh: 'Cari nama atau kod barang…',
+      masterSub: 'Tetapkan kategori, UOM, stok minimum (amaran apabila stok pada atau di bawahnya) dan kod bar bagi setiap barang.',
+      masterTitle: 'Induk barang',
+      minStockShort: 'Stok min',
+      noBatchStock: 'Barang ini tiada kelompok stok sekarang.',
+      noteLabel: 'Catatan',
+      overdrawnWarn: 'Keluar stok melebihi stok sebanyak {qty}. Sila semak atau laras melalui kiraan stok.',
+      reasonLabel: 'Sebab',
+      reasonCount: 'Perbezaan kiraan stok',
+      reasonDamaged: 'Rosak',
+      reasonExpired: 'Hapus kira tamat tempoh',
+      reasonFound: 'Dijumpai / lebihan',
+      reasonLost: 'Hilang',
+      reasonOther: 'Lain-lain',
+      stApplyBtn: 'Guna pelarasan',
+      stConfirm: 'Cipta rekod pelarasan untuk {n} barang?',
+      stCountedPh: 'Kuantiti dikira',
+      stNothing: 'Tiada perbezaan untuk dilaras. Masukkan kuantiti dikira dahulu.',
+      stSystemQty: 'Sistem',
+      stockTakeBtn: '⚖ Kiraan stok',
+      stockTakeSub: 'Masukkan kuantiti yang sebenarnya dikira; rekod pelarasan dicipta untuk perbezaannya. Pengurangan diambil daripada kelompok yang tamat dahulu (FEFO). Barang yang dibiarkan kosong tidak diubah.',
+      stockTakeTitle: 'Kiraan stok / pelarasan',
+      actGrn: 'Resit {no}: {n} baris, pembekal {supplier}',
+      actGrnDelete: 'Resit {no} dipadam (rekod stok masuk turut dipadam)',
+      actLocAdd: 'Lokasi ditambah: {code}',
+      actLocDel: 'Lokasi dipadam: {code}',
+      actTransfer: 'Pindah {item} x {qty}: {from} -> {to}',
+      allLocations: 'Semua lokasi',
+      choiceReceivingTitle: 'Terimaan (GRN)',
+      choiceReceivingDesc: 'Terima barang dan cipta nota terimaan',
+      defaultLocLabel: 'Lokasi lalai',
+      grnDeleteBtn: 'Padam resit',
+      grnDeleteConfirm: 'Padam resit {no}? Rekod stok masuk yang dicipta turut dipadam dan stok berkurang sewajarnya.',
+      grnExportBtn: 'Eksport Excel',
+      grnLinesCount: '{n} baris',
+      grnNeedLine: 'Masukkan tarikh dan sekurang-kurangnya satu baris (nama barang dan kuantiti).',
+      grnSub: 'Selepas simpan, setiap baris menjadi rekod stok masuk (dengan kelompok, tarikh luput dan lokasi) yang dikaitkan dengan resit ini.',
+      grnTitle: 'Resit baharu',
+      locAddBtn: '＋ Tambah lokasi',
+      locDeleteConfirm: 'Padam lokasi ini?',
+      locEmpty: 'Belum ada lokasi.',
+      locExists: 'Lokasi itu sudah wujud.',
+      locInUse: 'Masih ada stok di lokasi ini. Pindahkan dahulu.',
+      locItemsCount: '{n} barang',
+      locationCodePh: 'Kod lokasi, cth. A-01-02',
+      locationLabel: 'Lokasi',
+      locationsBtn: '📍 Lokasi',
+      locationsSub: 'Contohnya A-01-02 (zon-rak-tingkat). Tekan Lihat untuk melihat barang di lokasi itu sahaja.',
+      locationsTitle: 'Lokasi',
+      moveBtn: 'Pindah',
+      newReceiptBtn: '+ Resit baharu',
+      noLocation: 'Tiada lokasi',
+      pickFromHint: 'Ambil dari: {list}',
+      receiptFilterPh: 'Cari no. resit, pembekal, barang…',
+      receiptsEmpty: 'Belum ada resit.',
+      receivingPanelTitle: 'Resit (GRN)',
+      refLabel: 'No. PO / nota hantar',
+      supplierLabel: 'Pembekal',
+      transferApplyBtn: 'Sahkan pindahan',
+      transferBtn: '↔ Pindah',
+      transferFill: 'Pilih barang dan kelompok, kemudian masukkan kuantiti dan lokasi sasaran.',
+      transferFromLabel: 'Dari (lokasi / kelompok)',
+      transferInsufficient: 'Kelompok itu tidak mencukupi (ada: {qty}).',
+      transferSame: 'Lokasi sasaran sama dengan lokasi semasa.',
+      transferSub: 'Pindahkan satu kelompok dari satu lokasi ke lokasi lain (juga untuk menyimpan stok yang belum ada lokasi). Jumlah stok tidak berubah.',
+      transferTitle: 'Pindah antara lokasi',
+      transferToLabel: 'Pindah ke lokasi',
+      viewBtn: 'Lihat',
       syncing: 'Menyegerak...',
       syncedAt: 'Disegerak · {time}',
       syncFailed: 'Segerak gagal',
@@ -2007,8 +2548,30 @@
   let packingLists = [];
   let expanded = new Set(); // groupKeys currently expanded
   let isAdmin = sessionStorage.getItem(ADMIN_SESSION_KEY) === '1';
-  let currentView = 'choice'; // 'choice' | 'stock' | 'packing' | 'packingDetail'
+  let currentView = 'choice'; // 'choice' | 'stock' | 'packing' | 'packingDetail' | 'receiving'
   let currentPackingListId = null;
+  let itemMaster = [];   // 货物主档
+  let auditLog = [];     // 操作日志（最近 AUDIT_MAX 条）
+  let locations = [];    // 库位清单 [{id, code, note}]
+  let receipts = [];     // 收货单（GRN）
+  let latestExtra = { itemMaster: [], auditLog: [], locations: [], receipts: [] }; // 最近一次读取到的附加数据，写回时原样带上
+  const AUDIT_MAX = 1000;
+
+  function actorName() {
+    if (typeof authState !== 'undefined' && authState.mode === 'v2' && session && session.id) return session.id;
+    return isAdmin ? 'admin' : 'device';
+  }
+  function mkAudit(a, d) {
+    return { at: new Date().toISOString(), by: actorName(), a, d: d || {} };
+  }
+  function stampNew(r) {
+    return Object.assign({ by: actorName(), at: new Date().toISOString() }, r);
+  }
+  function saveLocalCache() {
+    try {
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists, itemMaster, auditLog, locations, receipts }));
+    } catch (e) {}
+  }
 
   async function sha256(text) {
     const enc = new TextEncoder().encode(text);
@@ -2234,11 +2797,17 @@
       authState = { mode: 'legacy', envUsers: {}, usersPayload: {}, archiveKey: '', archiveKeyPrev: '' };
       parsed = await openPayload(raw);
     }
-    return {
+    const out = {
       adminKeyHash: parsed.adminKeyHash || '',
       records: Array.isArray(parsed.records) ? parsed.records : [],
-      packingLists: Array.isArray(parsed.packingLists) ? parsed.packingLists : []
+      packingLists: Array.isArray(parsed.packingLists) ? parsed.packingLists : [],
+      itemMaster: Array.isArray(parsed.itemMaster) ? parsed.itemMaster : [],
+      auditLog: Array.isArray(parsed.auditLog) ? parsed.auditLog : [],
+      locations: Array.isArray(parsed.locations) ? parsed.locations : [],
+      receipts: Array.isArray(parsed.receipts) ? parsed.receipts : []
     };
+    latestExtra = { itemMaster: out.itemMaster, auditLog: out.auditLog, locations: out.locations, receipts: out.receipts };
+    return out;
   }
 
   // 通用：写入仓库文件（需要本机 Token）。先取得现有文件的 sha 再 PUT。
@@ -2280,7 +2849,20 @@
 
   // 把最新数据写回 GitHub（加密后写入）
   // authOverride：用于启用账号 / 添加删除用户（可更换主密钥、用户名单）
-  async function pushSharedData(newRecords, newAdminKeyHash, newPackingLists, authOverride) {
+  // opts：{ audit: [日志条目], itemMaster: 新的货物主档 }
+  async function pushSharedData(newRecords, newAdminKeyHash, newPackingLists, authOverride, opts) {
+    opts = opts || {};
+    const newMaster = opts.itemMaster || latestExtra.itemMaster;
+    const newLog = latestExtra.auditLog.concat(opts.audit || []).slice(-AUDIT_MAX);
+    const newLocs = opts.locations || latestExtra.locations;
+    const newReceipts = opts.receipts || latestExtra.receipts;
+    const done = () => {
+      latestExtra = { itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts };
+      itemMaster = newMaster;
+      auditLog = newLog;
+      locations = newLocs;
+      receipts = newReceipts;
+    };
     if (authOverride || authState.mode === 'v2') {
       const a = authOverride || {
         master: session.master, envUsers: authState.envUsers, usersPayload: authState.usersPayload,
@@ -2291,6 +2873,10 @@
         adminKeyHash: newAdminKeyHash,
         records: newRecords,
         packingLists: newPackingLists || [],
+        itemMaster: newMaster,
+        auditLog: newLog,
+        locations: newLocs,
+        receipts: newReceipts,
         users: a.usersPayload,
         archiveKey: a.archiveKey || '',
         archiveKeyPrev: a.archiveKeyPrev || ''
@@ -2299,6 +2885,7 @@
       await putRepoFile(REPO_PATH, JSON.stringify(env), 'SRS: update stock records');
       authState = { mode: 'v2', envUsers: a.envUsers, usersPayload: a.usersPayload, archiveKey: a.archiveKey || '', archiveKeyPrev: a.archiveKeyPrev || '' };
       if (authOverride) { session.master = a.master; persistSession(); }
+      done();
       return;
     }
     const dataKey = getDataKey();
@@ -2308,10 +2895,11 @@
       throw err;
     }
     const fileContent = await encryptPayload(
-      { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [] },
+      { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [], itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts },
       dataKey
     );
     await putRepoFile(REPO_PATH, fileContent, 'SRS: update stock records');
+    done();
   }
 
   // ---- 归档文件 archive.json（与 data.json 同一密码加密；只在查看/归档时读取）----
@@ -2370,7 +2958,11 @@
       records = data.records;
       adminKeyHash = data.adminKeyHash;
       packingLists = data.packingLists;
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(data));
+      itemMaster = data.itemMaster;
+      auditLog = data.auditLog;
+      locations = data.locations;
+      receipts = data.receipts;
+      saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
     } catch (err) {
       console.error(err);
@@ -2385,6 +2977,10 @@
           records = cached.records || [];
           adminKeyHash = cached.adminKeyHash || '';
           packingLists = cached.packingLists || [];
+          itemMaster = cached.itemMaster || [];
+          auditLog = cached.auditLog || [];
+          locations = cached.locations || [];
+          receipts = cached.receipts || [];
           setSyncStatus((err.code === 'NEEDKEY' || err.code === 'BADKEY') ? err.message : t('offlineUsingCache'), 'err');
         } else {
           records = [];
@@ -2410,7 +3006,7 @@
     if (loginScreen.classList.contains('open')) return; // 已显示时不要清掉用户正在输入的内容
     if (wipe) {
       clearSession();
-      records = []; packingLists = []; adminKeyHash = '';
+      records = []; packingLists = []; adminKeyHash = ''; itemMaster = []; auditLog = []; locations = []; receipts = [];
       localStorage.removeItem(LOCAL_CACHE_KEY);
       isAdmin = false;
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
@@ -2456,16 +3052,17 @@
   });
 
   // 新增/导入记录后：重新拉取最新数据，合并，推送回 GitHub
-  async function addRecordsAndSync(newRecords) {
+  async function addRecordsAndSync(newRecords, auditInfo) {
     setSyncStatus(t('syncing'));
     try {
       const latest = await fetchSharedData();
-      const merged = latest.records.concat(newRecords);
-      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists);
+      const merged = latest.records.concat(newRecords.map(stampNew));
+      const audit = auditInfo ? [mkAudit(auditInfo.a, auditInfo.d)] : [];
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined, { audit });
       records = merged;
       adminKeyHash = latest.adminKeyHash;
       packingLists = latest.packingLists;
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
       return true;
     } catch (err) {
@@ -2479,12 +3076,14 @@
     setSyncStatus(t('syncing'));
     try {
       const latest = await fetchSharedData();
+      const gone = latest.records.find(r => r.id === id);
       const merged = latest.records.filter(r => r.id !== id);
-      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists);
+      const audit = gone ? [mkAudit('delete', { item: gone.item, qty: gone.qty, type: gone.type, date: gone.date })] : [];
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined, { audit });
       records = merged;
       adminKeyHash = latest.adminKeyHash;
       packingLists = latest.packingLists;
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
       renderCurrentView();
     } catch (err) {
@@ -2503,14 +3102,15 @@
       const merged = latest.records.map(r => {
         if (r.id !== id) return r;
         found = true;
-        return Object.assign({}, r, updatedFields);
+        return Object.assign({}, r, updatedFields, { editedBy: actorName(), editedAt: new Date().toISOString() });
       });
       if (!found) throw new Error('record not found');
-      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists);
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+        { audit: [mkAudit('edit', { item: updatedFields.item || '', qty: updatedFields.qty, type: updatedFields.type, date: updatedFields.date })] });
       records = merged;
       adminKeyHash = latest.adminKeyHash;
       packingLists = latest.packingLists;
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
       return true;
     } catch (err) {
@@ -2521,16 +3121,19 @@
   }
 
   // 通用：拉取最新数据，用回调修改 packingLists（可选同时追加 records），推送回 GitHub
-  async function mutatePackingListsAndSync(mutateFn) {
+  // auditInfo：{a, d} 或 [{a, d}]，会写入操作日志
+  async function mutatePackingListsAndSync(mutateFn, auditInfo) {
     setSyncStatus(t('syncing'));
     try {
       const latest = await fetchSharedData();
       const result = mutateFn(latest.packingLists, latest.records);
-      await pushSharedData(result.records, latest.adminKeyHash, result.packingLists);
+      const infos = !auditInfo ? [] : (Array.isArray(auditInfo) ? auditInfo : [auditInfo]);
+      await pushSharedData(result.records, latest.adminKeyHash, result.packingLists, undefined,
+        { audit: infos.map(i => mkAudit(i.a, i.d)) });
       records = result.records;
       packingLists = result.packingLists;
       adminKeyHash = latest.adminKeyHash;
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
       return true;
     } catch (err) {
@@ -2600,6 +3203,8 @@
     const date = manDate.value;
     const platform = manPlatform.value.trim();
     const expiryDate = manExpiry.value;
+    const batch = document.getElementById('manBatch').value.trim();
+    const loc = document.getElementById('manLoc').value.trim();
 
     if (!item || !qty || qty <= 0 || !date) return;
 
@@ -2615,8 +3220,10 @@
       type: manualType,
       date,
       platform,
-      expiryDate
-    }]);
+      expiryDate,
+      batch,
+      loc
+    }], { a: 'add', d: { item, qty, type: manualType, date } });
 
     submitBtn.disabled = false;
     if (!ok) return;
@@ -2630,6 +3237,71 @@
   });
 
   // 根据现有记录自动填充“货物名称”“Platform/Vessel”“搜索”的建议列表
+  // ---------- 货物主档 / 提醒 ----------
+  function findMaster(item, itemCode) {
+    const code = (itemCode || '').trim().toLowerCase();
+    const name = (item || '').trim().toLowerCase();
+    return itemMaster.find(m => code && (m.itemCode || '').trim().toLowerCase() === code)
+        || itemMaster.find(m => (m.item || '').trim().toLowerCase() === name) || null;
+  }
+
+  // 低库存 / 已过期 / 临近到期（仅统计仍有库存的批次）
+  function computeAlerts(groups) {
+    const low = [], soon = [], expired = [];
+    const used = new Set();
+    groups.forEach(g => {
+      const m = findMaster(g.item, g.itemCode);
+      if (m) {
+        used.add(m.id);
+        if (m.minStock > 0 && g.balance <= m.minStock) low.push({ g, name: g.item, code: g.itemCode, bal: g.balance, min: m.minStock, uom: g.uom });
+      }
+      g.batches.forEach(b => {
+        const st = expiryStatus(b.expiry);
+        if (st === 'expired') expired.push({ g, b });
+        else if (st === 'soon') soon.push({ g, b });
+      });
+    });
+    itemMaster.forEach(m => {   // 主档里设了最低库存、但还没有任何库存记录的货物
+      if (!used.has(m.id) && m.minStock > 0) low.push({ g: null, name: m.item, code: m.itemCode || '', bal: 0, min: m.minStock, uom: m.uom || '' });
+    });
+    soon.sort((a, b) => a.b.expiry.localeCompare(b.b.expiry));
+    expired.sort((a, b) => a.b.expiry.localeCompare(b.b.expiry));
+    return { low, soon, expired };
+  }
+
+  let alertOpen = '';
+  function renderAlerts(allGroups) {
+    const panel = document.getElementById('alertsPanel');
+    const A = computeAlerts(allGroups);
+    const total = A.low.length + A.soon.length + A.expired.length;
+    const badge = document.getElementById('stockAlertBadge');
+    badge.style.display = total ? 'inline-block' : 'none';
+    badge.textContent = total ? '⚠ ' + t('alertBadge', { n: total }) : '';
+    if (!total) { panel.style.display = 'none'; return A; }
+    panel.style.display = 'block';
+    const chip = (k, n, label) => n ? `<button class="alert-chip ${k}${alertOpen === k ? ' active' : ''}" data-k="${k}">${label} (${n})</button>` : '';
+    document.getElementById('alertChips').innerHTML =
+      chip('expired', A.expired.length, t('alertExpired')) + chip('soon', A.soon.length, t('alertSoon')) + chip('low', A.low.length, t('alertLow'));
+    document.querySelectorAll('#alertChips .alert-chip').forEach(b => b.addEventListener('click', () => {
+      alertOpen = alertOpen === b.dataset.k ? '' : b.dataset.k;
+      renderAlerts(allGroups);
+    }));
+    const detail = document.getElementById('alertDetail');
+    let rows = '';
+    if (alertOpen === 'low') {
+      rows = A.low.map(x => `<div class="alert-row" data-name="${escapeHtml(x.name)}"><span>${escapeHtml((x.code ? x.code + ' · ' : '') + x.name)}</span><span><b>${x.bal}</b> / ${t('minStockShort')} ${x.min} ${escapeHtml(x.uom)}</span></div>`).join('');
+    } else if (alertOpen === 'soon' || alertOpen === 'expired') {
+      rows = A[alertOpen].map(x => `<div class="alert-row" data-name="${escapeHtml(x.g.item)}"><span>${escapeHtml((x.g.itemCode ? x.g.itemCode + ' · ' : '') + x.g.item)}${x.b.batch ? ' · 🏷 ' + escapeHtml(x.b.batch) : ''}</span><span>${expiryLabel(x.b.expiry)} · <b>${x.b.qty}</b> ${escapeHtml(x.g.uom)}</span></div>`).join('');
+    }
+    detail.innerHTML = rows;
+    detail.querySelectorAll('.alert-row').forEach(r => r.addEventListener('click', () => {
+      searchInput.value = r.dataset.name;
+      render();
+      document.getElementById('search').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    return A;
+  }
+
   function populateSuggestLists() {
     const names = new Set();
     const platforms = new Set();
@@ -2637,16 +3309,22 @@
       if (r.item) names.add(r.item);
       if (r.platform) platforms.add(r.platform);
     });
+    itemMaster.forEach(m => { if (m.item) names.add(m.item); });
 
     const nameOptions = Array.from(names).sort().map(n => `<option value="${escapeHtml(n)}">`).join('');
     itemNameList.innerHTML = nameOptions;
     searchSuggestList.innerHTML = nameOptions;
     platformList.innerHTML = Array.from(platforms).sort().map(p => `<option value="${escapeHtml(p)}">`).join('');
+    document.getElementById('locList').innerHTML = locations.slice().sort((a, b) => a.code.localeCompare(b.code))
+      .map(l => `<option value="${escapeHtml(l.code)}">`).join('');
   }
 
   // 货物名称 -> 货物编号 映射（取该货物最近使用过的编号）
   function getNameToCodeMap() {
     const map = {};
+    itemMaster.forEach(m => {
+      if (m.item && m.itemCode) map[m.item.trim().toLowerCase()] = m.itemCode;
+    });
     records.forEach(r => {
       if (r.item && r.itemCode) {
         map[r.item.trim().toLowerCase()] = r.itemCode;
@@ -2662,6 +3340,9 @@
     if (match) {
       manCode.value = match;
     }
+    const m = findMaster(manName.value, match || manCode.value);
+    if (m && m.uom && !manUom.value) manUom.value = m.uom;
+    if (m && m.loc && !document.getElementById('manLoc').value) document.getElementById('manLoc').value = m.loc;
   }
 
   manName.addEventListener('input', tryAutofillCode);
@@ -2670,6 +3351,76 @@
   function groupKey(r) {
     // group by item code when present, otherwise by item name
     return (r.itemCode && r.itemCode.trim()) ? 'code:' + r.itemCode.trim().toLowerCase() : 'name:' + r.item.trim().toLowerCase();
+  }
+
+  // ---------- 批次 / FEFO（先到期先出）----------
+  const r4 = (x) => Math.round(x * 10000) / 10000;
+
+  // 批次键：批次号 + 到期日；只有到期日的入库按到期日成批；都没有的归为“无批次”
+  // 批次键 = 批次/到期日 + 库位：同一批货放在不同库位会分成不同的“货批”
+  function batchKeyOf(r) {
+    const b = (r.batch || '').trim();
+    const loc = '@' + (r.loc || '').trim().toLowerCase();
+    if (b) return 'b:' + b.toLowerCase() + '|' + (r.expiryDate || '') + loc;
+    return (r.expiryDate ? 'e:' + r.expiryDate : '') + loc;
+  }
+
+  // 由某货物的交易（按日期升序）算出各批次剩余量。
+  // 未指定批次的出库（含旧数据）会按 FEFO 从现有批次里扣；超出的部分记为 deficit（超库存出库）。
+  function computeBatches(txs) {
+    const map = new Map();
+    txs.forEach(r => {
+      const k = batchKeyOf(r);
+      if (!map.has(k)) map.set(k, { key: k, batch: (r.batch || '').trim(), expiry: r.expiryDate || '', loc: (r.loc || '').trim(), qty: 0 });
+      map.get(k).qty += (r.type === 'IN' ? 1 : -1) * r.qty;
+    });
+    let deficit = 0;
+    const pos = [];
+    map.forEach(b => {
+      b.qty = r4(b.qty);
+      if (b.qty < 0) deficit += -b.qty;
+      else if (b.qty > 0) pos.push(b);
+    });
+    pos.sort((a, b) => {
+      const ea = a.expiry || '9999-12-31', eb = b.expiry || '9999-12-31';
+      return ea.localeCompare(eb) || a.batch.localeCompare(b.batch) || a.loc.localeCompare(b.loc);
+    });
+    deficit = r4(deficit);
+    for (const b of pos) {
+      if (deficit <= 0) break;
+      const take = Math.min(b.qty, deficit);
+      b.qty = r4(b.qty - take);
+      deficit = r4(deficit - take);
+    }
+    return { batches: pos.filter(b => b.qty > 0), deficit };
+  }
+
+  // 给出库按 FEFO 分配批次：返回 [{batch, expiryDate, qty}]；批次不足的部分作为“无批次”出库
+  function allocateFromBatches(batches, qty) {
+    const out = [];
+    let left = r4(qty);
+    for (const b of batches) {
+      if (left <= 0) break;
+      const take = r4(Math.min(b.qty, left));
+      if (take > 0) { out.push({ batch: b.batch, expiryDate: b.expiry, loc: b.loc || '', qty: take }); left = r4(left - take); }
+    }
+    if (left > 0) out.push({ batch: '', expiryDate: '', loc: '', qty: left });
+    return out;
+  }
+
+  // 针对一批最新记录创建分配器：连续多次扣同一货物时，会累计扣减剩余批次
+  function makeAllocator(recs) {
+    const work = {};
+    buildGroups(recs).forEach(g => { work[g.key] = g.batches.map(b => Object.assign({}, b)); });
+    return (item, itemCode, qty) => {
+      const bs = work[groupKey({ item, itemCode })] || [];
+      const out = allocateFromBatches(bs, qty);
+      out.forEach(piece => {
+        const b = bs.find(x => x.batch === piece.batch && x.expiry === piece.expiryDate && (x.loc || '') === (piece.loc || ''));
+        if (b) b.qty = r4(b.qty - piece.qty);
+      });
+      return out;
+    };
   }
 
   function escapeHtml(str) {
@@ -2697,7 +3448,7 @@
         };
       }
       const g = groups[key];
-      g.balance += r.type === 'IN' ? r.qty : -r.qty;
+      g.balance = r4(g.balance + (r.type === 'IN' ? r.qty : -r.qty));
       if (r.uom) g.uom = r.uom;
       if (r.platform) g.platforms.add(r.platform);
       g.transactions.push({ ...r, runningBalance: g.balance });
@@ -2705,8 +3456,11 @@
 
     // nearest (soonest) expiry per group, ignoring blanks
     Object.values(groups).forEach(g => {
-      const dates = g.transactions.map(t => t.expiryDate).filter(Boolean).sort();
-      g.nearestExpiry = dates.length ? dates[0] : '';
+      const bc = computeBatches(g.transactions);   // transactions 此时为日期升序
+      g.batches = bc.batches;
+      g.overdrawn = bc.deficit;
+      const exps = bc.batches.map(b => b.expiry).filter(Boolean).sort();
+      g.nearestExpiry = exps.length ? exps[0] : '';  // 只看还有库存的批次
       g.transactions.reverse(); // newest first for display
     });
 
@@ -2745,10 +3499,32 @@
     if (sortedPlatforms.includes(current)) filterPlatform.value = current;
   }
 
+  const filterCategory = document.getElementById('filterCategory');
+  const filterLocation = document.getElementById('filterLocation');
+
   function render() {
     let groups = buildGroups();
     populatePlatformFilter(groups);
     populateSuggestLists();
+    groups.forEach(g => {
+      const m = findMaster(g.item, g.itemCode);
+      g.category = (m && m.category) || '';
+      g.minStock = (m && m.minStock) || 0;
+      g.barcode = (m && m.barcode) || '';
+    });
+    renderAlerts(groups);
+
+    const cats = Array.from(new Set(groups.map(g => g.category).filter(Boolean))).sort();
+    const curCat = filterCategory.value;
+    filterCategory.innerHTML = `<option value="all">${t('allCategories')}</option>` + cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if (cats.includes(curCat)) filterCategory.value = curCat;
+
+    const locSet = new Set(locations.map(l => l.code));
+    groups.forEach(g => g.batches.forEach(b => { if (b.loc) locSet.add(b.loc); }));
+    const curLoc = filterLocation.value;
+    filterLocation.innerHTML = `<option value="all">${t('allLocations')}</option><option value="__none__">${t('noLocation')}</option>` +
+      Array.from(locSet).sort().map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if (curLoc === '__none__' || locSet.has(curLoc)) filterLocation.value = curLoc;
 
     const q = searchInput.value.trim().toLowerCase();
     const platformF = filterPlatform.value;
@@ -2756,10 +3532,14 @@
     const sortF = sortBy.value;
 
     groups = groups.filter(g => {
-      const matchesSearch = !q || g.item.toLowerCase().includes(q) || g.itemCode.toLowerCase().includes(q);
+      const matchesSearch = !q || g.item.toLowerCase().includes(q) || g.itemCode.toLowerCase().includes(q)
+        || g.barcode.toLowerCase().includes(q) || g.category.toLowerCase().includes(q);
+      const matchesCategory = filterCategory.value === 'all' || g.category === filterCategory.value;
+      const lf = filterLocation.value;
+      const matchesLocation = lf === 'all' || g.batches.some(b => lf === '__none__' ? !b.loc : b.loc === lf);
       const matchesPlatform = platformF === 'all' || g.platforms.has(platformF);
       const matchesExpiry = expiryF === 'all' || expiryStatus(g.nearestExpiry) === expiryF;
-      return matchesSearch && matchesPlatform && matchesExpiry;
+      return matchesSearch && matchesCategory && matchesLocation && matchesPlatform && matchesExpiry;
     });
 
     if (sortF === 'item') {
@@ -2784,8 +3564,8 @@
       row.className = 'item-row' + (isExpanded ? ' expanded' : '');
       row.innerHTML = `
         <td data-label="${t('colCode')}">${escapeHtml(g.itemCode)}</td>
-        <td class="name-cell"><span class="chevron">▶</span>${escapeHtml(g.item)}</td>
-        <td data-label="${t('colBalance')}" class="balance-cell">${g.balance}</td>
+        <td class="name-cell"><span class="chevron">▶</span>${escapeHtml(g.item)}${g.category ? `<span class="cat-tag">${escapeHtml(g.category)}</span>` : ''}</td>
+        <td data-label="${t('colBalance')}" class="balance-cell">${g.balance}${(g.minStock > 0 && g.balance <= g.minStock) ? `<span class="low-flag" title="${t('minStockShort')} ${g.minStock}">⚠</span>` : ''}</td>
         <td data-label="${t('colUom')}">${escapeHtml(g.uom)}</td>
         <td data-label="${t('colExpiry')}">${expiryLabel(g.nearestExpiry)}</td>
       `;
@@ -2804,9 +3584,10 @@
             <td data-label="${t('colDate')}">${t2.date}</td>
             <td data-label="${t('colType')}"><span class="badge ${t2.type === 'IN' ? 'in' : 'out'}">${t2.type === 'IN' ? t('typeIn') : t('typeOut')}</span></td>
             <td data-label="${t('colQty')}" class="qty">${t2.type === 'IN' ? '+' : '-'}${t2.qty}</td>
-            <td data-label="${t('colPlatform')}"><span class="cell-value">${escapeHtml(t2.platform || '—')}${t2.sourcePackingList ? ` <span class="pill">📋 ${escapeHtml(t2.sourcePackingList)}</span>` : ''}${t2.isOpening ? ` <span class="pill">📦 ${t('openingBalanceLabel')}</span>` : ''}</span></td>
+            <td data-label="${t('colPlatform')}"><span class="cell-value">${escapeHtml(t2.platform || '—')}${t2.sourcePackingList ? ` <span class="pill">📋 ${escapeHtml(t2.sourcePackingList)}</span>` : ''}${t2.isOpening ? ` <span class="pill">📦 ${t('openingBalanceLabel')}</span>` : ''}${t2.batch ? ` <span class="pill">🏷 ${escapeHtml(t2.batch)}</span>` : ''}${t2.loc ? ` <span class="pill">📍 ${escapeHtml(t2.loc)}</span>` : ''}${t2.transfer ? ` <span class="pill">↔ ${escapeHtml(t2.fromLoc || '—')} → ${escapeHtml(t2.toLoc || '—')}</span>` : ''}${t2.grnNo ? ` <span class="pill">📥 ${escapeHtml(t2.grnNo)}</span>` : ''}${t2.adjustment ? ` <span class="pill">⚖ ${escapeHtml(adjReasonLabel(t2.reason))}${t2.note ? ' · ' + escapeHtml(t2.note) : ''}</span>` : ''}</span></td>
             <td data-label="${t('colExpiry')}">${expiryLabel(t2.expiryDate)}</td>
             <td data-label="${t('colBalance')}" class="qty">${t2.runningBalance}</td>
+            <td data-label="${t('colBy')}" title="${escapeHtml(t2.at || '')}">${escapeHtml(t2.by || '—')}</td>
             ${isAdmin ? `<td data-label="">
               <button class="edit-btn" data-id="${t2.id}" title="${t('editRecordTitle')}">✎ ${t('editBtn')}</button>
               <button class="del-btn" data-id="${t2.id}" title="${t('deleteRecordTitle')}">✕ ${t('deleteBtn')}</button>
@@ -2817,6 +3598,16 @@
         detailRow.innerHTML = `
           <td colspan="5">
             <div class="detail-wrap">
+              <div class="batch-block">
+                <div class="batch-head">
+                  <span>📦 ${t('batchesTitle')}</span>
+                  ${isAdmin ? `<span><button class="edit-btn move-btn" data-name="${escapeHtml(g.item)}">↔ ${t('moveBtn')}</button><button class="edit-btn count-btn" data-name="${escapeHtml(g.item)}">⚖ ${t('countAdjustBtn')}</button></span>` : ''}
+                </div>
+                ${g.batches.length
+                  ? `<div class="batch-list">${g.batches.map((b, i) => `<span class="batch-chip"><b>${i + 1}.</b> ${b.loc ? '📍' + escapeHtml(b.loc) + ' · ' : ''}${escapeHtml(b.batch || '—')} · ${expiryLabel(b.expiry)} · <b>${b.qty}</b> ${escapeHtml(g.uom)}</span>`).join('')}</div>`
+                  : `<div class="pl-item-meta">${t('noBatchStock')}</div>`}
+                ${g.overdrawn > 0 ? `<div class="batch-warn">⚠ ${t('overdrawnWarn', { qty: g.overdrawn })}</div>` : ''}
+              </div>
               <table class="detail-table">
                 <thead>
                   <tr>
@@ -2826,6 +3617,7 @@
                     <th>${t('colPlatform')}</th>
                     <th>${t('colExpiry')}</th>
                     <th>${t('colBalance')}</th>
+                    <th>${t('colBy')}</th>
                     ${isAdmin ? '<th></th>' : ''}
                   </tr>
                 </thead>
@@ -2835,6 +3627,20 @@
           </td>
         `;
         tableBody.appendChild(detailRow);
+
+        detailRow.querySelectorAll('.move-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isAdmin) openTransfer(btn.dataset.name);
+          });
+        });
+
+        detailRow.querySelectorAll('.count-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isAdmin) openStockTake(btn.dataset.name);
+          });
+        });
 
         detailRow.querySelectorAll('.del-btn').forEach(btn => {
           btn.addEventListener('click', async (e) => {
@@ -2859,16 +3665,18 @@
 
   searchInput.addEventListener('input', render);
   filterPlatform.addEventListener('change', render);
+  filterCategory.addEventListener('change', render);
+  filterLocation.addEventListener('change', render);
   filterExpiry.addEventListener('change', render);
   sortBy.addEventListener('change', render);
 
   document.getElementById('exportBtn').addEventListener('click', () => {
-    const header = ['Date', 'Code', 'Item', 'Type', 'Quantity', 'UOM', 'Platform/Vessel', 'Expiry Date', 'Running Balance', 'Packing List'];
+    const header = ['Date', 'Code', 'Item', 'Type', 'Quantity', 'UOM', 'Platform/Vessel', 'Expiry Date', 'Batch', 'Location', 'Running Balance', 'Packing List', 'By', 'Recorded At', 'Adjustment Reason'];
     const groups = buildGroups();
     const rows = [];
     groups.forEach(g => {
       g.transactions.slice().reverse().forEach(t => {
-        rows.push([t.date, g.itemCode, g.item, t.type, t.qty, g.uom, t.platform || '', t.expiryDate || '', t.runningBalance, t.sourcePackingList || '']);
+        rows.push([t.date, g.itemCode, g.item, t.type, t.qty, g.uom, t.platform || '', t.expiryDate || '', t.batch || '', t.loc || '', t.runningBalance, t.sourcePackingList || '', t.by || '', t.at || '', t.adjustment ? (t.reason || '') : '']);
       });
     });
     const csv = [header, ...rows]
@@ -2962,6 +3770,8 @@
         const uomKeys = ['uom', 'unit', 'unit of measure'];
         const platformKeys = ['platform/vessel', 'platform / vessel', 'platform', 'vessel'];
         const expiryKeys = ['expiry date', 'expiry', 'exp date', 'exp'];
+        const batchKeys = ['batch', 'lot', 'batch no', 'lot no', 'batch/lot'];
+        const locKeys = ['location', 'bin', 'loc', 'bin location', 'rack'];
 
         let added = 0, skipped = 0;
         const newRecords = [];
@@ -2973,6 +3783,8 @@
           const uomKey = findKey(row, uomKeys);
           const platformKey = findKey(row, platformKeys);
           const expiryKey = findKey(row, expiryKeys);
+          const batchKey = findKey(row, batchKeys);
+          const locKey = findKey(row, locKeys);
 
           const item = nameKey ? String(row[nameKey]).trim() : '';
           const itemCode = codeKey ? String(row[codeKey]).trim() : '';
@@ -2980,6 +3792,8 @@
           const uom = uomKey ? String(row[uomKey]).trim() : '';
           const platform = platformKey ? String(row[platformKey]).trim() : '';
           const expiryDate = expiryKey ? formatExcelDate(row[expiryKey]) : '';
+          const batch = batchKey ? String(row[batchKey]).trim() : '';
+          const loc = locKey ? String(row[locKey]).trim() : '';
 
           if (!item || !qty || isNaN(qty) || qty <= 0) {
             skipped++;
@@ -2995,7 +3809,9 @@
             type: importType,
             date,
             platform,
-            expiryDate
+            expiryDate,
+            batch,
+            loc
           });
           added++;
         });
@@ -3006,7 +3822,7 @@
         }
 
         setImportStatus(t('syncing'));
-        const ok = await addRecordsAndSync(newRecords);
+        const ok = await addRecordsAndSync(newRecords, { a: 'import', d: { n: newRecords.length, type: importType } });
         render();
 
         if (!ok) {
@@ -3103,7 +3919,7 @@
         adminKeyHash = hash;
         isAdmin = true;
         sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
-        localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+        saveLocalCache();
         closeAdminModal();
         updateAdminUI();
         renderCurrentView();
@@ -3171,6 +3987,7 @@
   const packingListView = document.getElementById('packingListView');
   const packingDetailView = document.getElementById('packingDetailView');
   const stockView = document.getElementById('stockView');
+  const receivingView = document.getElementById('receivingView');
   const homeBtn = document.getElementById('homeBtn');
 
   function renderCurrentView() {
@@ -3178,15 +3995,22 @@
     packingListView.style.display = currentView === 'packing' ? 'block' : 'none';
     packingDetailView.style.display = currentView === 'packingDetail' ? 'block' : 'none';
     stockView.style.display = currentView === 'stock' ? 'block' : 'none';
+    receivingView.style.display = currentView === 'receiving' ? 'block' : 'none';
     homeBtn.style.display = currentView === 'choice' ? 'none' : 'flex';
 
     if (currentView === 'stock') render();
+    else if (currentView === 'choice') renderAlerts(buildGroups());
     else if (currentView === 'packing') renderPackingListView();
     else if (currentView === 'packingDetail') renderPackingDetail();
+    else if (currentView === 'receiving') renderReceivingView();
   }
 
   document.getElementById('gotoPackingBtn').addEventListener('click', () => {
     currentView = 'packing';
+    renderCurrentView();
+  });
+  document.getElementById('gotoReceivingBtn').addEventListener('click', () => {
+    currentView = 'receiving';
     renderCurrentView();
   });
   document.getElementById('gotoStockBtn').addEventListener('click', () => {
@@ -3429,7 +4253,7 @@
     const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => ({
       packingLists: latestPackingLists.concat([newPl]),
       records: latestRecords
-    }));
+    }), { a: 'plCreate', d: { title: title, n: items.length } });
     document.getElementById('plSaveBtn').disabled = false;
 
     if (ok) {
@@ -3469,6 +4293,33 @@
     }
     const totalQty = lines.reduce((sum, l) => sum + l.qty, 0);
     const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
+      const alloc = makeAllocator(latestRecords);   // 按最新库存做 FEFO 批次分配
+      const today = new Date().toISOString().slice(0, 10);
+      const newRecords = [];
+      const allocations = [];
+      lines.forEach(l => {
+        const pieces = alloc(l.stock.item, l.stock.itemCode || '', l.qty);
+        allocations.push({
+          item: l.stock.item, itemCode: l.stock.itemCode || '', uom: l.stock.uom || '', qty: l.qty,
+          batches: pieces.map(x => ({ batch: x.batch, expiryDate: x.expiryDate, loc: x.loc || '', qty: x.qty }))
+        });
+        pieces.forEach(x => newRecords.push(stampNew({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + newRecords.length,
+          item: l.stock.item,
+          itemCode: l.stock.itemCode || '',
+          qty: x.qty,
+          uom: l.stock.uom || item.uom || '',
+          type: 'OUT',
+          date: today,
+          platform: pl.platform,
+          expiryDate: x.expiryDate,
+          batch: x.batch,
+          loc: x.loc || '',
+          sourcePackingList: pl.title,
+          sourcePackingListId: pl.id,
+          sourcePackingListItemId: item.id
+        })));
+      });
       const targetPl = latestPackingLists.find(p => p.id === pl.id);
       if (targetPl) {
         const targetItem = targetPl.items.find(i => i.id === item.id);
@@ -3476,28 +4327,13 @@
           targetItem.done = true;
           targetItem.qtyTaken = totalQty;
           targetItem.completedAt = new Date().toISOString();
+          targetItem.takenBy = actorName();
           targetItem.status = (totalQty === targetItem.qtyRequested) ? 'complete' : 'incomplete';
-          targetItem.allocations = lines.map(l => ({
-            item: l.stock.item, itemCode: l.stock.itemCode || '', uom: l.stock.uom || '', qty: l.qty
-          }));
+          targetItem.allocations = allocations;
         }
       }
-      const newRecords = lines.map(l => ({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        item: l.stock.item,
-        itemCode: l.stock.itemCode || '',
-        qty: l.qty,
-        uom: l.stock.uom || item.uom || '',
-        type: 'OUT',
-        date: new Date().toISOString().slice(0, 10),
-        platform: pl.platform,
-        expiryDate: '',
-        sourcePackingList: pl.title,
-        sourcePackingListId: pl.id,
-        sourcePackingListItemId: item.id
-      }));
       return { packingLists: latestPackingLists, records: latestRecords.concat(newRecords) };
-    });
+    }, { a: 'plTake', d: { item: item.item, qty: totalQty, pl: pl.title } });
     return ok;
   }
 
@@ -3510,12 +4346,23 @@
           <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div>
         </div>
       </div>
+      <div class="pl-stock-hint pick-hint" style="margin-top:6px;"></div>
       <div class="pl-item-actions">
         <input type="number" min="0" step="1" class="pl-qty-taken-input" value="${item.qtyRequested}">
         <button class="pl-done-btn">${t('plMarkDoneBtn')}</button>
       </div>
     `;
     const qtyInput = row.querySelector('.pl-qty-taken-input');
+    const pickHint = row.querySelector('.pick-hint');
+    const pickGroup = findStockGroupForPlItem(getStockPickOptions(), item);
+    const showPick = () => {
+      const q = parseFloat(qtyInput.value) || 0;
+      if (!pickGroup || !pickGroup.group.batches.length || q <= 0) { pickHint.textContent = ''; return; }
+      pickHint.textContent = '📍 ' + t('pickFromHint', { list: allocateFromBatches(pickGroup.group.batches, q)
+        .map(p => (p.loc || t('noLocation')) + ' · ' + (p.batch || '—') + (p.expiryDate ? ' (' + p.expiryDate + ')' : '') + ' ×' + p.qty).join(', ') });
+    };
+    qtyInput.addEventListener('input', showPick);
+    showPick();
     const doneBtn = row.querySelector('.pl-done-btn');
     doneBtn.addEventListener('click', async () => {
       const qtyTaken = parseFloat(qtyInput.value);
@@ -3576,6 +4423,11 @@
         const qty = parseFloat(qtyInput.value) || 0;
         if (pick) {
           hint.textContent = t('plStockBalanceHint', { bal: pick.group.balance, uom: pick.group.uom });
+          if (qty > 0 && pick.group.batches.length) {
+            const list = allocateFromBatches(pick.group.batches, qty)
+              .map(p => (p.loc ? '📍' + p.loc + ' ' : '') + (p.batch || '—') + (p.expiryDate ? ' (' + p.expiryDate + ')' : '') + ' ×' + p.qty).join(', ');
+            hint.textContent += ' · ' + t('fefoHint', { list });
+          }
           hint.classList.toggle('low', qty > pick.group.balance);
         } else {
           hint.textContent = ''; hint.classList.remove('low');
@@ -3650,7 +4502,7 @@
             <div>
               <div class="pl-item-name">${escapeHtml(item.item)}</div>
               <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div>
-              ${(item.allocations || []).map(a => `<div class="pl-item-meta">📦 ${escapeHtml((a.itemCode ? a.itemCode + ' · ' : '') + a.item)} × ${a.qty} ${escapeHtml(a.uom || '')}</div>`).join('')}
+              ${(item.allocations || []).map(a => `<div class="pl-item-meta">📦 ${escapeHtml((a.itemCode ? a.itemCode + ' · ' : '') + a.item)} × ${a.qty} ${escapeHtml(a.uom || '')}${(a.batches && a.batches.some(b => b.batch || b.expiryDate || b.loc)) ? ' — ' + escapeHtml(a.batches.map(b => (b.loc ? '📍' + b.loc + ' ' : '') + (b.batch || '—') + (b.expiryDate ? ' (' + b.expiryDate + ')' : '') + ' ×' + b.qty).join(', ')) : ''}</div>`).join('')}
             </div>
             <div style="text-align:right;">
               ${isIncomplete
@@ -3684,7 +4536,7 @@
             }
             const newRecords = latestRecords.filter(r => r.sourcePackingListItemId !== item.id);
             return { packingLists: latestPackingLists, records: newRecords };
-          });
+          }, { a: 'plUndo', d: { item: item.item, pl: pl.title } });
           undoBtn.disabled = false;
           if (ok) renderCurrentView();
         });
@@ -3858,16 +4710,610 @@
     if (!isAdmin || !currentPackingListId) return;
     if (!confirm(t('deletePackingListConfirm'))) return;
     const idToDelete = currentPackingListId;
+    const plTitle = (packingLists.find(p => p.id === idToDelete) || {}).title || '';
     const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => ({
       packingLists: latestPackingLists.filter(p => p.id !== idToDelete),
       records: latestRecords
-    }));
+    }), { a: 'plDelete', d: { title: plTitle } });
     if (ok) {
       currentView = 'packing';
       currentPackingListId = null;
       renderCurrentView();
     }
   });
+
+  // ================= 收货单 GRN =================
+  const expandedReceipts = new Set();
+  const receiptFilter = document.getElementById('receiptFilter');
+
+  function receiptLineText(l) {
+    return (l.itemCode ? l.itemCode + ' · ' : '') + l.item + ' × ' + l.qty + ' ' + (l.uom || '')
+      + (l.batch ? ' · 🏷 ' + l.batch : '') + (l.expiryDate ? ' · ' + l.expiryDate : '') + (l.loc ? ' · 📍' + l.loc : '');
+  }
+
+  function renderReceivingView() {
+    const q = receiptFilter.value.trim().toLowerCase();
+    const list = receipts.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''))
+      .filter(r => !q || (r.no + ' ' + (r.supplier || '') + ' ' + (r.ref || '') + ' ' + r.lines.map(l => l.item + ' ' + (l.itemCode || '')).join(' ')).toLowerCase().includes(q));
+    const box = document.getElementById('receiptsContainer');
+    document.getElementById('receiptsEmpty').style.display = list.length ? 'none' : 'block';
+    box.innerHTML = '';
+    list.forEach(r => {
+      const open = expandedReceipts.has(r.id);
+      const card = document.createElement('div');
+      card.className = 'grn-card';
+      card.innerHTML = `
+        <div class="grn-top"><span class="grn-no">📥 ${escapeHtml(r.no)}</span><span class="pl-card-meta" style="margin:0;">${escapeHtml(r.date || '')}</span></div>
+        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(r.supplier || '—')}${r.ref ? ' · ' + escapeHtml(r.ref) : ''} · ${t('grnLinesCount', { n: r.lines.length })}${r.by ? ' · ' + escapeHtml(r.by) : ''}</div>
+        ${open ? `<div class="grn-lines">
+          ${r.lines.map(l => `<div class="grn-l">${escapeHtml(receiptLineText(l))}</div>`).join('')}
+          ${r.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(r.note)}</div>` : ''}
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="export-btn grn-export" data-id="${escapeHtml(r.id)}">📄 ${t('grnExportBtn')}</button>
+            ${isAdmin ? `<button class="danger-btn grn-del" data-id="${escapeHtml(r.id)}">🗑 ${t('grnDeleteBtn')}</button>` : ''}
+          </div></div>` : ''}`;
+      card.addEventListener('click', () => {
+        if (expandedReceipts.has(r.id)) expandedReceipts.delete(r.id); else expandedReceipts.add(r.id);
+        renderReceivingView();
+      });
+      box.appendChild(card);
+      card.querySelectorAll('.grn-export').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); exportReceiptExcel(r); }));
+      card.querySelectorAll('.grn-del').forEach(b => b.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!isAdmin || !confirm(t('grnDeleteConfirm', { no: r.no }))) return;
+        b.disabled = true;
+        try {
+          const latest = await fetchSharedData();
+          const merged = latest.records.filter(x => x.grnId !== r.id);
+          await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+            { receipts: latest.receipts.filter(x => x.id !== r.id), audit: [mkAudit('grnDelete', { no: r.no })] });
+          records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+          saveLocalCache();
+          setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+        } catch (err) {
+          console.error(err);
+          alert(t('syncFailed') + ': ' + err.message);
+        }
+        renderReceivingView();
+      }));
+    });
+  }
+  receiptFilter.addEventListener('input', renderReceivingView);
+
+  function exportReceiptExcel(r) {
+    if (typeof XLSX === 'undefined') { alert(t('xlsxLibFailed')); return; }
+    const aoa = [
+      ['GRN', r.no], ['Date', r.date || ''], ['Supplier', r.supplier || ''], ['Ref', r.ref || ''], ['Note', r.note || ''], [],
+      ['Code', 'Item', 'Qty', 'UOM', 'Batch', 'Expiry', 'Location']
+    ].concat(r.lines.map(l => [l.itemCode || '', l.item, l.qty, l.uom || '', l.batch || '', l.expiryDate || '', l.loc || '']));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'GRN');
+    XLSX.writeFile(wb, r.no + '.xlsx');
+  }
+
+  // ---- 新收货单 ----
+  const grnModal = document.getElementById('grnModal');
+  const grnLines = document.getElementById('grnLines');
+
+  function addGrnLine(pre) {
+    pre = pre || {};
+    const row = document.createElement('div');
+    row.className = 'grn-line';
+    row.innerHTML = `
+      <div class="field wide"><label>${t('itemNameLabel')}</label><input type="text" class="gl-name" list="itemNameList" autocomplete="off" value="${escapeHtml(pre.item || '')}"></div>
+      <div class="field"><label>${t('itemCodeLabel')}</label><input type="text" class="gl-code" autocomplete="off" value="${escapeHtml(pre.itemCode || '')}"></div>
+      <div class="field"><label>${t('qtyLabel')}</label><input type="number" class="gl-qty" min="0" step="any" value="${pre.qty || ''}"></div>
+      <div class="field"><label>${t('uomLabel')}</label><input type="text" class="gl-uom" autocomplete="off" value="${escapeHtml(pre.uom || '')}"></div>
+      <div class="field"><label>${t('batchLabel')}</label><input type="text" class="gl-batch" autocomplete="off" value="${escapeHtml(pre.batch || '')}"></div>
+      <div class="field"><label>${t('expiryDateLabel')}</label><input type="date" class="gl-exp" value="${escapeHtml(pre.expiryDate || '')}"></div>
+      <div class="field"><label>${t('locationLabel')}</label><input type="text" class="gl-loc" list="locList" autocomplete="off" value="${escapeHtml(pre.loc || '')}"></div>
+      <button type="button" class="grn-remove" title="${t('deleteBtn')}">✕</button>`;
+    grnLines.appendChild(row);
+    const nameIn = row.querySelector('.gl-name');
+    const fill = () => {
+      const name = nameIn.value.trim();
+      const code = getNameToCodeMap()[name.toLowerCase()];
+      if (code && !row.querySelector('.gl-code').value) row.querySelector('.gl-code').value = code;
+      const m = findMaster(name, row.querySelector('.gl-code').value);
+      const known = records.find(r => r.uom && r.item.trim().toLowerCase() === name.toLowerCase());
+      const uomIn = row.querySelector('.gl-uom');
+      if (!uomIn.value) { const u = (m && m.uom) || (known && known.uom) || ''; if (u) uomIn.value = u; }
+      const locIn = row.querySelector('.gl-loc');
+      if (m && m.loc && !locIn.value) locIn.value = m.loc;   // 上架建议：主档里的默认库位
+    };
+    nameIn.addEventListener('input', fill);
+    nameIn.addEventListener('change', fill);
+    row.querySelector('.grn-remove').addEventListener('click', () => row.remove());
+  }
+
+  document.getElementById('newReceiptBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    document.getElementById('grnDate').value = new Date().toISOString().slice(0, 10);
+    ['grnSupplier', 'grnRef', 'grnNote'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('grnSupplierList').innerHTML = Array.from(new Set(receipts.map(r => r.supplier).filter(Boolean)))
+      .sort().map(x => `<option value="${escapeHtml(x)}">`).join('');
+    document.getElementById('grnError').textContent = '';
+    grnLines.innerHTML = '';
+    addGrnLine();
+    grnModal.classList.add('open');
+  });
+  document.getElementById('grnAddLineBtn').addEventListener('click', () => addGrnLine());
+  document.getElementById('grnCancel').addEventListener('click', () => grnModal.classList.remove('open'));
+
+  document.getElementById('grnSave').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const err = document.getElementById('grnError');
+    const date = document.getElementById('grnDate').value;
+    const supplier = document.getElementById('grnSupplier').value.trim();
+    const ref = document.getElementById('grnRef').value.trim();
+    const note = document.getElementById('grnNote').value.trim();
+    const lines = [];
+    grnLines.querySelectorAll('.grn-line').forEach(row => {
+      const l = {
+        item: row.querySelector('.gl-name').value.trim(),
+        itemCode: row.querySelector('.gl-code').value.trim(),
+        qty: parseFloat(row.querySelector('.gl-qty').value),
+        uom: row.querySelector('.gl-uom').value.trim(),
+        batch: row.querySelector('.gl-batch').value.trim(),
+        expiryDate: row.querySelector('.gl-exp').value,
+        loc: row.querySelector('.gl-loc').value.trim()
+      };
+      if (l.item && l.qty > 0) lines.push(l);
+    });
+    if (!date || !lines.length) { err.textContent = t('grnNeedLine'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('grnSave');
+    btn.disabled = true; err.textContent = '';
+    try {
+      const latest = await fetchSharedData();
+      const year = date.slice(0, 4);
+      let seq = 0;
+      latest.receipts.forEach(r => { const m = /^GRN-(\d{4})-(\d+)$/.exec(r.no || ''); if (m && m[1] === year) seq = Math.max(seq, Number(m[2])); });
+      const no = 'GRN-' + year + '-' + String(seq + 1).padStart(4, '0');
+      const grnId = 'grn_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      let newLocs = latest.locations.slice();
+      const recs = lines.map((l, i) => {
+        if (l.loc && !newLocs.some(x => x.code.toLowerCase() === l.loc.toLowerCase())) {
+          newLocs.push({ id: 'loc_' + Date.now().toString(36) + i, code: l.loc, note: '' });
+        }
+        return stampNew({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + i,
+          item: l.item, itemCode: l.itemCode, qty: l.qty, uom: l.uom, type: 'IN', date, platform: '',
+          expiryDate: l.expiryDate, batch: l.batch, loc: l.loc, supplier, grnId, grnNo: no
+        });
+      });
+      const receipt = {
+        id: grnId, no, date, supplier, ref, note, by: actorName(), at: new Date().toISOString(),
+        lines: lines.map((l, i) => Object.assign({}, l, { recId: recs[i].id }))
+      };
+      const merged = latest.records.concat(recs);
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+        { receipts: latest.receipts.concat([receipt]), locations: newLocs, audit: [mkAudit('grn', { no, n: lines.length, supplier: supplier || '—' })] });
+      records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      grnModal.classList.remove('open');
+      expandedReceipts.add(grnId);
+      renderCurrentView();
+    } catch (e) {
+      console.error(e);
+      err.textContent = t('syncFailed') + ': ' + e.message;
+    }
+    btn.disabled = false;
+  });
+
+  // ================= 库位管理 / 转移上架（管理员）=================
+  // 只改“附加数据”（库位清单等）时用：先取最新数据，再带着新的附加数据写回
+  async function pushExtra(opts) {
+    const latest = await fetchSharedData();
+    await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined, opts);
+    records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+    saveLocalCache();
+    setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+    return latest;
+  }
+
+  const locationsModal = document.getElementById('locationsModal');
+  const locError = document.getElementById('locError');
+
+  function renderLocationsModal() {
+    const usage = new Map();   // 库位 -> 货物个数
+    buildGroups().forEach(g => {
+      const seen = new Set();
+      g.batches.forEach(b => { const c = b.loc || ''; if (!seen.has(c)) { seen.add(c); usage.set(c, (usage.get(c) || 0) + 1); } });
+    });
+    const rows = locations.slice().sort((a, b) => a.code.localeCompare(b.code)).map(l => {
+      const n = usage.get(l.code) || 0;
+      return `<div class="user-row">
+        <span>📍 <b>${escapeHtml(l.code)}</b> ${l.note ? escapeHtml(l.note) : ''} <span class="me">${t('locItemsCount', { n })}</span></span>
+        <span>
+          <button class="edit-btn loc-view" data-code="${escapeHtml(l.code)}">${t('viewBtn')}</button>
+          <button class="del-btn loc-del" data-id="${escapeHtml(l.id)}" data-n="${n}">✕</button>
+        </span></div>`;
+    });
+    const un = usage.get('') || 0;
+    if (un) rows.push(`<div class="user-row"><span>📍 <i>${t('noLocation')}</i> <span class="me">${t('locItemsCount', { n: un })}</span></span>
+        <span><button class="edit-btn loc-view" data-code="__none__">${t('viewBtn')}</button></span></div>`);
+    const el = document.getElementById('locList2');
+    el.innerHTML = rows.join('') || `<div class="pl-item-meta">${t('locEmpty')}</div>`;
+    el.querySelectorAll('.loc-view').forEach(b => b.addEventListener('click', () => {
+      filterLocation.value = b.dataset.code;
+      locationsModal.classList.remove('open');
+      render();
+      document.getElementById('search').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    el.querySelectorAll('.loc-del').forEach(b => b.addEventListener('click', async () => {
+      if (Number(b.dataset.n) > 0) { locError.textContent = t('locInUse'); return; }
+      if (!confirm(t('locDeleteConfirm'))) return;
+      locError.textContent = '';
+      const gone = locations.find(l => l.id === b.dataset.id);
+      try {
+        await pushExtra({ locations: locations.filter(l => l.id !== b.dataset.id), audit: [mkAudit('locDel', { code: gone ? gone.code : '' })] });
+      } catch (e) { locError.textContent = t('syncFailed') + ': ' + e.message; }
+      renderLocationsModal();
+    }));
+  }
+
+  document.getElementById('locationsBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    locError.textContent = '';
+    renderLocationsModal();
+    locationsModal.classList.add('open');
+  });
+  document.getElementById('locClose').addEventListener('click', () => locationsModal.classList.remove('open'));
+  document.getElementById('locAddBtn').addEventListener('click', async () => {
+    const code = document.getElementById('locNewCode').value.trim();
+    const note = document.getElementById('locNewNote').value.trim();
+    if (!code) return;
+    if (locations.some(l => l.code.toLowerCase() === code.toLowerCase())) { locError.textContent = t('locExists'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { locError.textContent = t('ghConfigMissing'); return; }
+    locError.textContent = '';
+    try {
+      await pushExtra({
+        locations: locations.concat([{ id: 'loc_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), code, note }]),
+        audit: [mkAudit('locAdd', { code })]
+      });
+      document.getElementById('locNewCode').value = '';
+      document.getElementById('locNewNote').value = '';
+    } catch (e) { locError.textContent = t('syncFailed') + ': ' + e.message; }
+    renderLocationsModal();
+  });
+
+  // ---- 转移 ----
+  const transferModal = document.getElementById('transferModal');
+  const tfItem = document.getElementById('tfItem');
+  const tfLot = document.getElementById('tfLot');
+  let tfGroups = [];
+
+  const groupLabel = (g) => (g.itemCode ? g.itemCode + ' · ' : '') + g.item;
+  const lotLabel = (b, uom) => (b.loc ? '📍' + b.loc : t('noLocation')) + ' · ' + (b.batch || '—') + (b.expiry ? ' (' + b.expiry + ')' : '') + ' · ' + b.qty + ' ' + uom;
+
+  function tfRefreshLots() {
+    const g = tfGroups.find(x => groupLabel(x) === tfItem.value.trim());
+    tfLot.innerHTML = g ? g.batches.map((b, i) => `<option value="${i}">${escapeHtml(lotLabel(b, g.uom))}</option>`).join('') : '';
+  }
+  function openTransfer(itemName) {
+    if (!isAdmin) return;
+    tfGroups = buildGroups().filter(g => g.batches.length).sort((a, b) => a.item.localeCompare(b.item));
+    document.getElementById('tfItemList').innerHTML = tfGroups.map(g => `<option value="${escapeHtml(groupLabel(g))}">`).join('');
+    const pre = tfGroups.find(g => g.item === itemName);
+    tfItem.value = pre ? groupLabel(pre) : '';
+    document.getElementById('tfQty').value = '';
+    document.getElementById('tfTo').value = '';
+    document.getElementById('tfError').textContent = '';
+    tfRefreshLots();
+    transferModal.classList.add('open');
+  }
+  document.getElementById('transferBtn').addEventListener('click', () => openTransfer(''));
+  tfItem.addEventListener('input', tfRefreshLots);
+  tfItem.addEventListener('change', tfRefreshLots);
+  document.getElementById('tfCancel').addEventListener('click', () => transferModal.classList.remove('open'));
+
+  document.getElementById('tfApply').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const err = document.getElementById('tfError');
+    const g0 = tfGroups.find(x => groupLabel(x) === tfItem.value.trim());
+    const lot0 = g0 && g0.batches[Number(tfLot.value)];
+    const qty = parseFloat(document.getElementById('tfQty').value);
+    const to = document.getElementById('tfTo').value.trim();
+    if (!g0 || !lot0 || !(qty > 0) || !to) { err.textContent = t('transferFill'); return; }
+    if (to.toLowerCase() === (lot0.loc || '').toLowerCase()) { err.textContent = t('transferSame'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('tfApply');
+    btn.disabled = true; err.textContent = '';
+    try {
+      const latest = await fetchSharedData();
+      const g = buildGroups(latest.records).find(x => x.key === g0.key);
+      const lot = g && g.batches.find(b => b.key === lot0.key);
+      if (!lot || qty > lot.qty) { err.textContent = t('transferInsufficient', { qty: lot ? lot.qty : 0 }); btn.disabled = false; return; }
+      const exist = latest.locations.find(l => l.code.toLowerCase() === to.toLowerCase());
+      const toCode = exist ? exist.code : to;
+      const newLocs = exist ? latest.locations : latest.locations.concat([{ id: 'loc_' + Date.now().toString(36), code: toCode, note: '' }]);
+      const today = new Date().toISOString().slice(0, 10);
+      const tid = 'tf_' + Date.now().toString(36);
+      const base = { item: g.item, itemCode: g.itemCode, qty, uom: g.uom, date: today, platform: '', expiryDate: lot.expiry, batch: lot.batch, transfer: true, transferId: tid, fromLoc: lot.loc || '', toLoc: toCode };
+      const outRec = stampNew(Object.assign({ id: 'tf' + Date.now().toString(36) + 'o' + Math.random().toString(36).slice(2, 5), type: 'OUT', loc: lot.loc || '' }, base));
+      const inRec = stampNew(Object.assign({ id: 'tf' + Date.now().toString(36) + 'i' + Math.random().toString(36).slice(2, 5), type: 'IN', loc: toCode }, base));
+      const merged = latest.records.concat([outRec, inRec]);
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+        { locations: newLocs, audit: [mkAudit('transfer', { item: g.item, qty, from: lot.loc || '—', to: toCode })] });
+      records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      transferModal.classList.remove('open');
+      renderCurrentView();
+    } catch (e) {
+      console.error(e);
+      err.textContent = t('syncFailed') + ': ' + e.message;
+    }
+    btn.disabled = false;
+  });
+
+  // ================= 盘点 / 库存调整（管理员）=================
+  const stockTakeModal = document.getElementById('stockTakeModal');
+  const stFilter = document.getElementById('stFilter');
+  let stCounts = new Map();   // groupKey -> 点到的数量
+
+  function adjReasonLabel(reason) {
+    const k = { count: 'reasonCount', damaged: 'reasonDamaged', expired: 'reasonExpired', lost: 'reasonLost', found: 'reasonFound', other: 'reasonOther' }[reason];
+    return k ? t(k) : (reason || '');
+  }
+
+  function renderStockTakeList() {
+    const q = stFilter.value.trim().toLowerCase();
+    const groups = buildGroups().sort((a, b) => a.item.localeCompare(b.item))
+      .filter(g => !q || g.item.toLowerCase().includes(q) || g.itemCode.toLowerCase().includes(q));
+    const shown = groups.slice(0, 100);
+    const list = document.getElementById('stList');
+    list.innerHTML = shown.map(g => {
+      const has = stCounts.has(g.key);
+      const diff = has ? r4(stCounts.get(g.key) - g.balance) : null;
+      return `<div class="mrow" data-key="${escapeHtml(g.key)}">
+        <div class="mname">${g.itemCode ? '<b>' + escapeHtml(g.itemCode) + '</b> · ' : ''}${escapeHtml(g.item)}
+          <span class="pl-item-meta" style="display:inline;">${t('stSystemQty')}: <b>${g.balance}</b> ${escapeHtml(g.uom)}</span></div>
+        <div class="mfields" style="grid-template-columns: 1fr 1fr;">
+          <input data-f="count" type="number" min="0" step="any" placeholder="${t('stCountedPh')}" value="${has ? stCounts.get(g.key) : ''}">
+          <span class="st-diff" style="align-self:center; font-weight:700; ${diff > 0 ? 'color:var(--in)' : diff < 0 ? 'color:var(--out)' : 'color:var(--muted)'}">${diff === null ? '' : (diff > 0 ? '+' : '') + diff}</span>
+        </div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.mrow').forEach(div => {
+      const inp = div.querySelector('input');
+      const g = shown.find(x => x.key === div.dataset.key);
+      inp.addEventListener('input', () => {
+        const v = parseFloat(inp.value);
+        if (isNaN(v) || v < 0) stCounts.delete(g.key); else stCounts.set(g.key, v);
+        const diff = stCounts.has(g.key) ? r4(stCounts.get(g.key) - g.balance) : null;
+        const span = div.querySelector('.st-diff');
+        span.textContent = diff === null ? '' : (diff > 0 ? '+' : '') + diff;
+        span.style.color = diff > 0 ? 'var(--in)' : diff < 0 ? 'var(--out)' : 'var(--muted)';
+      });
+    });
+    const st = document.getElementById('stStatus');
+    st.textContent = groups.length > shown.length ? t('archiveCount', { shown: shown.length, total: groups.length }) : '';
+    st.className = 'modal-status';
+  }
+
+  function openStockTake(filterText) {
+    if (!isAdmin) return;
+    stCounts = new Map();
+    stFilter.value = filterText || '';
+    document.getElementById('stNote').value = '';
+    document.getElementById('stReason').value = 'count';
+    document.getElementById('stError').textContent = '';
+    renderStockTakeList();
+    stockTakeModal.classList.add('open');
+  }
+  document.getElementById('stockTakeBtn').addEventListener('click', () => openStockTake(''));
+  stFilter.addEventListener('input', renderStockTakeList);
+  document.getElementById('stCancel').addEventListener('click', () => stockTakeModal.classList.remove('open'));
+
+  document.getElementById('stApply').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const err = document.getElementById('stError');
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    if (!stCounts.size) { err.textContent = t('stNothing'); return; }
+    const reason = document.getElementById('stReason').value;
+    const note = document.getElementById('stNote').value.trim();
+    const btn = document.getElementById('stApply');
+    btn.disabled = true;
+    err.textContent = '';
+    try {
+      const latest = await fetchSharedData();   // 以最新库存为准计算差额
+      const groups = buildGroups(latest.records);
+      const alloc = makeAllocator(latest.records);
+      const takeId = 'st_' + Date.now().toString(36);
+      const today = new Date().toISOString().slice(0, 10);
+      const newRecs = [];
+      let items = 0;
+      stCounts.forEach((counted, key) => {
+        const g = groups.find(x => x.key === key);
+        if (!g) return;
+        const diff = r4(counted - g.balance);
+        if (diff === 0) return;
+        items++;
+        const base = { item: g.item, itemCode: g.itemCode, uom: g.uom, date: today, platform: '', adjustment: true, reason, note, takeId };
+        const mkId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + newRecs.length;
+        if (diff > 0) {
+          newRecs.push(stampNew(Object.assign({ id: mkId(), qty: diff, type: 'IN', expiryDate: '', batch: '' }, base)));
+        } else {
+          alloc(g.item, g.itemCode, -diff).forEach(piece => {
+            newRecs.push(stampNew(Object.assign({ id: mkId(), qty: piece.qty, type: 'OUT', expiryDate: piece.expiryDate, batch: piece.batch, loc: piece.loc || '' }, base)));
+          });
+        }
+      });
+      if (!items) { err.textContent = t('stNothing'); btn.disabled = false; return; }
+      if (!confirm(t('stConfirm', { n: items }))) { btn.disabled = false; return; }
+      const merged = latest.records.concat(newRecs);
+      await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+        { audit: [mkAudit('adjust', { n: items, reason, note })] });
+      records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      stockTakeModal.classList.remove('open');
+      renderCurrentView();
+    } catch (e) {
+      console.error(e);
+      err.textContent = t('syncFailed') + ': ' + e.message;
+    }
+    btn.disabled = false;
+  });
+
+  // ================= 货物主档（管理员）=================
+  const masterModal = document.getElementById('masterModal');
+  const masterFilter = document.getElementById('masterFilter');
+  let masterDraft = new Map();   // rowKey -> { category, uom, minStock, barcode }
+  let masterNew = [];            // 本次新增、尚未保存的货物
+
+  function masterRows() {
+    const rows = [];
+    const used = new Set();
+    buildGroups().forEach(g => {
+      const m = findMaster(g.item, g.itemCode);
+      if (m) used.add(m.id);
+      rows.push({ key: g.key, item: g.item, itemCode: g.itemCode, m, defUom: g.uom });
+    });
+    itemMaster.forEach(m => {
+      if (!used.has(m.id)) rows.push({ key: 'm:' + m.id, item: m.item, itemCode: m.itemCode || '', m, defUom: m.uom || '' });
+    });
+    masterNew.forEach(n => rows.push({ key: 'n:' + n.id, item: n.item, itemCode: n.itemCode, m: null, defUom: '', isNew: true, id: n.id }));
+    return rows.sort((a, b) => a.item.localeCompare(b.item));
+  }
+  function masterVal(row, f) {
+    const d = masterDraft.get(row.key);
+    if (d && d[f] !== undefined) return d[f];
+    if (row.m && row.m[f] !== undefined && row.m[f] !== '') return row.m[f];
+    return f === 'uom' ? row.defUom : '';
+  }
+
+  function renderMasterList() {
+    const q = masterFilter.value.trim().toLowerCase();
+    const rows = masterRows().filter(r => !q || r.item.toLowerCase().includes(q) || r.itemCode.toLowerCase().includes(q));
+    const shown = rows.slice(0, 100);
+    const cats = new Set(itemMaster.map(m => m.category).filter(Boolean));
+    document.getElementById('masterCatList').innerHTML = Array.from(cats).sort().map(c => `<option value="${escapeHtml(c)}">`).join('');
+    const list = document.getElementById('masterList');
+    list.innerHTML = shown.map(r => `<div class="mrow" data-key="${escapeHtml(r.key)}">
+        <div class="mname">${r.itemCode ? '<b>' + escapeHtml(r.itemCode) + '</b> · ' : ''}${escapeHtml(r.item)}</div>
+        <div class="mfields">
+          <input data-f="category" list="masterCatList" placeholder="${t('categoryLabel')}" value="${escapeHtml(String(masterVal(r, 'category')))}">
+          <input data-f="uom" placeholder="${t('uomLabel')}" value="${escapeHtml(String(masterVal(r, 'uom')))}">
+          <input data-f="minStock" type="number" min="0" step="any" placeholder="${t('minStockShort')}" value="${masterVal(r, 'minStock') || ''}">
+          <input data-f="barcode" placeholder="${t('barcodeLabel')}" value="${escapeHtml(String(masterVal(r, 'barcode')))}">
+          <input data-f="loc" list="locList" placeholder="${t('defaultLocLabel')}" value="${escapeHtml(String(masterVal(r, 'loc')))}">
+        </div>
+      </div>`).join('');
+    list.querySelectorAll('.mrow').forEach(div => {
+      div.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
+        const key = div.dataset.key;
+        const d = masterDraft.get(key) || {};
+        d[inp.dataset.f] = inp.dataset.f === 'minStock' ? (parseFloat(inp.value) || 0) : inp.value.trim();
+        masterDraft.set(key, d);
+      }));
+    });
+    const st = document.getElementById('masterStatus');
+    st.textContent = rows.length > shown.length ? t('archiveCount', { shown: shown.length, total: rows.length }) : '';
+    st.className = 'modal-status';
+  }
+
+  document.getElementById('masterBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    masterDraft = new Map();
+    masterNew = [];
+    masterFilter.value = '';
+    document.getElementById('masterError').textContent = '';
+    renderMasterList();
+    masterModal.classList.add('open');
+  });
+  masterFilter.addEventListener('input', renderMasterList);
+  document.getElementById('masterCancel').addEventListener('click', () => masterModal.classList.remove('open'));
+  document.getElementById('masterAddBtn').addEventListener('click', () => {
+    const name = document.getElementById('masterNewName').value.trim();
+    const code = document.getElementById('masterNewCode').value.trim();
+    if (!name) return;
+    masterNew.push({ id: 'im_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), item: name, itemCode: code });
+    document.getElementById('masterNewName').value = '';
+    document.getElementById('masterNewCode').value = '';
+    masterFilter.value = name;
+    renderMasterList();
+  });
+
+  document.getElementById('masterSave').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    const err = document.getElementById('masterError');
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('masterSave');
+    btn.disabled = true;
+    err.textContent = '';
+    try {
+      const latest = await fetchSharedData();
+      const rows = masterRows();
+      const out = [];
+      rows.forEach(r => {
+        const v = { category: masterVal(r, 'category'), uom: masterVal(r, 'uom'), minStock: Number(masterVal(r, 'minStock')) || 0, barcode: masterVal(r, 'barcode'), loc: masterVal(r, 'loc') };
+        const hasAny = v.category || v.minStock > 0 || v.barcode || v.loc || (r.m && r.m.uom) || (masterDraft.get(r.key) || {}).uom;
+        if (!hasAny && !r.isNew) return;
+        out.push(Object.assign({ id: (r.m && r.m.id) || r.id || ('im_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), item: r.item, itemCode: r.itemCode }, v));
+      });
+      await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
+        { itemMaster: out, audit: [mkAudit('master', { n: out.length })] });
+      records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+      saveLocalCache();
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      masterModal.classList.remove('open');
+      renderCurrentView();
+    } catch (e) {
+      console.error(e);
+      err.textContent = t('syncFailed') + ': ' + e.message;
+    }
+    btn.disabled = false;
+  });
+
+  // ================= 操作日志（管理员）=================
+  const AUDIT_KEYS = {
+    add: 'actAdd', import: 'actImport', edit: 'actEdit', delete: 'actDelete',
+    plCreate: 'actPlCreate', plDelete: 'actPlDelete', plTake: 'actPlTake', plUndo: 'actPlUndo',
+    clearAll: 'actClearAll', archive: 'actArchive', adjust: 'actAdjust', master: 'actMaster',
+    userAdd: 'actUserAdd', userRemove: 'actUserRemove', enable: 'actEnable',
+    locAdd: 'actLocAdd', locDel: 'actLocDel', transfer: 'actTransfer', grn: 'actGrn', grnDelete: 'actGrnDelete'
+  };
+  function auditText(e) {
+    const key = AUDIT_KEYS[e.a];
+    if (!key) return e.a;
+    const d = Object.assign({}, e.d || {});
+    if (d.type) d.type = d.type === 'IN' ? t('typeIn') : t('typeOut');
+    if (e.a === 'adjust') { d.reason = adjReasonLabel(d.reason); d.note = d.note ? ' · ' + d.note : ''; }
+    return t(key, d);
+  }
+  const activityModal = document.getElementById('activityModal');
+  const activityFilter = document.getElementById('activityFilter');
+  function renderActivity() {
+    const q = activityFilter.value.trim().toLowerCase();
+    const rows = auditLog.slice().reverse().map(e => ({ e, text: auditText(e) }))
+      .filter(x => !q || x.text.toLowerCase().includes(q) || (x.e.by || '').toLowerCase().includes(q));
+    const shown = rows.slice(0, 300);
+    document.getElementById('activityList').innerHTML = shown.map(x => `<div class="user-row" style="align-items:flex-start;">
+        <span><b>${escapeHtml(x.e.by || '—')}</b> · ${escapeHtml(x.text)}</span>
+        <span class="me" style="white-space:nowrap;">${escapeHtml((x.e.at || '').replace('T', ' ').slice(0, 16))}</span>
+      </div>`).join('');
+    const st = document.getElementById('activityStatus');
+    st.textContent = auditLog.length ? t('archiveCount', { shown: shown.length, total: rows.length }) : t('activityEmpty');
+    st.className = 'modal-status';
+  }
+  document.getElementById('activityBtn').addEventListener('click', async () => {
+    if (!isAdmin) return;
+    activityFilter.value = '';
+    activityModal.classList.add('open');
+    renderActivity();
+    try { await loadDataAndRender(true); renderActivity(); } catch (e) {}   // 先显示本机已有的，再刷新到最新
+  });
+  activityFilter.addEventListener('input', renderActivity);
+  document.getElementById('activityClose').addEventListener('click', () => activityModal.classList.remove('open'));
 
   // ================= 用户管理（管理员）=================
   const usersModal = document.getElementById('usersModal');
@@ -3919,7 +5365,7 @@
     await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, {
       master: session.master, envUsers, usersPayload,
       archiveKey: authState.archiveKey, archiveKeyPrev: authState.archiveKeyPrev
-    });
+    }, { audit: [mkAudit('userAdd', { id: id.trim() })] });
   }
 
   // 启用账号：把现有（旧版）数据转换为 v2，并创建第一个用户（通常是管理员自己）
@@ -3933,7 +5379,7 @@
     await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, {
       master, envUsers: { [first.uid]: first.env }, usersPayload: { [first.uid]: first.payload },
       archiveKey, archiveKeyPrev: ''
-    });
+    }, { audit: [mkAudit('enable', { id: id.trim() })] });
     session.uid = first.uid; session.id = id.trim(); session.persist = false;
     persistSession();
     if (archived && archived.length) {
@@ -3958,9 +5404,10 @@
       usersPayload[u] = info;
     }
     const prevArchiveKey = authState.archiveKey;
+    const removedId = ((authState.usersPayload || {})[uid] || {}).id || '';
     await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, {
       master: newMaster, envUsers, usersPayload, archiveKey: newArchiveKey, archiveKeyPrev: prevArchiveKey
-    });
+    }, { audit: [mkAudit('userRemove', { id: removedId })] });
     if (archived !== null) await pushArchiveRecords(archived);
   }
 
@@ -3997,25 +5444,28 @@
     return recs.filter(r => r.date && r.date <= cutoff && !r.sourcePackingListItemId);
   }
 
+  // 为被归档的记录生成“期初结余”：每个货物每个批次一条；超库存出库部分留一条 OUT
+  function makeOpenings(eligible, cutoff) {
+    const out = [];
+    const mk = (g, qty, type, batch, expiry, loc) => ({
+      id: 'open_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + out.length,
+      item: g.item, itemCode: g.itemCode, qty, uom: g.uom, type, date: cutoff,
+      platform: '', expiryDate: expiry || '', batch: batch || '', loc: loc || '', isOpening: true,
+      by: actorName(), at: new Date().toISOString()
+    });
+    buildGroups(eligible).forEach(g => {
+      g.batches.forEach(b => out.push(mk(g, b.qty, 'IN', b.batch, b.expiry, b.loc)));
+      if (g.overdrawn > 0) out.push(mk(g, g.overdrawn, 'OUT', '', ''));
+    });
+    return out;
+  }
+
   async function archiveOldRecords(cutoff) {
     const latest = await fetchSharedData();
     const eligible = archiveEligible(latest.records, cutoff);
     if (!eligible.length) return 0;
 
-    const openings = buildGroups(eligible)
-      .filter(g => g.balance !== 0)
-      .map(g => ({
-        id: 'open_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        item: g.item,
-        itemCode: g.itemCode,
-        qty: Math.abs(g.balance),
-        uom: g.uom,
-        type: g.balance > 0 ? 'IN' : 'OUT',
-        date: cutoff,
-        platform: '',
-        expiryDate: g.nearestExpiry || '',
-        isOpening: true
-      }));
+    const openings = makeOpenings(eligible, cutoff);
 
     // 先写归档文件（按记录 id 去重，失败重试不会产生重复），成功后再改 data.json
     const oldArchive = await fetchArchiveRecords();
@@ -4024,12 +5474,13 @@
 
     const gone = new Set(eligible.map(r => r.id));
     const remaining = latest.records.filter(r => !gone.has(r.id)).concat(openings);
-    await pushSharedData(remaining, latest.adminKeyHash, latest.packingLists);
+    await pushSharedData(remaining, latest.adminKeyHash, latest.packingLists, undefined,
+      { audit: [mkAudit('archive', { n: eligible.length, cutoff })] });
 
     records = remaining;
     adminKeyHash = latest.adminKeyHash;
     packingLists = latest.packingLists;
-    localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+    saveLocalCache();
     setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
     return eligible.length;
   }
@@ -4045,7 +5496,7 @@
     const cutoff = archiveCutoff.value;
     if (!cutoff) { archivePreview.textContent = ''; return; }
     const eligible = archiveEligible(records, cutoff);
-    const openings = buildGroups(eligible).filter(g => g.balance !== 0).length;
+    const openings = makeOpenings(eligible, cutoff).length;
     archivePreview.textContent = eligible.length
       ? t('archivePreview', { n: eligible.length, m: openings })
       : t('archiveNothing');
@@ -4187,11 +5638,12 @@
     setSyncStatus(t('syncing'));
     try {
       const latest = await fetchSharedData();
-      await pushSharedData([], latest.adminKeyHash, latest.packingLists);
+      await pushSharedData([], latest.adminKeyHash, latest.packingLists, undefined,
+        { audit: [mkAudit('clearAll', { n: latest.records.length })] });
       records = [];
       adminKeyHash = latest.adminKeyHash;
       packingLists = latest.packingLists;
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists }));
+      saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
       clearAllModal.classList.remove('open');
       renderCurrentView();
@@ -4239,6 +5691,8 @@
     editDate.value = rec.date || '';
     editPlatform.value = rec.platform || '';
     editExpiry.value = rec.expiryDate || '';
+    document.getElementById('editBatch').value = rec.batch || '';
+    document.getElementById('editLoc').value = rec.loc || '';
     setEditType(rec.type === 'OUT' ? 'OUT' : 'IN');
     editRecordError.textContent = '';
     editRecordModal.classList.add('open');
@@ -4261,6 +5715,8 @@
     const date = editDate.value;
     const platform = editPlatform.value.trim();
     const expiryDate = editExpiry.value;
+    const batch = document.getElementById('editBatch').value.trim();
+    const loc = document.getElementById('editLoc').value.trim();
 
     if (!item || !qty || qty <= 0 || !date) {
       editRecordError.textContent = t('editSaveFailed');
@@ -4271,7 +5727,7 @@
     editRecordError.textContent = '';
 
     const ok = await updateRecordAndSync(editingRecordId, {
-      item, itemCode, qty, uom, date, platform, expiryDate, type: editingType
+      item, itemCode, qty, uom, date, platform, expiryDate, batch, loc, type: editingType
     });
 
     editRecordSave.disabled = false;
