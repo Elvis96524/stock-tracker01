@@ -2064,6 +2064,7 @@
       pickFromHint: '取货位置：{list}',
       receiptFilterPh: '搜索收货单号、供应商、货物…',
       receiptsEmpty: '还没有收货单。',
+      masterDeleteConfirm: '删除「{item}」的主档资料（分类、单价、条码等）？点“保存”后生效。出入库记录不会被删除；有出入库记录的货物仍会出现在列表里，只是资料被清空。',
       scanBtn: '📷 扫码',
       scanTitle: '扫码',
       scanDone: '完成',
@@ -2563,6 +2564,7 @@
       pickFromHint: 'Pick from: {list}',
       receiptFilterPh: 'Search receipt no., supplier, item…',
       receiptsEmpty: 'No receipts yet.',
+      masterDeleteConfirm: 'Delete the item master data for "{item}" (category, price, barcode, etc.)? Takes effect when you press Save. Stock records are not deleted; an item that has stock records stays in the list with its data cleared.',
       scanBtn: '📷 Scan',
       scanTitle: 'Scan',
       scanDone: 'Done',
@@ -3062,6 +3064,7 @@
       pickFromHint: 'Ambil dari: {list}',
       receiptFilterPh: 'Cari no. resit, pembekal, barang…',
       receiptsEmpty: 'Belum ada resit.',
+      masterDeleteConfirm: 'Padam data induk barang untuk "{item}" (kategori, harga, kod bar dan lain-lain)? Berkuat kuasa selepas anda tekan Simpan. Rekod stok tidak dipadam; barang yang ada rekod stok kekal dalam senarai dengan datanya dikosongkan.',
       scanBtn: '📷 Imbas',
       scanTitle: 'Imbas',
       scanDone: 'Selesai',
@@ -7380,17 +7383,19 @@
   const masterFilter = document.getElementById('masterFilter');
   let masterDraft = new Map();   // rowKey -> { category, uom, minStock, barcode }
   let masterNew = [];            // 本次新增、尚未保存的货物
+  let masterDeleted = new Set(); // 本次标记删除的主档记录 id
 
   function masterRows() {
     const rows = [];
     const used = new Set();
     buildGroups().forEach(g => {
-      const m = findMaster(g.item, g.itemCode);
+      let m = findMaster(g.item, g.itemCode);
       if (m) used.add(m.id);
+      if (m && masterDeleted.has(m.id)) m = null;
       rows.push({ key: g.key, item: g.item, itemCode: g.itemCode, m, defUom: g.uom });
     });
     itemMaster.forEach(m => {
-      if (!used.has(m.id)) rows.push({ key: 'm:' + m.id, item: m.item, itemCode: m.itemCode || '', m, defUom: m.uom || '' });
+      if (!used.has(m.id) && !masterDeleted.has(m.id)) rows.push({ key: 'm:' + m.id, item: m.item, itemCode: m.itemCode || '', m, defUom: m.uom || '' });
     });
     masterNew.forEach(n => rows.push({ key: 'n:' + n.id, item: n.item, itemCode: n.itemCode, m: null, defUom: '', isNew: true, id: n.id }));
     return rows.sort((a, b) => a.item.localeCompare(b.item));
@@ -7410,7 +7415,7 @@
     document.getElementById('masterCatList').innerHTML = Array.from(cats).sort().map(c => `<option value="${escapeHtml(c)}">`).join('');
     const list = document.getElementById('masterList');
     list.innerHTML = shown.map(r => `<div class="mrow" data-key="${escapeHtml(r.key)}">
-        <div class="mname">${r.itemCode ? '<b>' + escapeHtml(r.itemCode) + '</b> · ' : ''}${escapeHtml(r.item)}</div>
+        <div class="mname" style="display:flex; justify-content:space-between; gap:8px; align-items:center;"><span>${r.itemCode ? '<b>' + escapeHtml(r.itemCode) + '</b> · ' : ''}${escapeHtml(r.item)}</span>${(r.m || r.isNew) ? `<button type="button" class="del-btn m-del" title="${t('deleteBtn')}">✕</button>` : ''}</div>
         <div class="mfields">
           <input data-f="category" list="masterCatList" placeholder="${t('categoryLabel')}" value="${escapeHtml(String(masterVal(r, 'category')))}">
           <input data-f="uom" placeholder="${t('uomLabel')}" value="${escapeHtml(String(masterVal(r, 'uom')))}">
@@ -7423,6 +7428,15 @@
         </div>
       </div>`).join('');
     list.querySelectorAll('.mrow').forEach(div => {
+      const delBtn = div.querySelector('.m-del');
+      if (delBtn) delBtn.addEventListener('click', () => {
+        const row = shown.find(x => x.key === div.dataset.key);
+        if (!row || !confirm(t('masterDeleteConfirm', { item: row.item }))) return;
+        if (row.isNew) masterNew = masterNew.filter(n => 'n:' + n.id !== row.key);
+        if (row.m) masterDeleted.add(row.m.id);
+        masterDraft.delete(row.key);
+        renderMasterList();
+      });
       div.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
         const key = div.dataset.key;
         const d = masterDraft.get(key) || {};
@@ -7439,6 +7453,7 @@
     if (!isAdmin) return;
     masterDraft = new Map();
     masterNew = [];
+    masterDeleted = new Set();
     masterFilter.value = '';
     document.getElementById('masterError').textContent = '';
     renderMasterList();
