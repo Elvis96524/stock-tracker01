@@ -933,6 +933,10 @@
   }
   .pl-done-btn:hover { opacity: 0.9; }
   .pl-done-check { color: var(--in); font-weight: 700; font-size: 13px; }
+  .pl-check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; cursor: pointer; font-weight: 600; }
+  .pl-check input { width: 18px; height: 18px; margin: 0; }
+  .pl-item-row.staged { border-color: #22a06b; background: #f3fbf6; }
+  #plSaveBar { position: sticky; bottom: 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: flex-end; background: var(--panel); border-top: 1px solid var(--border); padding: 10px 0; margin-top: 12px; z-index: 5; }
   .pl-admin-alloc { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
   .pl-admin-alloc label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
   .pl-admin-alloc input.pl-stock-pick {
@@ -1110,6 +1114,7 @@
 
   <!-- 选择页：Packing List / Stock Balance -->
   <div id="choiceView">
+    <div id="backupReminder" class="qc-tag" style="display:none; margin:0 0 12px; cursor:pointer; padding:6px 10px; font-size:13px;"></div>
     <div class="choice-grid">
       <button class="choice-card" id="gotoPackingBtn">
         <div class="choice-icon">📋</div>
@@ -1249,6 +1254,34 @@
       <h2 style="margin:0 0 10px;" data-i18n="returnsPanelTitle">退货单 (RTN)</h2>
       <div id="returnsContainer"></div>
       <div class="empty" id="returnsEmpty" style="display:none;" data-i18n="returnsEmpty">还没有退货单。</div>
+    </div>
+  </div>
+
+  <!-- 备份与恢复（管理员）-->
+  <div class="modal-overlay" id="backupModal">
+    <div class="modal-card" style="max-width:600px;">
+      <h2 data-i18n="bkTitle">备份与恢复</h2>
+      <div class="sub" id="bkLast"></div>
+      <h3 style="margin:10px 0 6px;" data-i18n="bkBackupHead">备份</h3>
+      <div class="sub" data-i18n="bkBackupSub">把全部数据（库存记录、Packing List、收货单、采购单、出库单、货物主档等）下载成一个文件。建议设置备份密码，文件会被加密。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><label for="bkPassword" data-i18n="bkPasswordLabel">备份密码（留空 = 不加密）</label><input type="password" id="bkPassword" autocomplete="new-password"></div>
+      </div>
+      <label class="pl-check" style="margin-bottom:10px;"><input type="checkbox" id="bkIncludeArchive" checked> <span data-i18n="bkIncludeArchive">同时包含已归档的旧记录</span></label>
+      <div><button class="btn-primary" id="bkDownloadBtn" data-i18n="bkDownloadBtn">⬇ 下载备份文件</button></div>
+      <div class="modal-error" id="bkError"></div>
+      <h3 style="margin:18px 0 6px;" data-i18n="bkRestoreHead">恢复</h3>
+      <div class="sub" data-i18n="bkRestoreSub">选择之前下载的备份文件。恢复会用备份里的内容覆盖现在的全部数据；覆盖之前，系统会先自动下载一份现在数据的备份文件。账号和管理员密钥不会被改动。</div>
+      <input type="file" id="bkFile" accept=".json,application/json" class="file-btn">
+      <div class="edit-grid" style="margin:8px 0 6px;">
+        <div class="field"><label for="bkRestorePassword" data-i18n="bkRestorePasswordLabel">备份密码（加密的文件才需要）</label><input type="password" id="bkRestorePassword" autocomplete="off"></div>
+      </div>
+      <button class="export-btn" id="bkLoadBtn" data-i18n="bkLoadBtn">读取备份文件</button>
+      <div id="bkPreview" class="pl-item-meta" style="margin:10px 0;"></div>
+      <label class="pl-check" id="bkRestoreArchiveWrap" style="display:none; margin-bottom:10px;"><input type="checkbox" id="bkRestoreArchive" checked> <span data-i18n="bkRestoreArchive">同时恢复归档的旧记录</span></label>
+      <div><button class="danger-btn" id="bkRestoreBtn" disabled data-i18n="bkRestoreBtn">⚠ 用这份备份覆盖现在的数据</button></div>
+      <div class="modal-error" id="bkRestoreError"></div>
+      <div class="modal-btn-row"><button class="btn-secondary" id="bkClose" data-i18n="closeBtn">关闭</button></div>
     </div>
   </div>
 
@@ -1669,6 +1702,11 @@
         <button class="admin-btn" id="exportDoExcelBtn" data-i18n="exportDoExcelBtn">📊 Export DO (Excel)</button>
       </div>
       <div id="packingDetailItems"></div>
+      <div id="plSaveBar" style="display:none;">
+        <div class="pl-item-meta" style="flex:1 1 100%; margin:0;" data-i18n="plSaveHint">勾选已备好的项目；最后点“完成并保存”一次过扣库存，中途不会保存。</div>
+        <button type="button" class="export-btn" id="plCheckAllBtn" data-i18n="plCheckAllBtn">全部勾选</button>
+        <button type="button" class="pl-done-btn" id="plSaveAllBtn"></button>
+      </div>
       <button class="admin-btn" id="deletePackingListBtn" data-admin-only style="margin-top:16px; color:var(--out); border-color:var(--out);" data-i18n="deletePackingListBtn">🗑 Delete this packing list</button>
     </div>
   </div>
@@ -1778,6 +1816,7 @@
         <button class="export-btn" id="masterBtn" data-admin-only data-i18n="masterBtn">🗂 Item master</button>
         <button class="export-btn" id="stockTakeBtn" data-admin-only data-i18n="stockTakeBtn">⚖ Stock take</button>
         <button class="export-btn" id="stockReportBtn" data-admin-only data-i18n="srBtn">📊 Stock reports</button>
+        <button class="export-btn" id="backupBtn" data-admin-only data-i18n="bkBtn">💾 Backup / Restore</button>
         <button class="export-btn" id="activityBtn" data-admin-only data-i18n="activityBtn">📜 Activity</button>
         <button class="export-btn" id="archiveBtn" data-admin-only data-i18n="archiveBtn">📦 Archive old records</button>
         <button class="danger-btn" id="clearAllStockBtn" data-admin-only data-i18n="clearAllStockBtn">🗑️ Clear All</button>
@@ -2064,6 +2103,43 @@
       pickFromHint: '取货位置：{list}',
       receiptFilterPh: '搜索收货单号、供应商、货物…',
       receiptsEmpty: '还没有收货单。',
+      bkBtn: '💾 备份 / 恢复',
+      bkTitle: '备份与恢复',
+      bkNever: '还没有备份过。建议现在就备份一次。',
+      bkLastAt: '上次在这台设备备份：{date}（{n} 天前）',
+      bkBackupHead: '备份',
+      bkBackupSub: '把全部数据（库存记录、Packing List、收货单、采购单、出库单、货物主档等）下载成一个文件。建议设置备份密码，文件会被加密。',
+      bkPasswordLabel: '备份密码（留空 = 不加密）',
+      bkIncludeArchive: '同时包含已归档的旧记录',
+      bkDownloadBtn: '⬇ 下载备份文件',
+      bkPlainConfirm: '没有设置备份密码，文件内容将不加密，任何人拿到文件都能读取。仍然继续吗？',
+      bkDone: '已下载备份文件（{n} 条库存记录）。请把文件保存到安全的地方，并记住备份密码。',
+      bkRestoreHead: '恢复',
+      bkRestoreSub: '选择之前下载的备份文件。恢复会用备份里的内容覆盖现在的全部数据；覆盖之前，系统会先自动下载一份现在数据的备份文件。账号和管理员密钥不会被改动。',
+      bkRestorePasswordLabel: '备份密码（加密的文件才需要）',
+      bkLoadBtn: '读取备份文件',
+      bkRestoreArchive: '同时恢复归档的旧记录',
+      bkRestoreBtn: '⚠ 用这份备份覆盖现在的数据',
+      bkPickFile: '请先选择备份文件。',
+      bkNeedPassword: '这个备份文件是加密的，请输入备份密码。',
+      bkBadPassword: '备份密码不对，或文件已损坏。',
+      bkInvalid: '这不是有效的备份文件。',
+      bkRecords: '库存记录',
+      bkMaster: '货物主档',
+      bkNow: '现在',
+      bkPreviewHead: '备份时间：{date}',
+      bkArchiveCount: '归档的旧记录：{n} 条',
+      bkRestoreConfirm: '确定用备份覆盖现在的全部数据吗？备份里有 {n} 条库存记录。系统会先自动下载一份现在数据的备份。',
+      bkRestoreDone: '已恢复。恢复前的数据备份文件已自动下载，请保存好。',
+      bkRemindNever: '还没有备份过。点这里备份一次。',
+      bkRemindOld: '已经 {n} 天没有在这台设备备份了。点这里备份。',
+      actRestore: '从备份恢复数据（备份日期 {date}，{n} 条库存记录）',
+      plCheckLabel: '已备好',
+      plCheckAllBtn: '全部勾选',
+      plSaveAllBtn: '✓ 完成并保存（{n} 项）',
+      plSaveHint: '勾选已备好的项目；最后点“完成并保存”一次过扣库存，中途不会保存。',
+      plNothingChecked: '请先勾选至少一个已备好的项目。',
+      plSavePartialConfirm: '还有 {n} 项没有勾选。仍然保存已勾选的 {m} 项吗？没勾选的以后还可以继续处理。',
       masterDeleteConfirm: '删除「{item}」的主档资料（分类、单价、条码等）？点“保存”后生效。出入库记录不会被删除；有出入库记录的货物仍会出现在列表里，只是资料被清空。',
       scanBtn: '📷 扫码',
       scanTitle: '扫码',
@@ -2564,6 +2640,43 @@
       pickFromHint: 'Pick from: {list}',
       receiptFilterPh: 'Search receipt no., supplier, item…',
       receiptsEmpty: 'No receipts yet.',
+      bkBtn: '💾 Backup / Restore',
+      bkTitle: 'Backup & restore',
+      bkNever: 'No backup has been made yet. Make one now.',
+      bkLastAt: 'Last backup from this device: {date} ({n} days ago)',
+      bkBackupHead: 'Backup',
+      bkBackupSub: 'Download all data (stock records, packing lists, receipts, purchase orders, delivery orders, item master, etc.) as one file. Set a backup password so the file is encrypted.',
+      bkPasswordLabel: 'Backup password (blank = not encrypted)',
+      bkIncludeArchive: 'Include archived old records',
+      bkDownloadBtn: '⬇ Download backup file',
+      bkPlainConfirm: 'No backup password is set, so the file will NOT be encrypted and anyone with the file can read it. Continue?',
+      bkDone: 'Backup file downloaded ({n} stock records). Keep it somewhere safe and remember the backup password.',
+      bkRestoreHead: 'Restore',
+      bkRestoreSub: 'Choose a backup file you downloaded earlier. Restoring overwrites all current data with the backup. Before overwriting, a backup of the current data is downloaded automatically. Accounts and the admin key are not changed.',
+      bkRestorePasswordLabel: 'Backup password (only for encrypted files)',
+      bkLoadBtn: 'Read backup file',
+      bkRestoreArchive: 'Also restore archived old records',
+      bkRestoreBtn: '⚠ Overwrite current data with this backup',
+      bkPickFile: 'Choose a backup file first.',
+      bkNeedPassword: 'This backup file is encrypted. Enter the backup password.',
+      bkBadPassword: 'Wrong backup password, or the file is damaged.',
+      bkInvalid: 'This is not a valid backup file.',
+      bkRecords: 'Stock records',
+      bkMaster: 'Item master',
+      bkNow: 'now',
+      bkPreviewHead: 'Backup made: {date}',
+      bkArchiveCount: 'Archived old records: {n}',
+      bkRestoreConfirm: 'Overwrite ALL current data with the backup? The backup has {n} stock records. A backup of the current data is downloaded first.',
+      bkRestoreDone: 'Restored. A backup of the data from before the restore was downloaded automatically; please keep it.',
+      bkRemindNever: 'No backup yet. Tap here to make one.',
+      bkRemindOld: '{n} days since the last backup from this device. Tap here to back up.',
+      actRestore: 'Restored data from backup (made {date}, {n} stock records)',
+      plCheckLabel: 'Ready',
+      plCheckAllBtn: 'Check all',
+      plSaveAllBtn: '✓ Complete & save ({n} items)',
+      plSaveHint: 'Tick each item that is ready. Nothing is saved until you press “Complete & save”, which deducts stock for all ticked items at once.',
+      plNothingChecked: 'Tick at least one ready item first.',
+      plSavePartialConfirm: '{n} item(s) are not ticked. Save the {m} ticked item(s) anyway? The rest can be done later.',
       masterDeleteConfirm: 'Delete the item master data for "{item}" (category, price, barcode, etc.)? Takes effect when you press Save. Stock records are not deleted; an item that has stock records stays in the list with its data cleared.',
       scanBtn: '📷 Scan',
       scanTitle: 'Scan',
@@ -3064,6 +3177,43 @@
       pickFromHint: 'Ambil dari: {list}',
       receiptFilterPh: 'Cari no. resit, pembekal, barang…',
       receiptsEmpty: 'Belum ada resit.',
+      bkBtn: '💾 Sandaran / Pulih',
+      bkTitle: 'Sandaran & pemulihan',
+      bkNever: 'Belum ada sandaran. Buat sekarang.',
+      bkLastAt: 'Sandaran terakhir dari peranti ini: {date} ({n} hari lalu)',
+      bkBackupHead: 'Sandaran',
+      bkBackupSub: 'Muat turun semua data (rekod stok, senarai pembungkusan, resit, pesanan pembelian, pesanan penghantaran, induk barang dan lain-lain) sebagai satu fail. Tetapkan kata laluan sandaran supaya fail disulitkan.',
+      bkPasswordLabel: 'Kata laluan sandaran (kosong = tidak disulit)',
+      bkIncludeArchive: 'Termasuk rekod lama yang diarkibkan',
+      bkDownloadBtn: '⬇ Muat turun fail sandaran',
+      bkPlainConfirm: 'Tiada kata laluan sandaran, jadi fail TIDAK akan disulitkan dan sesiapa yang memilikinya boleh membacanya. Teruskan?',
+      bkDone: 'Fail sandaran dimuat turun ({n} rekod stok). Simpan di tempat selamat dan ingat kata laluan sandaran.',
+      bkRestoreHead: 'Pulihkan',
+      bkRestoreSub: 'Pilih fail sandaran yang dimuat turun sebelum ini. Pemulihan akan menimpa semua data semasa dengan sandaran. Sebelum menimpa, sandaran data semasa dimuat turun secara automatik. Akaun dan kunci admin tidak diubah.',
+      bkRestorePasswordLabel: 'Kata laluan sandaran (hanya untuk fail disulit)',
+      bkLoadBtn: 'Baca fail sandaran',
+      bkRestoreArchive: 'Pulihkan juga rekod lama yang diarkibkan',
+      bkRestoreBtn: '⚠ Timpa data semasa dengan sandaran ini',
+      bkPickFile: 'Pilih fail sandaran dahulu.',
+      bkNeedPassword: 'Fail sandaran ini disulitkan. Masukkan kata laluan sandaran.',
+      bkBadPassword: 'Kata laluan sandaran salah, atau fail rosak.',
+      bkInvalid: 'Ini bukan fail sandaran yang sah.',
+      bkRecords: 'Rekod stok',
+      bkMaster: 'Induk barang',
+      bkNow: 'kini',
+      bkPreviewHead: 'Sandaran dibuat: {date}',
+      bkArchiveCount: 'Rekod lama diarkibkan: {n}',
+      bkRestoreConfirm: 'Timpa SEMUA data semasa dengan sandaran? Sandaran ada {n} rekod stok. Sandaran data semasa dimuat turun dahulu.',
+      bkRestoreDone: 'Dipulihkan. Sandaran data sebelum pemulihan telah dimuat turun secara automatik; sila simpan.',
+      bkRemindNever: 'Belum ada sandaran. Ketik di sini untuk membuat satu.',
+      bkRemindOld: '{n} hari sejak sandaran terakhir dari peranti ini. Ketik di sini untuk sandaran.',
+      actRestore: 'Data dipulihkan daripada sandaran (dibuat {date}, {n} rekod stok)',
+      plCheckLabel: 'Siap',
+      plCheckAllBtn: 'Tanda semua',
+      plSaveAllBtn: '✓ Selesai & simpan ({n} item)',
+      plSaveHint: 'Tandakan setiap item yang siap. Tiada apa disimpan sehingga anda tekan “Selesai & simpan”, yang menolak stok bagi semua item yang ditandakan sekali gus.',
+      plNothingChecked: 'Tandakan sekurang-kurangnya satu item yang siap dahulu.',
+      plSavePartialConfirm: '{n} item tidak ditandakan. Simpan {m} item yang ditandakan juga? Selebihnya boleh diselesaikan kemudian.',
       masterDeleteConfirm: 'Padam data induk barang untuk "{item}" (kategori, harga, kod bar dan lain-lain)? Berkuat kuasa selepas anda tekan Simpan. Rekod stok tidak dipadam; barang yang ada rekod stok kekal dalam senarai dengan datanya dikosongkan.',
       scanBtn: '📷 Imbas',
       scanTitle: 'Imbas',
@@ -4953,7 +5103,7 @@
     homeBtn.style.display = currentView === 'choice' ? 'none' : 'flex';
 
     if (currentView === 'stock') render();
-    else if (currentView === 'choice') renderAlerts(buildGroups());
+    else if (currentView === 'choice') { renderAlerts(buildGroups()); renderBackupReminder(); }
     else if (currentView === 'packing') renderPackingListView();
     else if (currentView === 'packingDetail') renderPackingDetail();
     else if (currentView === 'receiving') renderReceivingView();
@@ -5225,7 +5375,9 @@
 
   // ---- Packing List 详情 / 勾选完成 ----
   // 库存货物选项（用于 Packing List 管理员选择）：显示名称 + 编号 + 当前库存
+  let plPickCache = null;   // 打开一张 Packing List 时只计算一次库存选项（货物种类多时很重要）
   function getStockPickOptions() {
+    if (plPickCache) return plPickCache;
     return buildGroups()
       .sort((a, b) => a.item.localeCompare(b.item))
       .map(g => ({
@@ -5242,62 +5394,87 @@
         || null;
   }
 
-  // 提交：标记 Packing List 项目已发放，并为每条分配在库存中生成 OUT 记录（扣库存）
-  // lines: [{ stock: {item,itemCode,uom}, qty }]
-  async function commitPackingItemTaken(pl, item, lines) {
+  // ---- Packing List：先在本机暂存，最后“完成并保存”一次过写入 ----
+  const PL_DRAFT_KEY = 'srsPlDraft_v1';
+  let plDraft = {};   // { plId: { itemId: { checked, qty, lines:[{label, qty}] } } }
+  try { plDraft = JSON.parse(localStorage.getItem(PL_DRAFT_KEY) || '{}') || {}; } catch (e) { plDraft = {}; }
+  function savePlDraft() { try { localStorage.setItem(PL_DRAFT_KEY, JSON.stringify(plDraft)); } catch (e) {} }
+  function plDraftOf(plId, itemId) { return (plDraft[plId] || {})[itemId] || null; }
+  function setPlDraft(plId, itemId, d) { (plDraft[plId] = plDraft[plId] || {})[itemId] = d; savePlDraft(); }
+  function clearPlDraft(plId, itemIds) {
+    if (!plDraft[plId]) return;
+    itemIds.forEach(id => { delete plDraft[plId][id]; });
+    if (!Object.keys(plDraft[plId]).length) delete plDraft[plId];
+    savePlDraft();
+  }
+  let plRowCollectors = [];   // 当前页面上每个未完成项目的 {item, get()}
+
+  function refreshPlSaveBar() {
+    const bar = document.getElementById('plSaveBar');
+    if (!plRowCollectors.length) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    const n = plRowCollectors.filter(c => c.get().checked).length;
+    document.getElementById('plSaveAllBtn').textContent = t('plSaveAllBtn', { n });
+    document.getElementById('plSaveAllBtn').disabled = n === 0;
+  }
+
+  // 一次过提交：标记多个 Packing List 项目已发放，并为每条分配在库存中生成 OUT 记录（扣库存，先到期先出）
+  // entries: [{ item, lines: [{ stock: {item,itemCode,uom}, qty }] }]
+  async function commitPackingBatch(pl, entries) {
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) {
       alert(t('ghConfigMissing'));
       return false;
     }
-    const totalQty = lines.reduce((sum, l) => sum + l.qty, 0);
-    const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
-      const alloc = makeAllocator(latestRecords);   // 按最新库存做 FEFO 批次分配
+    const infos = entries.map(e => ({ a: 'plTake', d: { item: e.item.item, qty: e.lines.reduce((n, l) => n + l.qty, 0), pl: pl.title } }));
+    return mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
+      const alloc = makeAllocator(latestRecords);   // 按最新库存做 FEFO 批次分配；多个项目共用同一库存时会累计扣减
       const today = new Date().toISOString().slice(0, 10);
       const newRecords = [];
-      const allocations = [];
-      lines.forEach(l => {
-        const pieces = alloc(l.stock.item, l.stock.itemCode || '', l.qty);
-        allocations.push({
-          item: l.stock.item, itemCode: l.stock.itemCode || '', uom: l.stock.uom || '', qty: l.qty,
-          batches: pieces.map(x => ({ batch: x.batch, expiryDate: x.expiryDate, loc: x.loc || '', qty: x.qty }))
-        });
-        pieces.forEach(x => newRecords.push(stampNew({
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + newRecords.length,
-          item: l.stock.item,
-          itemCode: l.stock.itemCode || '',
-          qty: x.qty,
-          uom: l.stock.uom || item.uom || '',
-          type: 'OUT',
-          date: today,
-          platform: pl.platform,
-          expiryDate: x.expiryDate,
-          batch: x.batch,
-          loc: x.loc || '',
-          sourcePackingList: pl.title,
-          sourcePackingListId: pl.id,
-          sourcePackingListItemId: item.id
-        })));
-      });
       const targetPl = latestPackingLists.find(p => p.id === pl.id);
-      if (targetPl) {
-        const targetItem = targetPl.items.find(i => i.id === item.id);
-        if (targetItem) {
-          targetItem.done = true;
-          targetItem.qtyTaken = totalQty;
-          targetItem.completedAt = new Date().toISOString();
-          targetItem.takenBy = actorName();
-          targetItem.status = (totalQty === targetItem.qtyRequested) ? 'complete' : 'incomplete';
-          targetItem.allocations = allocations;
-        }
-      }
+      entries.forEach(e => {
+        const item = e.item;
+        const targetItem = targetPl && targetPl.items.find(i => i.id === item.id);
+        if (!targetItem || targetItem.done) return;   // 已被别人完成的项目不重复扣库存
+        const totalQty = e.lines.reduce((sum, l) => sum + l.qty, 0);
+        const allocations = [];
+        e.lines.forEach(l => {
+          const pieces = alloc(l.stock.item, l.stock.itemCode || '', l.qty);
+          allocations.push({
+            item: l.stock.item, itemCode: l.stock.itemCode || '', uom: l.stock.uom || '', qty: l.qty,
+            batches: pieces.map(x => ({ batch: x.batch, expiryDate: x.expiryDate, loc: x.loc || '', qty: x.qty }))
+          });
+          pieces.forEach(x => newRecords.push(stampNew({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + newRecords.length,
+            item: l.stock.item,
+            itemCode: l.stock.itemCode || '',
+            qty: x.qty,
+            uom: l.stock.uom || item.uom || '',
+            type: 'OUT',
+            date: today,
+            platform: pl.platform,
+            expiryDate: x.expiryDate,
+            batch: x.batch,
+            loc: x.loc || '',
+            sourcePackingList: pl.title,
+            sourcePackingListId: pl.id,
+            sourcePackingListItemId: item.id
+          })));
+        });
+        targetItem.done = true;
+        targetItem.qtyTaken = totalQty;
+        targetItem.completedAt = new Date().toISOString();
+        targetItem.takenBy = actorName();
+        targetItem.status = (totalQty === targetItem.qtyRequested) ? 'complete' : 'incomplete';
+        targetItem.allocations = allocations;
+      });
       return { packingLists: latestPackingLists, records: latestRecords.concat(newRecords) };
-    }, { a: 'plTake', d: { item: item.item, qty: totalQty, pl: pl.title } });
-    return ok;
+    }, infos);
   }
 
-  // 劳工：沿用原流程（按清单货物直接扣库存）
+  // 劳工：按清单货物直接扣库存。勾选“已备好”并填好数量即可，不会马上保存。
   function renderLabourTakeRow(row, pl, item) {
+    const d0 = plDraftOf(pl.id, item.id) || { checked: false, qty: item.qtyRequested };
     row.innerHTML = `
       <div class="pl-item-top">
         <div>
@@ -5307,11 +5484,12 @@
       </div>
       <div class="pl-stock-hint pick-hint" style="margin-top:6px;"></div>
       <div class="pl-item-actions">
-        <input type="number" min="0" step="1" class="pl-qty-taken-input" value="${item.qtyRequested}">
-        <button class="pl-done-btn">${t('plMarkDoneBtn')}</button>
+        <input type="number" min="0" step="1" class="pl-qty-taken-input" value="${d0.qty != null ? d0.qty : item.qtyRequested}">
+        <label class="pl-check"><input type="checkbox" class="pl-check-input"${d0.checked ? ' checked' : ''}> ${t('plCheckLabel')}</label>
       </div>
     `;
     const qtyInput = row.querySelector('.pl-qty-taken-input');
+    const chk = row.querySelector('.pl-check-input');
     const pickHint = row.querySelector('.pick-hint');
     const pickGroup = findStockGroupForPlItem(getStockPickOptions(), item);
     const showPick = () => {
@@ -5320,26 +5498,31 @@
       pickHint.textContent = '📍 ' + t('pickFromHint', { list: allocateFromBatches(pickGroup.group.batches, q)
         .map(p => (p.loc || t('noLocation')) + ' · ' + (p.batch || '—') + (p.expiryDate ? ' (' + p.expiryDate + ')' : '') + ' ×' + p.qty).join(', ') });
     };
-    qtyInput.addEventListener('input', showPick);
+    const persist = () => {
+      row.classList.toggle('staged', chk.checked);
+      setPlDraft(pl.id, item.id, { checked: chk.checked, qty: parseFloat(qtyInput.value) || 0 });
+      refreshPlSaveBar();
+    };
+    qtyInput.addEventListener('input', () => { showPick(); persist(); });
+    chk.addEventListener('change', persist);
     showPick();
-    const doneBtn = row.querySelector('.pl-done-btn');
-    doneBtn.addEventListener('click', async () => {
-      const qtyTaken = parseFloat(qtyInput.value);
-      if (!qtyTaken || qtyTaken <= 0) return;
-      doneBtn.disabled = true;
-      const ok = await commitPackingItemTaken(pl, item,
-        [{ stock: { item: item.item, itemCode: item.itemCode, uom: item.uom }, qty: qtyTaken }]);
-      doneBtn.disabled = false;
-      if (ok) renderCurrentView();
+    row.classList.toggle('staged', chk.checked);
+    plRowCollectors.push({
+      item, row, chk,
+      get: () => {
+        const qty = parseFloat(qtyInput.value);
+        return { item, checked: chk.checked, invalid: !(qty > 0), lines: [{ stock: { item: item.item, itemCode: item.itemCode, uom: item.uom }, qty }] };
+      }
     });
   }
 
   // 管理员：每一行 = [从库存选择货物] + [发放数量]（并排）；填好一行后自动出现新的一行，
-  // 可从多个库存货物凑齐同一个清单项目。确认后逐行扣库存。
+  // 可从多个库存货物凑齐同一个清单项目。勾选“已备好”后暂存，最后点“完成并保存”一次过扣库存。
   function renderAdminAllocRow(row, pl, item) {
     const options = getStockPickOptions();
-    const listId = 'plStockList_' + item.id;
+    const listId = 'plStockListShared';   // 所有行共用同一个下拉清单，避免每行重复生成上千个选项
     const preset = findStockGroupForPlItem(options, item);
+    const d0 = plDraftOf(pl.id, item.id);
     row.innerHTML = `
       <div class="pl-item-top">
         <div>
@@ -5348,16 +5531,25 @@
         </div>
       </div>
       <div class="pl-admin-alloc">
-        <datalist id="${listId}">
-          ${options.map(o => `<option value="${escapeHtml(o.label)}" label="${escapeHtml(t('plStockBalanceHint', { bal: o.group.balance, uom: o.group.uom }))}"></option>`).join('')}
-        </datalist>
         <div class="pl-alloc-lines"></div>
-        <button class="pl-done-btn" style="align-self:flex-start;">${t('plDeductBtn')}</button>
+        <label class="pl-check"><input type="checkbox" class="pl-check-input"${d0 && d0.checked ? ' checked' : ''}> ${t('plCheckLabel')}</label>
       </div>
     `;
     const linesEl = row.querySelector('.pl-alloc-lines');
-    const doneBtn = row.querySelector('.pl-done-btn');
+    const chk = row.querySelector('.pl-check-input');
     const pickOf = (input) => options.find(o => o.label === input.value.trim()) || null;
+
+    const persist = () => {
+      row.classList.toggle('staged', chk.checked);
+      const lines = [];
+      linesEl.querySelectorAll('.pl-alloc-line').forEach(line => {
+        const label = line.querySelector('.pl-stock-pick').value.trim();
+        const q = parseFloat(line.querySelector('.pl-qty-taken-input').value);
+        if (label || q > 0) lines.push({ label, qty: isNaN(q) ? null : q });
+      });
+      setPlDraft(pl.id, item.id, { checked: chk.checked, lines });
+      refreshPlSaveBar();
+    };
 
     function addLine(presetPick, presetQty) {
       const line = document.createElement('div');
@@ -5394,51 +5586,81 @@
         // 这一行（且是最后一行）已选好货物并填了数量 → 出现新的一行
         if (pick && qty > 0 && linesEl.lastElementChild === line) addLine(null, null);
       };
-      pickInput.addEventListener('input', update);
-      pickInput.addEventListener('change', update);
-      qtyInput.addEventListener('input', update);
+      const onEdit = () => { update(); persist(); };
+      pickInput.addEventListener('input', onEdit);
+      pickInput.addEventListener('change', onEdit);
+      qtyInput.addEventListener('input', onEdit);
       update();
     }
-    addLine(preset, preset ? item.qtyRequested : item.qtyRequested);
+    if (d0 && d0.lines && d0.lines.length) {
+      d0.lines.forEach(l => addLine(options.find(o => o.label === l.label) || (l.label ? { label: l.label } : null), l.qty));
+      if (!linesEl.lastElementChild || linesEl.lastElementChild.querySelector('.pl-stock-pick').value.trim()) addLine(null, null);
+    } else {
+      addLine(preset, item.qtyRequested);
+    }
+    chk.addEventListener('change', persist);
+    row.classList.toggle('staged', chk.checked);
 
-    doneBtn.addEventListener('click', async () => {
-      const lines = [];
-      let incomplete = false;
-      linesEl.querySelectorAll('.pl-alloc-line').forEach(line => {
-        const pickInput = line.querySelector('.pl-stock-pick');
-        const qty = parseFloat(line.querySelector('.pl-qty-taken-input').value);
-        const pick = pickOf(pickInput);
-        if (!pickInput.value.trim() && !(qty > 0)) return; // 空行忽略
-        if (!pick || !(qty > 0)) { incomplete = true; return; }
-        lines.push({ pick, qty });
-      });
-      if (incomplete || !lines.length) { alert(t('plPickStockFirst')); return; }
-
-      // 同一库存货物在多行出现时，合并计算是否超出库存
-      const perStock = {};
-      lines.forEach(l => { perStock[l.pick.label] = (perStock[l.pick.label] || 0) + l.qty; });
-      for (const label of Object.keys(perStock)) {
-        const pick = options.find(o => o.label === label);
-        if (perStock[label] > pick.group.balance &&
-            !confirm(t('plOverBalanceConfirm', { qty: perStock[label], bal: pick.group.balance }))) return;
+    plRowCollectors.push({
+      item, row, chk,
+      get: () => {
+        const lines = [];
+        let invalid = false;
+        linesEl.querySelectorAll('.pl-alloc-line').forEach(line => {
+          const pickInput = line.querySelector('.pl-stock-pick');
+          const qty = parseFloat(line.querySelector('.pl-qty-taken-input').value);
+          const pick = pickOf(pickInput);
+          if (!pickInput.value.trim() && !(qty > 0)) return; // 空行忽略
+          if (!pick || !(qty > 0)) { invalid = true; return; }
+          lines.push({ pick, qty, stock: { item: pick.group.item, itemCode: pick.group.itemCode, uom: pick.group.uom } });
+        });
+        return { item, checked: chk.checked, invalid: invalid || !lines.length, lines };
       }
-
-      doneBtn.disabled = true;
-      const ok = await commitPackingItemTaken(pl, item, lines.map(l => ({
-        stock: { item: l.pick.group.item, itemCode: l.pick.group.itemCode, uom: l.pick.group.uom },
-        qty: l.qty
-      })));
-      doneBtn.disabled = false;
-      if (ok) renderCurrentView();
     });
   }
+
+  // 底部“完成并保存”：把所有已勾选的项目一次过写入并扣库存
+  document.getElementById('plCheckAllBtn').addEventListener('click', () => {
+    const all = plRowCollectors.every(c => c.chk.checked);
+    plRowCollectors.forEach(c => { c.chk.checked = !all; c.chk.dispatchEvent(new Event('change')); });
+  });
+  document.getElementById('plSaveAllBtn').addEventListener('click', async () => {
+    const pl = packingLists.find(x => x.id === currentPackingListId);
+    if (!pl) return;
+    const entries = [];
+    let bad = null;
+    plRowCollectors.forEach(c => {
+      const e = c.get();
+      if (!e.checked) return;
+      if (e.invalid) { bad = bad || c; return; }
+      entries.push(e);
+    });
+    if (bad) { bad.row.scrollIntoView({ behavior: 'smooth', block: 'center' }); alert(t('plPickStockFirst')); return; }
+    if (!entries.length) { alert(t('plNothingChecked')); return; }
+    // 同一库存货物在多个项目 / 多行出现时，合并计算是否超出库存
+    const perStock = {};
+    entries.forEach(e => e.lines.forEach(l => { if (l.pick) { const o = perStock[l.pick.label] || (perStock[l.pick.label] = { pick: l.pick, qty: 0 }); o.qty += l.qty; } }));
+    for (const label of Object.keys(perStock)) {
+      const o = perStock[label];
+      if (o.qty > o.pick.group.balance && !confirm(t('plOverBalanceConfirm', { qty: r4(o.qty), bal: o.pick.group.balance }))) return;
+    }
+    const unchecked = plRowCollectors.length - entries.length;
+    if (unchecked > 0 && !confirm(t('plSavePartialConfirm', { n: unchecked, m: entries.length }))) return;
+    const btn = document.getElementById('plSaveAllBtn');
+    btn.disabled = true;
+    const ok = await commitPackingBatch(pl, entries);
+    if (ok) { clearPlDraft(pl.id, entries.map(e => e.item.id)); renderCurrentView(); }
+    else btn.disabled = false;
+  });
 
   function renderPackingDetail() {
     const pl = packingLists.find(p => p.id === currentPackingListId);
     const headerEl = document.getElementById('packingDetailHeader');
     const itemsEl = document.getElementById('packingDetailItems');
+    plRowCollectors = [];
 
     if (!pl) {
+      document.getElementById('plSaveBar').style.display = 'none';
       headerEl.innerHTML = '';
       itemsEl.innerHTML = `<div class="empty">${t('packingListEmptyText')}</div>`;
       return;
@@ -5451,6 +5673,12 @@
     `;
 
     itemsEl.innerHTML = '';
+    plPickCache = null;
+    plPickCache = getStockPickOptions();
+    const sharedList = document.createElement('datalist');
+    sharedList.id = 'plStockListShared';
+    sharedList.innerHTML = plPickCache.map(o => `<option value="${escapeHtml(o.label)}" label="${escapeHtml(t('plStockBalanceHint', { bal: o.group.balance, uom: o.group.uom }))}"></option>`).join('');
+    itemsEl.appendChild(sharedList);
     pl.items.forEach(item => {
       const row = document.createElement('div');
       row.className = 'pl-item-row' + (item.done ? ' done' : '');
@@ -5508,6 +5736,8 @@
       }
       itemsEl.appendChild(row);
     });
+    plPickCache = null;
+    refreshPlSaveBar();
   }
 
   // ================= 导出 Packing List 为送货单 DO（PDF / Excel）=================
@@ -6135,6 +6365,150 @@
     const w = window.open(url, '_blank');
     if (!w) alert(t('popupBlocked'));
   }
+
+  // ================= 备份与恢复（管理员）=================
+  const BK_LAST_KEY = 'srsLastBackup';
+  const bkModal = document.getElementById('backupModal');
+  let bkLoaded = null;   // 已读取的备份文件内容
+
+  function bkLastText() {
+    let iso = '';
+    try { iso = localStorage.getItem(BK_LAST_KEY) || ''; } catch (e) {}
+    if (!iso) return '';
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    return t('bkLastAt', { date: iso.slice(0, 10), n: days });
+  }
+  function renderBackupReminder() {
+    const el = document.getElementById('backupReminder');
+    let iso = '';
+    try { iso = localStorage.getItem(BK_LAST_KEY) || ''; } catch (e) {}
+    const days = iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) : 9999;
+    const show = isAdmin && days > 30;
+    el.style.display = show ? 'block' : 'none';
+    el.textContent = '💾 ' + (iso ? t('bkRemindOld', { n: days }) : t('bkRemindNever'));
+  }
+  document.getElementById('backupReminder').addEventListener('click', () => document.getElementById('backupBtn').click());
+
+  const BK_FIELDS = ['records', 'packingLists', 'itemMaster', 'locations', 'receipts', 'purchaseOrders', 'suppliers', 'returns', 'salesOrders', 'deliveries'];
+  function bkCounts(d) {
+    const c = {};
+    BK_FIELDS.forEach(k => { c[k] = Array.isArray(d[k]) ? d[k].length : 0; });
+    return c;
+  }
+  async function buildBackup(includeArchive) {
+    const latest = await fetchSharedData();   // 总是取最新的共享数据
+    const data = {};
+    BK_FIELDS.forEach(k => { data[k] = latest[k] || []; });
+    const bk = { srsBackup: 1, app: 'SRS', createdAt: new Date().toISOString(), createdBy: actorName(), data };
+    if (includeArchive) {
+      try { bk.archive = await fetchArchiveRecords(); } catch (e) { bk.archive = []; }
+    }
+    bk.counts = Object.assign(bkCounts(data), { archive: bk.archive ? bk.archive.length : 0 });
+    return bk;
+  }
+  async function downloadBackup(bk, password, prefix) {
+    const text = password ? await encryptPayload(bk, password) : JSON.stringify(bk);
+    const name = (prefix || 'srs-backup') + '-' + new Date().toISOString().slice(0, 10) + (password ? '' : '-PLAIN') + '.json';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    return name;
+  }
+
+  document.getElementById('backupBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    document.getElementById('bkLast').textContent = bkLastText() || t('bkNever');
+    ['bkError', 'bkRestoreError'].forEach(id => { document.getElementById(id).textContent = ''; });
+    document.getElementById('bkPreview').textContent = '';
+    document.getElementById('bkRestoreArchiveWrap').style.display = 'none';
+    document.getElementById('bkRestoreBtn').disabled = true;
+    document.getElementById('bkFile').value = '';
+    document.getElementById('bkRestorePassword').value = '';
+    bkLoaded = null;
+    bkModal.classList.add('open');
+  });
+  document.getElementById('bkClose').addEventListener('click', () => bkModal.classList.remove('open'));
+
+  document.getElementById('bkDownloadBtn').addEventListener('click', async () => {
+    const err = document.getElementById('bkError');
+    const pw = document.getElementById('bkPassword').value;
+    if (!pw && !confirm(t('bkPlainConfirm'))) return;
+    const btn = document.getElementById('bkDownloadBtn');
+    btn.disabled = true; err.textContent = '';
+    try {
+      const bk = await buildBackup(document.getElementById('bkIncludeArchive').checked);
+      await downloadBackup(bk, pw);
+      try { localStorage.setItem(BK_LAST_KEY, new Date().toISOString()); } catch (e) {}
+      document.getElementById('bkLast').textContent = bkLastText();
+      err.style.color = 'var(--in)';
+      err.textContent = t('bkDone', { n: bk.counts.records });
+      renderBackupReminder();
+    } catch (e) { console.error(e); err.style.color = ''; err.textContent = t('syncFailed') + ': ' + e.message; }
+    btn.disabled = false;
+  });
+
+  document.getElementById('bkLoadBtn').addEventListener('click', async () => {
+    const err = document.getElementById('bkRestoreError');
+    const prev = document.getElementById('bkPreview');
+    err.textContent = ''; prev.textContent = ''; bkLoaded = null;
+    document.getElementById('bkRestoreBtn').disabled = true;
+    document.getElementById('bkRestoreArchiveWrap').style.display = 'none';
+    const f = document.getElementById('bkFile').files[0];
+    if (!f) { err.textContent = t('bkPickFile'); return; }
+    try {
+      let parsed = JSON.parse(await f.text());
+      let encrypted = false;
+      if (parsed && parsed.srsEncrypted === 1) {
+        encrypted = true;
+        const pw = document.getElementById('bkRestorePassword').value;
+        if (!pw) { err.textContent = t('bkNeedPassword'); return; }
+        try { parsed = await decryptPayload(parsed, pw); } catch (e) { err.textContent = t('bkBadPassword'); return; }
+      }
+      if (!parsed || parsed.srsBackup !== 1 || !parsed.data || !Array.isArray(parsed.data.records)) { err.textContent = t('bkInvalid'); return; }
+      bkLoaded = { bk: parsed, encrypted, password: encrypted ? document.getElementById('bkRestorePassword').value : '' };
+      const c = parsed.counts || bkCounts(parsed.data);
+      const cur = bkCounts({ records, packingLists, itemMaster, locations, receipts, purchaseOrders, suppliers, returns, salesOrders, deliveries });
+      const lbl = { records: t('bkRecords'), packingLists: 'Packing List', receipts: 'GRN', purchaseOrders: 'PO', salesOrders: 'SO', deliveries: 'DO', returns: 'RTN', itemMaster: t('bkMaster') };
+      prev.innerHTML = `<b>${t('bkPreviewHead', { date: escapeHtml((parsed.createdAt || '').slice(0, 16).replace('T', ' ')) })}</b><br>` +
+        Object.keys(lbl).map(k => `${escapeHtml(lbl[k])}: ${c[k] || 0} <span style="opacity:.6">(${t('bkNow')} ${cur[k] || 0})</span>`).join(' · ')
+        + (parsed.archive ? `<br>${t('bkArchiveCount', { n: parsed.archive.length })}` : '');
+      document.getElementById('bkRestoreArchiveWrap').style.display = parsed.archive && parsed.archive.length ? 'inline-flex' : 'none';
+      document.getElementById('bkRestoreBtn').disabled = false;
+    } catch (e) { console.error(e); err.textContent = t('bkInvalid'); }
+  });
+
+  document.getElementById('bkRestoreBtn').addEventListener('click', async () => {
+    if (!isAdmin || !bkLoaded) return;
+    const err = document.getElementById('bkRestoreError');
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    if (!confirm(t('bkRestoreConfirm', { n: bkLoaded.bk.data.records.length }))) return;
+    const withArchive = document.getElementById('bkRestoreArchiveWrap').style.display !== 'none' && document.getElementById('bkRestoreArchive').checked;
+    const btn = document.getElementById('bkRestoreBtn');
+    btn.disabled = true; err.textContent = '';
+    try {
+      // 1) 先自动保存一份“恢复前”的备份（同样的密码；没有设密码则不加密）
+      const before = await buildBackup(withArchive);
+      await downloadBackup(before, bkLoaded.password, 'srs-before-restore');
+      // 2) 先恢复归档，再恢复主数据
+      const latest = await fetchSharedData();
+      if (withArchive) await pushArchiveRecords(bkLoaded.bk.archive);
+      const d = bkLoaded.bk.data;
+      const opts = { audit: [mkAudit('restore', { date: (bkLoaded.bk.createdAt || '').slice(0, 10), n: d.records.length })] };
+      ['itemMaster', 'locations', 'receipts', 'purchaseOrders', 'suppliers', 'returns', 'salesOrders', 'deliveries'].forEach(k => { opts[k] = Array.isArray(d[k]) ? d[k] : []; });
+      await pushSharedData(d.records, latest.adminKeyHash, Array.isArray(d.packingLists) ? d.packingLists : [], undefined, opts);
+      records = d.records; adminKeyHash = latest.adminKeyHash; packingLists = Array.isArray(d.packingLists) ? d.packingLists : [];
+      saveLocalCache();
+      try { localStorage.removeItem(PL_DRAFT_KEY); plDraft = {}; } catch (e) {}
+      setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+      bkModal.classList.remove('open');
+      bkLoaded = null;
+      renderCurrentView();
+      alert(t('bkRestoreDone'));
+    } catch (e) { console.error(e); err.textContent = t('syncFailed') + ': ' + e.message; btn.disabled = false; }
+  });
 
   // ================= 扫码（摄像头）=================
   const scanModal = document.getElementById('scanModal');
@@ -7522,7 +7896,7 @@
     locAdd: 'actLocAdd', locDel: 'actLocDel', transfer: 'actTransfer', grn: 'actGrn', grnDelete: 'actGrnDelete',
     poCreate: 'actPoCreate', poClose: 'actPoClose', poCancel: 'actPoCancel', qcRelease: 'actQc',
     supSave: 'actSupSave', supDel: 'actSupDel', rtn: 'actRtn', rtnDelete: 'actRtnDelete',
-    soCreate: 'actSoCreate', soClose: 'actSoClose', soCancel: 'actSoCancel', doCreate: 'actDoCreate', doPod: 'actDoPod', doDelete: 'actDoDelete'
+    restore: 'actRestore', soCreate: 'actSoCreate', soClose: 'actSoClose', soCancel: 'actSoCancel', doCreate: 'actDoCreate', doPod: 'actDoPod', doDelete: 'actDoDelete'
   };
   function auditText(e) {
     const key = AUDIT_KEYS[e.a];
