@@ -741,6 +741,13 @@
     margin: -14px 0 16px;
   }
   .sync-status.err { color: var(--out); }
+  body { --site-color: #2563eb; }
+  body[data-site="b"] { --site-color: #ea580c; }
+  .site-bar { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 8px 12px; border-radius: 10px;
+    border-left: 6px solid var(--site-color); background: color-mix(in srgb, var(--site-color) 12%, transparent); }
+  .site-bar .site-pin { font-size: 16px; }
+  .site-bar select { flex: 1; min-width: 0; font-size: 16px; font-weight: 700; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--site-color); background: var(--panel, #fff); color: inherit; }
+  body.is-admin .site-bar [data-admin-only] { display: inline-block; }
 
   .admin-notice {
     background: var(--warn-bg);
@@ -844,6 +851,14 @@
 
   [data-admin-only] { display: none; }
   body.is-admin [data-admin-only] { display: block; }
+  [data-perm] { display: none; }
+  body.p-stock [data-perm~="stock"], body.p-adjust [data-perm~="adjust"], body.p-master [data-perm~="master"],
+  body.p-reports [data-perm~="reports"], body.p-packing [data-perm~="packing"], body.p-receiving [data-perm~="receiving"],
+  body.p-delivery [data-perm~="delivery"] { display: block; }
+  .perm-grid { display:grid; gap:6px; margin:8px 0 12px; }
+  .perm-grid label { display:flex; gap:8px; align-items:flex-start; font-size:14px; cursor:pointer; }
+  .perm-grid input { width:18px; height:18px; margin:2px 0 0; flex:none; }
+  .perm-tag { font-size:11px; padding:1px 6px; border-radius:8px; background:var(--accent-soft, rgba(37,99,235,.12)); color:var(--accent, #2563eb); margin-left:4px; }
 
   /* ---------- 选择页 ---------- */
   .choice-grid {
@@ -1042,6 +1057,24 @@
     <div id="usersList" style="margin-bottom:14px;"></div>
     <input type="text" id="userNewId" data-i18n-ph="userIdLabel" autocomplete="off" autocapitalize="off" spellcheck="false">
     <input type="password" id="userNewPw" data-i18n-ph="userPwLabel" autocomplete="new-password">
+    <div id="userAccessBox">
+      <div class="sub" style="margin:10px 0 0;" data-i18n="permTitle">权限</div>
+      <select id="userRole">
+        <option value="readonly" data-i18n="permRoleReadonly">只读</option>
+        <option value="custom" data-i18n="permRoleCustom">自定义</option>
+        <option value="admin" data-i18n="permRoleAdmin">管理员</option>
+      </select>
+      <div class="perm-grid" id="userPermGrid">
+        <label><input type="checkbox" class="perm-cb" data-p="stock"><span data-i18n="permStock"></span></label>
+        <label><input type="checkbox" class="perm-cb" data-p="adjust"><span data-i18n="permAdjust"></span></label>
+        <label><input type="checkbox" class="perm-cb" data-p="master"><span data-i18n="permMaster"></span></label>
+        <label><input type="checkbox" class="perm-cb" data-p="reports"><span data-i18n="permReports"></span></label>
+        <label><input type="checkbox" class="perm-cb" data-p="packing"><span data-i18n="permPacking"></span></label>
+        <label><input type="checkbox" class="perm-cb" data-p="receiving"><span data-i18n="permReceiving"></span></label>
+        <label><input type="checkbox" class="perm-cb" data-p="delivery"><span data-i18n="permDelivery"></span></label>
+      </div>
+      <div class="sub" id="userPermNote" data-i18n="permNote"></div>
+    </div>
     <div class="modal-error" id="usersError"></div>
     <div class="modal-btn-row">
       <button class="btn-secondary" id="usersClose" data-i18n="closeBtn">关闭</button>
@@ -1087,6 +1120,12 @@
 </div>
 
 <div class="wrap">
+
+  <div class="site-bar" id="siteBar" style="display:none;">
+    <span class="site-pin">📍</span>
+    <select id="siteSelect" title="Warehouse"></select>
+    <button class="admin-btn" id="siteRenameBtn" data-admin-only title="Rename">✎</button>
+  </div>
 
   <header>
     <div>
@@ -1146,7 +1185,7 @@
     <div class="panel">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="soPanelTitle">销售订单 (SO)</h2>
-        <button class="admin-btn" id="newSoBtn" data-admin-only data-i18n="newSoBtn">+ 新销售订单</button>
+        <button class="admin-btn" id="newSoBtn" data-perm="delivery" data-i18n="newSoBtn">+ 新销售订单</button>
       </div>
       <div id="soContainer" style="margin-top:10px;"></div>
       <div class="empty" id="soEmpty" style="display:none;" data-i18n="soEmpty">还没有销售订单。</div>
@@ -1154,7 +1193,8 @@
     <div class="panel">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="doPanelTitle">出库单 (DO)</h2>
-        <button class="admin-btn" id="newDoBtn" data-admin-only data-i18n="newDoBtn">+ 新出库单</button>
+        <button class="admin-btn js-customers-btn" data-perm="delivery packing" data-i18n="customersBtn">🏢 客户</button>
+        <button class="admin-btn" id="newDoBtn" data-perm="delivery" data-i18n="newDoBtn">+ 新出库单</button>
       </div>
       <input type="text" id="doFilter" data-i18n-ph="doFilterPh" autocomplete="off" style="margin:10px 0; width:100%;">
       <div id="doContainer"></div>
@@ -1187,7 +1227,8 @@
   <!-- 新出库单 -->
   <div class="modal-overlay" id="doModal">
     <div class="modal-card" style="max-width:760px;">
-      <h2 data-i18n="doTitle">新出库单</h2>
+      <h2 id="doTitleH" data-i18n="doTitle">新出库单</h2>
+      <div class="modal-status" id="doEditNote" style="display:none; margin:0 0 12px; padding:10px 12px; border-radius:10px; background:rgba(37,99,235,.10); font-size:13px;"></div>
       <div class="sub" data-i18n="doSub">保存后按先到期先出自动选批次扣减库存，并生成出库单号。可只发订单的一部分，剩下的以后补发。</div>
       <div class="edit-grid" style="margin-bottom:6px;">
         <div class="field"><label for="doDate" data-i18n="dateLabel">日期</label><input type="date" id="doDate"></div>
@@ -1230,12 +1271,12 @@
   <div id="receivingView" style="display:none;">
     <div class="rv-toolbar">
       <button class="export-btn" id="reportBtn" data-i18n="reportBtn">📊 报表</button>
-      <button class="export-btn" id="suppliersBtn" data-admin-only data-i18n="suppliersBtn">🏭 供应商</button>
+      <button class="export-btn" id="suppliersBtn" data-perm="receiving" data-i18n="suppliersBtn">🏭 供应商</button>
     </div>
     <div class="panel" id="poPanel">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="poPanelTitle">采购单 (PO)</h2>
-        <button class="admin-btn" id="newPoBtn" data-admin-only data-i18n="newPoBtn">+ 新采购单</button>
+        <button class="admin-btn" id="newPoBtn" data-perm="receiving" data-i18n="newPoBtn">+ 新采购单</button>
       </div>
       <div id="poContainer" style="margin-top:10px;"></div>
       <div class="empty" id="poEmpty" style="display:none;" data-i18n="poEmpty">还没有采购单。</div>
@@ -1243,7 +1284,7 @@
     <div class="panel">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="receivingPanelTitle">收货单 (GRN)</h2>
-        <button class="admin-btn" id="newReceiptBtn" data-admin-only data-i18n="newReceiptBtn">+ 新收货单</button>
+        <button class="admin-btn" id="newReceiptBtn" data-perm="receiving" data-i18n="newReceiptBtn">+ 新收货单</button>
       </div>
       <div id="qcPendingNote" class="qc-tag" style="display:none; margin:8px 0 0;"></div>
       <input type="text" id="receiptFilter" data-i18n-ph="receiptFilterPh" autocomplete="off" style="margin:10px 0; width:100%;">
@@ -1319,6 +1360,21 @@
   </div>
 
   <!-- 供应商（管理员） -->
+  <div class="modal-overlay" id="customersModal">
+    <div class="modal-card" style="max-width:600px;">
+      <h2 data-i18n="customersTitle">客户</h2>
+      <div class="sub" data-i18n="customersSub">登记客户公司名和地址。DO 打印时会显示：公司名、地址，下一行是 Packing List 里的船名。</div>
+      <div class="edit-grid" style="margin-bottom:6px;">
+        <div class="field"><label for="cuName" data-i18n="cuNameLabel">客户公司名</label><input type="text" id="cuName" autocomplete="off"></div>
+        <div class="field"><label for="cuAddr" data-i18n="cuAddrLabel">地址（可多行）</label><textarea id="cuAddr" rows="3" style="width:100%; border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:15px; font-family:inherit; resize:vertical;"></textarea></div>
+      </div>
+      <button class="export-btn" id="cuSaveBtn" style="margin-bottom:10px;" data-i18n="cuSaveBtn">＋ 保存客户</button>
+      <div id="cuList" style="margin-bottom:14px;"></div>
+      <div class="modal-error" id="cuError"></div>
+      <div class="modal-btn-row"><button class="btn-secondary" id="cuClose" data-i18n="closeBtn">关闭</button></div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="suppliersModal">
     <div class="modal-card" style="max-width:600px;">
       <h2 data-i18n="suppliersTitle">供应商</h2>
@@ -1423,7 +1479,8 @@
     <div class="panel">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="packingListPanelTitle">Packing Lists</h2>
-        <button class="admin-btn" id="newPackingListBtn" data-admin-only data-i18n="newPackingListBtn">+ New</button>
+        <button class="admin-btn js-customers-btn" data-perm="delivery packing" data-i18n="customersBtn">🏢 客户</button>
+        <button class="admin-btn" id="newPackingListBtn" data-perm="packing" data-i18n="newPackingListBtn">+ New</button>
       </div>
       <div id="packingListsContainer"></div>
       <div class="empty" id="packingListEmpty" style="display:none;" data-i18n="packingListEmptyText">暂无 Packing List。</div>
@@ -1435,6 +1492,7 @@
     <div class="modal-card" style="max-width:520px;">
       <h2 data-i18n="newPackingListTitle">新建 Packing List</h2>
       <input type="text" id="plTitle" data-i18n-ph="packingListTitlePh" autocomplete="off">
+      <input type="text" id="plCustomer" list="customerList" data-i18n-ph="customerLabel" autocomplete="off">
       <input type="text" id="plPlatform" data-i18n-ph="platformLabel" autocomplete="off">
       <input type="date" id="plDate">
 
@@ -1707,7 +1765,7 @@
         <button type="button" class="export-btn" id="plCheckAllBtn" data-i18n="plCheckAllBtn">全部勾选</button>
         <button type="button" class="pl-done-btn" id="plSaveAllBtn"></button>
       </div>
-      <button class="admin-btn" id="deletePackingListBtn" data-admin-only style="margin-top:16px; color:var(--out); border-color:var(--out);" data-i18n="deletePackingListBtn">🗑 Delete this packing list</button>
+      <button class="admin-btn" id="deletePackingListBtn" data-perm="packing" style="margin-top:16px; color:var(--out); border-color:var(--out);" data-i18n="deletePackingListBtn">🗑 Delete this packing list</button>
     </div>
   </div>
 
@@ -1724,7 +1782,7 @@
 
   <div class="admin-notice" id="adminNotice" data-i18n="adminRequiredNotice">仅管理员可新增或删除记录。点击右上角"管理员"登录以进行操作。</div>
 
-  <div class="panel" data-admin-only>
+  <div class="panel" data-perm="stock">
 
     <h2 data-i18n="importPanelTitle">从 Excel 导入</h2>
     <div class="import-row">
@@ -1748,7 +1806,7 @@
     </div>
   </div>
 
-  <div class="panel" data-admin-only>
+  <div class="panel" data-perm="stock">
     <h2 data-i18n="manualPanelTitle">手动新增进出记录</h2>
     <form id="manualForm">
       <div class="field">
@@ -1770,7 +1828,7 @@
         <input type="text" id="manUom" placeholder="例如：pcs, box, kg" data-i18n-ph="uomPlaceholder">
       </div>
       <div id="manConvHint" class="pl-item-meta" style="flex:1 1 100%; margin:0; display:none;"></div>
-      <div class="field" data-admin-only>
+      <div class="field" data-perm="stock">
         <label for="manPrice" data-i18n="priceLabel">单价</label>
         <input type="number" id="manPrice" min="0" step="any" placeholder="0.00">
       </div>
@@ -1811,11 +1869,11 @@
     <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
       <h2 style="margin:0;" data-i18n="overviewPanelTitle">货物库存总览</h2>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="export-btn" id="locationsBtn" data-admin-only data-i18n="locationsBtn">📍 Locations</button>
-        <button class="export-btn" id="transferBtn" data-admin-only data-i18n="transferBtn">↔ Transfer</button>
-        <button class="export-btn" id="masterBtn" data-admin-only data-i18n="masterBtn">🗂 Item master</button>
-        <button class="export-btn" id="stockTakeBtn" data-admin-only data-i18n="stockTakeBtn">⚖ Stock take</button>
-        <button class="export-btn" id="stockReportBtn" data-admin-only data-i18n="srBtn">📊 Stock reports</button>
+        <button class="export-btn" id="locationsBtn" data-perm="master" data-i18n="locationsBtn">📍 Locations</button>
+        <button class="export-btn" id="transferBtn" data-perm="adjust" data-i18n="transferBtn">↔ Transfer</button>
+        <button class="export-btn" id="masterBtn" data-perm="master" data-i18n="masterBtn">🗂 Item master</button>
+        <button class="export-btn" id="stockTakeBtn" data-perm="adjust" data-i18n="stockTakeBtn">⚖ Stock take</button>
+        <button class="export-btn" id="stockReportBtn" data-perm="reports" data-i18n="srBtn">📊 Stock reports</button>
         <button class="export-btn" id="backupBtn" data-admin-only data-i18n="bkBtn">💾 Backup / Restore</button>
         <button class="export-btn" id="activityBtn" data-admin-only data-i18n="activityBtn">📜 Activity</button>
         <button class="export-btn" id="archiveBtn" data-admin-only data-i18n="archiveBtn">📦 Archive old records</button>
@@ -2103,6 +2161,61 @@
       pickFromHint: '取货位置：{list}',
       receiptFilterPh: '搜索收货单号、供应商、货物…',
       receiptsEmpty: '还没有收货单。',
+      permTitle: '权限',
+      permRoleReadonly: '只读（只能查看）',
+      permRoleCustom: '自定义（勾选可做的操作）',
+      permRoleAdmin: '管理员（全部权限，不需要管理员密钥）',
+      permStock: '库存记录：新增 / 编辑 / 删除 / Excel 导入',
+      permAdjust: '盘点调整与库位转移',
+      permMaster: '货物主档与库位管理',
+      permReports: '库存报表',
+      permPacking: 'Packing List：建立 / 备货 / 扣库存 / 删除',
+      permReceiving: '收货：采购单 / 收货单 / 质检 / 退货 / 供应商',
+      permDelivery: '出库：销售订单 / 出库单 / 签收 / 客户 / 从 PL 生成 DO',
+      permNote: '备份恢复、归档、清空、操作日志、用户管理，只有管理员可以做。',
+      permStockShort: '库存', permAdjustShort: '盘点转移', permMasterShort: '主档', permReportsShort: '报表',
+      permPackingShort: 'PL', permReceivingShort: '收货', permDeliveryShort: '出库',
+      permTagAdmin: '管理员', permTagReadonly: '只读',
+      permEditBtn: '权限',
+      permPwBlank: '密码留空 = 只更新这个用户的权限。',
+      permNeedPw: '新用户必须设置密码（至少 6 位）。',
+      actUserPerm: '更新用户权限：{id}（{perms}）',
+      doEditBtn: '修改',
+      doEditTitle: '修改出库单 {no}',
+      doEditNote: '正在修改 {no}：保存后号码不变，之前扣的库存会先放回，再按新内容重新扣。已签收的 DO 不能修改。',
+      doEditGone: '这张 DO 已经被删除，无法修改。',
+      doEditSigned: '这张 DO 已经有客户签收记录，不能修改。',
+      actDoEdit: '修改出库单 {no}',
+      doFromPlNone: '这个 Packing List 还没有任何已备好的货物，无法生成 DO。',
+      doFromPlNeedAll: '还有 {n} 项货物没有备好。全部备好后才能生成 DO（实发数量不足的可以照实际数量登记）。',
+      plLockedBanner: '已生成 {no}，这个 Packing List 已锁定，不能再改。要修改：先到「出库」页删除 {no}，回到这里修改，再点"生成 DO"，号码仍然是 {no}。',
+      plReservedBanner: '{no} 的 DO 已删除，这个 Packing List 可以修改。修改后再点"生成 DO"，会继续使用号码 {no}（除非它已被占用）。',
+      plLockedAlert: '这个 Packing List 已生成 {no}，不能修改。请先到「出库」页删除 {no}，修改后再重新生成。',
+      plReservedTag: '保留号码 {no}',
+      doDeleteConfirmPl: '删除 {no}？\n这张 DO 来自 Packing List：库存不会有任何变化，Packing List 会解锁，可以修改。\n修改后再点"生成 DO"，会继续使用号码 {no}；这期间新转出的 DO 会用下一个号码。',
+      appOutdated: '数据文件比这台设备上的程序新。请关闭并重新打开 App（或刷新页面）以更新到最新版，再继续操作。',
+      customersBtn: '🏢 客户',
+      customersTitle: '客户',
+      customersSub: '登记客户公司名和地址。DO 打印时会显示：公司名、地址，下一行是 Packing List 里的船名。',
+      cuNameLabel: '客户公司名',
+      cuAddrLabel: '地址（可多行）',
+      cuSaveBtn: '＋ 保存客户',
+      cuNameReq: '请填写客户公司名。',
+      cuExists: '已有同名客户。',
+      cuEmpty: '还没有客户。',
+      cuDeleteConfirm: '删除客户「{name}」？已经开出的 DO 不受影响。',
+      actCuSave: '保存客户「{name}」',
+      actCuDel: '删除客户「{name}」',
+      doFromPlAskCustomer: '这个 Packing List 没有选客户。请输入 DO 上的客户公司名（要与「客户」页里登记的名称一致才会带出地址；留空则只显示船名）：',
+      doFromPlAdminOnly: '这个 Packing List 还没有生成 DO。请管理员登录后再点这个按钮。',
+      siteDefault1: '仓库 1',
+      siteDefault2: '仓库 2',
+      siteNotCreated: '这个仓库还没有建立数据文件，请管理员先切换过去建立。',
+      siteNotCreatedNonAdmin: '这个仓库还没有建立数据文件。请管理员登录后切换到这个仓库，系统会提示建立。',
+      siteCreateConfirm: '「{name}」还没有数据文件。要现在建立吗？\n\n它会是一个全新的空仓库，与另一个仓库的库存完全分开；账号和管理员密钥沿用当前的。',
+      siteRenamePrompt: '这个仓库的名称（只保存在本机，其他设备需各自设置）：',
+      actSiteCreate: '建立新仓库「{name}」',
+      bkSiteMismatch: '注意：这份备份来自「{from}」，但你现在在「{to}」。\n恢复后「{to}」的数据会被替换成「{from}」的内容。确定要继续吗？',
       bkBtn: '💾 备份 / 恢复',
       bkTitle: '备份与恢复',
       bkNever: '还没有备份过。建议现在就备份一次。',
@@ -2412,7 +2525,7 @@
       plCompleteLabel: '已完成',
       plIncompleteLabel: '数量不符',
       plPendingLabel: '待处理',
-      exportDoPdfBtn: '📄 导出送货单 (PDF)',
+      exportDoPdfBtn: '📄 生成送货单 DO 给客户签名 (PDF)',
       exportDoExcelBtn: '📊 导出送货单 (Excel)',
       plImportExcelBtn: '📄 从 Excel 导入货物',
       plImportedOk: '已从 Excel 导入 {count} 项货物',
@@ -2640,6 +2753,61 @@
       pickFromHint: 'Pick from: {list}',
       receiptFilterPh: 'Search receipt no., supplier, item…',
       receiptsEmpty: 'No receipts yet.',
+      permTitle: 'Access',
+      permRoleReadonly: 'View only',
+      permRoleCustom: 'Custom (tick what they can do)',
+      permRoleAdmin: 'Admin (everything, no admin key needed)',
+      permStock: 'Stock records: add / edit / delete / Excel import',
+      permAdjust: 'Stock take adjustments & location transfers',
+      permMaster: 'Item master & locations',
+      permReports: 'Stock reports',
+      permPacking: 'Packing List: create / pick / deduct stock / delete',
+      permReceiving: 'Receiving: PO / GRN / QC / returns / suppliers',
+      permDelivery: 'Delivery: SO / DO / POD / customers / DO from PL',
+      permNote: 'Backup/restore, archive, clear all, activity log and user management are admin only.',
+      permStockShort: 'Stock', permAdjustShort: 'Adjust', permMasterShort: 'Master', permReportsShort: 'Reports',
+      permPackingShort: 'PL', permReceivingShort: 'Receiving', permDeliveryShort: 'Delivery',
+      permTagAdmin: 'Admin', permTagReadonly: 'View only',
+      permEditBtn: 'Access',
+      permPwBlank: 'Leave the password blank = update this user\'s access only.',
+      permNeedPw: 'A new user needs a password (at least 6 characters).',
+      actUserPerm: 'Updated user access: {id} ({perms})',
+      doEditBtn: 'Edit',
+      doEditTitle: 'Edit Delivery Order {no}',
+      doEditNote: 'Editing {no}: the number stays the same. The stock it deducted is put back first, then deducted again from the new content. A signed DO cannot be edited.',
+      doEditGone: 'This DO has been deleted and cannot be edited.',
+      doEditSigned: 'This DO already has a customer signature record and cannot be edited.',
+      actDoEdit: 'Edited delivery order {no}',
+      doFromPlNone: 'Nothing has been picked on this Packing List yet, so no DO can be made.',
+      doFromPlNeedAll: '{n} item(s) are not picked yet. A DO can only be made once everything is picked (record short quantities as the actual quantity).',
+      plLockedBanner: '{no} has been generated, so this Packing List is locked. To change it: delete {no} on the Delivery page, edit here, then press "Make DO" again. The number stays {no}.',
+      plReservedBanner: 'The DO {no} was deleted, so this Packing List can be edited. After editing, press "Make DO" again and it will reuse {no} (unless it is taken).',
+      plLockedAlert: 'This Packing List already produced {no} and cannot be changed. Delete {no} on the Delivery page first, edit, then generate it again.',
+      plReservedTag: 'number {no} reserved',
+      doDeleteConfirmPl: 'Delete {no}?\nThis DO came from a Packing List: stock does not change, and the Packing List is unlocked for editing.\nWhen you make the DO again it reuses {no}; any DO created in the meantime takes the next number.',
+      appOutdated: 'The data file is newer than the app on this device. Close and reopen the app (or refresh the page) to update, then continue.',
+      customersBtn: '🏢 Customers',
+      customersTitle: 'Customers',
+      customersSub: 'Keep customer company names and addresses. A DO prints the company name, the address, and on the next line the vessel name from the Packing List.',
+      cuNameLabel: 'Customer company name',
+      cuAddrLabel: 'Address (multiple lines allowed)',
+      cuSaveBtn: '＋ Save customer',
+      cuNameReq: 'Enter the customer company name.',
+      cuExists: 'A customer with this name already exists.',
+      cuEmpty: 'No customers yet.',
+      cuDeleteConfirm: 'Delete customer "{name}"? DOs already issued are not affected.',
+      actCuSave: 'Saved customer "{name}"',
+      actCuDel: 'Deleted customer "{name}"',
+      doFromPlAskCustomer: 'No customer was chosen for this Packing List. Enter the customer company name for the DO (it must match a name saved under Customers for the address to appear; leave blank to show only the vessel name):',
+      doFromPlAdminOnly: 'This Packing List has no DO yet. An admin must sign in and press this button.',
+      siteDefault1: 'Warehouse 1',
+      siteDefault2: 'Warehouse 2',
+      siteNotCreated: 'This warehouse has no data file yet. An admin must switch to it first to create it.',
+      siteNotCreatedNonAdmin: 'This warehouse has no data file yet. Sign in as admin and switch to it; you will be asked to create it.',
+      siteCreateConfirm: '"{name}" has no data file yet. Create it now?\n\nIt starts as a brand-new empty warehouse, fully separate from the other one. Accounts and the admin key are carried over from the current one.',
+      siteRenamePrompt: 'Name of this warehouse (saved on this device only; set it on each device):',
+      actSiteCreate: 'Created new warehouse "{name}"',
+      bkSiteMismatch: 'Warning: this backup is from "{from}" but you are in "{to}".\nRestoring will replace the data of "{to}" with the contents of "{from}". Continue?',
       bkBtn: '💾 Backup / Restore',
       bkTitle: 'Backup & restore',
       bkNever: 'No backup has been made yet. Make one now.',
@@ -2949,7 +3117,7 @@
       plCompleteLabel: 'Complete',
       plIncompleteLabel: 'Qty mismatch',
       plPendingLabel: 'Pending',
-      exportDoPdfBtn: '📄 Export DO (PDF)',
+      exportDoPdfBtn: '📄 Make DO for customer signing (PDF)',
       exportDoExcelBtn: '📊 Export DO (Excel)',
       plImportExcelBtn: '📄 Import items from Excel',
       plImportedOk: 'Imported {count} item(s) from Excel',
@@ -3177,6 +3345,61 @@
       pickFromHint: 'Ambil dari: {list}',
       receiptFilterPh: 'Cari no. resit, pembekal, barang…',
       receiptsEmpty: 'Belum ada resit.',
+      permTitle: 'Akses',
+      permRoleReadonly: 'Lihat sahaja',
+      permRoleCustom: 'Tersuai (tandakan apa yang boleh dibuat)',
+      permRoleAdmin: 'Admin (semua akses, tanpa kunci admin)',
+      permStock: 'Rekod stok: tambah / edit / padam / import Excel',
+      permAdjust: 'Pelarasan kiraan stok & pindah lokasi',
+      permMaster: 'Induk barang & lokasi',
+      permReports: 'Laporan stok',
+      permPacking: 'Packing List: cipta / ambil / tolak stok / padam',
+      permReceiving: 'Terimaan: PO / GRN / QC / pulangan / pembekal',
+      permDelivery: 'Penghantaran: SO / DO / POD / pelanggan / DO daripada PL',
+      permNote: 'Sandaran/pulih, arkib, kosongkan semua, log aktiviti dan pengurusan pengguna hanya untuk admin.',
+      permStockShort: 'Stok', permAdjustShort: 'Laras', permMasterShort: 'Induk', permReportsShort: 'Laporan',
+      permPackingShort: 'PL', permReceivingShort: 'Terimaan', permDeliveryShort: 'Hantar',
+      permTagAdmin: 'Admin', permTagReadonly: 'Lihat sahaja',
+      permEditBtn: 'Akses',
+      permPwBlank: 'Kosongkan kata laluan = kemas kini akses pengguna ini sahaja.',
+      permNeedPw: 'Pengguna baharu perlu kata laluan (sekurang-kurangnya 6 aksara).',
+      actUserPerm: 'Kemas kini akses pengguna: {id} ({perms})',
+      doEditBtn: 'Ubah',
+      doEditTitle: 'Ubah Delivery Order {no}',
+      doEditNote: 'Mengubah {no}: nombor kekal sama. Stok yang ditolak dikembalikan dahulu, kemudian ditolak semula mengikut kandungan baharu. DO yang telah ditandatangani tidak boleh diubah.',
+      doEditGone: 'DO ini telah dipadam dan tidak boleh diubah.',
+      doEditSigned: 'DO ini telah ada rekod tandatangan pelanggan dan tidak boleh diubah.',
+      actDoEdit: 'Delivery order {no} diubah',
+      doFromPlNone: 'Belum ada barang diambil dalam Packing List ini, jadi DO tidak dapat dibuat.',
+      doFromPlNeedAll: '{n} item belum diambil. DO hanya boleh dibuat selepas semua diambil (rekod kuantiti kurang mengikut kuantiti sebenar).',
+      plLockedBanner: '{no} telah dijana, jadi Packing List ini dikunci. Untuk mengubah: padam {no} di halaman Penghantaran, ubah di sini, kemudian tekan "Buat DO" semula. Nombor kekal {no}.',
+      plReservedBanner: 'DO {no} telah dipadam, jadi Packing List ini boleh diubah. Selepas itu tekan "Buat DO" semula dan ia akan guna semula {no} (kecuali telah diambil).',
+      plLockedAlert: 'Packing List ini telah menghasilkan {no} dan tidak boleh diubah. Padam {no} di halaman Penghantaran dahulu, ubah, kemudian jana semula.',
+      plReservedTag: 'nombor {no} disimpan',
+      doDeleteConfirmPl: 'Padam {no}?\nDO ini daripada Packing List: stok tidak berubah, dan Packing List dibuka untuk diubah.\nApabila DO dibuat semula, ia guna semula {no}; DO yang dibuat sementara itu mengambil nombor seterusnya.',
+      appOutdated: 'Fail data lebih baharu daripada aplikasi pada peranti ini. Tutup dan buka semula aplikasi (atau muat semula halaman) untuk mengemas kini, kemudian teruskan.',
+      customersBtn: '🏢 Pelanggan',
+      customersTitle: 'Pelanggan',
+      customersSub: 'Simpan nama syarikat dan alamat pelanggan. DO akan mencetak nama syarikat, alamat, dan pada baris seterusnya nama kapal dari Packing List.',
+      cuNameLabel: 'Nama syarikat pelanggan',
+      cuAddrLabel: 'Alamat (boleh berbaris-baris)',
+      cuSaveBtn: '＋ Simpan pelanggan',
+      cuNameReq: 'Isi nama syarikat pelanggan.',
+      cuExists: 'Pelanggan dengan nama ini sudah wujud.',
+      cuEmpty: 'Belum ada pelanggan.',
+      cuDeleteConfirm: 'Padam pelanggan "{name}"? DO yang telah dikeluarkan tidak terjejas.',
+      actCuSave: 'Pelanggan "{name}" disimpan',
+      actCuDel: 'Pelanggan "{name}" dipadam',
+      doFromPlAskCustomer: 'Tiada pelanggan dipilih untuk Packing List ini. Masukkan nama syarikat pelanggan untuk DO (mesti sama dengan nama di Pelanggan supaya alamat dipaparkan; kosongkan untuk papar nama kapal sahaja):',
+      doFromPlAdminOnly: 'Packing List ini belum ada DO. Pentadbir mesti log masuk dan tekan butang ini.',
+      siteDefault1: 'Gudang 1',
+      siteDefault2: 'Gudang 2',
+      siteNotCreated: 'Gudang ini belum mempunyai fail data. Pentadbir mesti beralih ke sini dahulu untuk mewujudkannya.',
+      siteNotCreatedNonAdmin: 'Gudang ini belum mempunyai fail data. Log masuk sebagai pentadbir dan beralih ke sini; anda akan diminta mewujudkannya.',
+      siteCreateConfirm: '"{name}" belum mempunyai fail data. Wujudkan sekarang?\n\nIa bermula sebagai gudang kosong yang baharu, terasing sepenuhnya daripada gudang lain. Akaun dan kunci pentadbir dibawa dari yang semasa.',
+      siteRenamePrompt: 'Nama gudang ini (disimpan pada peranti ini sahaja; tetapkan pada setiap peranti):',
+      actSiteCreate: 'Gudang baharu "{name}" diwujudkan',
+      bkSiteMismatch: 'Amaran: sandaran ini dari "{from}" tetapi anda berada di "{to}".\nPemulihan akan menggantikan data "{to}" dengan kandungan "{from}". Teruskan?',
       bkBtn: '💾 Sandaran / Pulih',
       bkTitle: 'Sandaran & pemulihan',
       bkNever: 'Belum ada sandaran. Buat sekarang.',
@@ -3486,7 +3709,7 @@
       plCompleteLabel: 'Lengkap',
       plIncompleteLabel: 'Kuantiti tidak sepadan',
       plPendingLabel: 'Belum selesai',
-      exportDoPdfBtn: '📄 Eksport DO (PDF)',
+      exportDoPdfBtn: '📄 Buat DO untuk tandatangan pelanggan (PDF)',
       exportDoExcelBtn: '📊 Eksport DO (Excel)',
       plImportExcelBtn: '📄 Import barang dari Excel',
       plImportedOk: '{count} barang telah diimport dari Excel',
@@ -3531,6 +3754,7 @@
     currentLang = langSelect.value;
     localStorage.setItem('stockAppLang', currentLang);
     applyStaticTranslations();
+    if (typeof renderSiteBar === 'function') renderSiteBar();
     updateAdminUI();
     renderCurrentView();
   });
@@ -3542,9 +3766,30 @@
   const REPO_OWNER = 'Elvis96524';
   const REPO_NAME = 'stock-tracker01';
   const REPO_BRANCH = 'main';
-  const REPO_PATH = 'data.json';
-
-  const LOCAL_CACHE_KEY = 'srsDataCache_v1';
+  // ---- 多仓库：每个仓库使用各自独立的数据文件，互不干扰 ----
+  // main = 原有的 data.json / archive.json（旧数据原封不动）；b = data-b.json / archive-b.json
+  const SITES = [
+    { id: 'main', path: 'data.json', archive: 'archive.json', sfx: '' }
+    // 单仓库版：第二仓库（id 'b'）已停用。要恢复，把下面这一行加回数组即可：
+    // , { id: 'b', path: 'data-b.json', archive: 'archive-b.json', sfx: '_b' }
+  ];
+  const APP_VER = 3;   // 数据格式版本：数据文件比本机程序新时，拒绝读写，避免旧版覆盖新版的数据
+  const SITE_KEY = 'srsSite_v1';
+  const SITE_NAMES_KEY = 'srsSiteNames_v1';
+  let curSiteId = 'main';
+  try { const sv = localStorage.getItem(SITE_KEY); if (SITES.some(x => x.id === sv)) curSiteId = sv; } catch (e) {}
+  const curSite = () => SITES.find(x => x.id === curSiteId) || SITES[0];
+  const repoPath = () => curSite().path;
+  const archivePath = () => curSite().archive;
+  const cacheKey = () => 'srsDataCache_v1' + curSite().sfx;
+  const plDraftKey = () => 'srsPlDraft_v1' + curSite().sfx;
+  const bkLastKey = () => 'srsLastBackup' + curSite().sfx;
+  function siteName(id) {
+    let names = {};
+    try { names = JSON.parse(localStorage.getItem(SITE_NAMES_KEY) || '{}') || {}; } catch (e) {}
+    const k = id || curSiteId;
+    return names[k] || t(k === 'main' ? 'siteDefault1' : 'siteDefault2');
+  }
   const DEVICE_LOCK_KEY = 'srsDeviceLock_v1';
   const GH_CONFIG_KEY = 'srsGhConfig_v1';
   const ADMIN_SESSION_KEY = 'srsAdminSession_v1';
@@ -3562,15 +3807,36 @@
   let receipts = [];     // 收货单（GRN）
   let purchaseOrders = []; // 采购单（PO）
   let suppliers = [];    // 供应商清单
+  let customers = [];    // 客户清单 [{id, name, address}]
   let returns = [];      // 退货单（退给供应商）
   let salesOrders = [];  // 销售订单（SO）
   let deliveries = [];   // 出库单（DO）
-  let latestExtra = { itemMaster: [], auditLog: [], locations: [], receipts: [], purchaseOrders: [], suppliers: [], returns: [], salesOrders: [], deliveries: [] }; // 最近一次读取到的附加数据，写回时原样带上
+  let latestExtra = { itemMaster: [], auditLog: [], locations: [], receipts: [], purchaseOrders: [], suppliers: [], customers: [], returns: [], salesOrders: [], deliveries: [] }; // 最近一次读取到的附加数据，写回时原样带上
   const AUDIT_MAX = 1000;
 
   function actorName() {
     if (typeof authState !== 'undefined' && authState.mode === 'v2' && session && session.id) return session.id;
     return isAdmin ? 'admin' : 'device';
+  }
+  const PERM_KEYS = ['stock', 'adjust', 'master', 'reports', 'packing', 'receiving', 'delivery'];
+  function myUserEntry() {
+    if (typeof authState === 'undefined' || authState.mode !== 'v2' || !session || !session.uid) return null;
+    return (authState.usersPayload || {})[session.uid] || null;
+  }
+  // 账号模式下，只要已经有「管理员账号」，就不再允许用管理员密钥切换成管理员（防止普通用户自行升级）
+  function adminKeyAllowed() {
+    if (typeof authState === 'undefined' || authState.mode !== 'v2') return true;
+    return !Object.values(authState.usersPayload || {}).some(u => u && u.role === 'admin');
+  }
+  function fullAdmin() {
+    if (isAdmin && adminKeyAllowed()) return true;
+    const u = myUserEntry();
+    return !!(u && u.role === 'admin');
+  }
+  function can(p) {
+    if (fullAdmin()) return true;
+    const u = myUserEntry();
+    return !!(u && Array.isArray(u.perms) && u.perms.includes(p));
   }
   function mkAudit(a, d) {
     return { at: new Date().toISOString(), by: actorName(), a, d: d || {} };
@@ -3580,7 +3846,7 @@
   }
   function saveLocalCache() {
     try {
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ adminKeyHash, records, packingLists, itemMaster, auditLog, locations, receipts, purchaseOrders, suppliers, returns, salesOrders, deliveries }));
+      localStorage.setItem(cacheKey(), JSON.stringify({ adminKeyHash, records, packingLists, itemMaster, auditLog, locations, receipts, purchaseOrders, suppliers, customers, returns, salesOrders, deliveries }));
     } catch (e) {}
   }
 
@@ -3733,7 +3999,7 @@
 
   // 登录：用 ID+密码解开主密钥
   async function loginWithCredentials(id, password, persist) {
-    const text = await fetchRepoText(REPO_PATH);
+    const text = await fetchRepoText(repoPath());
     if (text === null) throw new Error('fetch failed: 404');
     const env = JSON.parse(text);
     if (env.srsEncrypted !== 2) throw new Error(t('accountsNotEnabled'));
@@ -3747,7 +4013,7 @@
   }
 
   // 为某个用户生成登录条目（salt 新随机；返回 envelope 条目 + payload 条目）
-  async function buildUserEntries(id, password, masterRaw) {
+  async function buildUserEntries(id, password, masterRaw, meta) {
     const uid = await userUid(id);
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const bits = await deriveWrapBits(password, salt, ENC_ITER);
@@ -3755,7 +4021,7 @@
     return {
       uid,
       env: { salt: bytesToB64(salt), iter: ENC_ITER, iv: wrapped.iv, wk: wrapped.wk },
-      payload: { id: id.trim(), wb: bytesToB64(bits), createdAt: new Date().toISOString() }
+      payload: Object.assign({ id: id.trim(), wb: bytesToB64(bits), createdAt: new Date().toISOString() }, meta || {})
     };
   }
 
@@ -3788,10 +4054,12 @@
 
   // 拉取共享数据
   async function fetchSharedData() {
-    const text = await fetchRepoText(REPO_PATH);
+    const siteAtStart = curSiteId;
+    const text = await fetchRepoText(repoPath());
     if (text === null) throw new Error('fetch failed: 404');
     const raw = JSON.parse(text);
     let parsed;
+    if (siteAtStart !== curSiteId) { const e = new Error('stale'); e.code = 'STALE'; throw e; }
     if (raw && raw.srsEncrypted === 2) {
       if (!session.master) throw loginRequiredError('loginRequired');
       parsed = await openWithKey(raw, session.master);
@@ -3808,6 +4076,7 @@
       authState = { mode: 'legacy', envUsers: {}, usersPayload: {}, archiveKey: '', archiveKeyPrev: '' };
       parsed = await openPayload(raw);
     }
+    if ((parsed.appVer || 0) > APP_VER) { const e = new Error(t('appOutdated')); e.code = 'OUTDATED'; throw e; }
     const out = {
       adminKeyHash: parsed.adminKeyHash || '',
       records: Array.isArray(parsed.records) ? parsed.records : [],
@@ -3818,11 +4087,13 @@
       receipts: Array.isArray(parsed.receipts) ? parsed.receipts : [],
       purchaseOrders: Array.isArray(parsed.purchaseOrders) ? parsed.purchaseOrders : [],
       suppliers: Array.isArray(parsed.suppliers) ? parsed.suppliers : [],
+      customers: Array.isArray(parsed.customers) ? parsed.customers : [],
       returns: Array.isArray(parsed.returns) ? parsed.returns : [],
       salesOrders: Array.isArray(parsed.salesOrders) ? parsed.salesOrders : [],
       deliveries: Array.isArray(parsed.deliveries) ? parsed.deliveries : []
     };
-    latestExtra = { itemMaster: out.itemMaster, auditLog: out.auditLog, locations: out.locations, receipts: out.receipts, purchaseOrders: out.purchaseOrders, suppliers: out.suppliers, returns: out.returns, salesOrders: out.salesOrders, deliveries: out.deliveries };
+    if (siteAtStart !== curSiteId) { const e = new Error('stale'); e.code = 'STALE'; throw e; }
+    latestExtra = { itemMaster: out.itemMaster, auditLog: out.auditLog, locations: out.locations, receipts: out.receipts, purchaseOrders: out.purchaseOrders, suppliers: out.suppliers, customers: out.customers, returns: out.returns, salesOrders: out.salesOrders, deliveries: out.deliveries };
     return out;
   }
 
@@ -3874,12 +4145,13 @@
     const newReceipts = opts.receipts || latestExtra.receipts;
     const newPOs = opts.purchaseOrders || latestExtra.purchaseOrders;
     const newSups = opts.suppliers || latestExtra.suppliers;
+    const newCusts = opts.customers || latestExtra.customers || [];
     const newRets = opts.returns || latestExtra.returns;
     const newSOs = opts.salesOrders || latestExtra.salesOrders;
     const newDOs = opts.deliveries || latestExtra.deliveries;
     const done = () => {
-      latestExtra = { itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, returns: newRets, salesOrders: newSOs, deliveries: newDOs };
-      purchaseOrders = newPOs; suppliers = newSups; returns = newRets; salesOrders = newSOs; deliveries = newDOs;
+      latestExtra = { itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, customers: newCusts, returns: newRets, salesOrders: newSOs, deliveries: newDOs };
+      purchaseOrders = newPOs; suppliers = newSups; customers = newCusts; returns = newRets; salesOrders = newSOs; deliveries = newDOs;
       itemMaster = newMaster;
       auditLog = newLog;
       locations = newLocs;
@@ -3900,7 +4172,7 @@
         locations: newLocs,
         receipts: newReceipts,
         purchaseOrders: newPOs,
-        suppliers: newSups,
+        suppliers: newSups, customers: newCusts, appVer: APP_VER,
         returns: newRets,
         salesOrders: newSOs,
         deliveries: newDOs,
@@ -3909,7 +4181,7 @@
         archiveKeyPrev: a.archiveKeyPrev || ''
       }, a.master));
       env.users = a.envUsers;
-      await putRepoFile(REPO_PATH, JSON.stringify(env), 'SRS: update stock records');
+      await putRepoFile(repoPath(), JSON.stringify(env), 'SRS: update stock records');
       authState = { mode: 'v2', envUsers: a.envUsers, usersPayload: a.usersPayload, archiveKey: a.archiveKey || '', archiveKeyPrev: a.archiveKeyPrev || '' };
       if (authOverride) { session.master = a.master; persistSession(); }
       done();
@@ -3922,19 +4194,18 @@
       throw err;
     }
     const fileContent = await encryptPayload(
-      { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [], itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, returns: newRets, salesOrders: newSOs, deliveries: newDOs },
+      { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [], itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, customers: newCusts, appVer: APP_VER, returns: newRets, salesOrders: newSOs, deliveries: newDOs },
       dataKey
     );
-    await putRepoFile(REPO_PATH, fileContent, 'SRS: update stock records');
+    await putRepoFile(repoPath(), fileContent, 'SRS: update stock records');
     done();
   }
 
   // ---- 归档文件 archive.json（与 data.json 同一密码加密；只在查看/归档时读取）----
-  const ARCHIVE_PATH = 'archive.json';
 
   // 读取归档：不存在返回 null；v2 用 archiveKey（含上一把），旧版用数据密码
   async function fetchArchiveRaw() {
-    const text = await fetchRepoText(ARCHIVE_PATH);
+    const text = await fetchRepoText(archivePath());
     if (text === null) return null;
     const raw = JSON.parse(text);
     let parsed;
@@ -3957,7 +4228,7 @@
   async function pushArchiveRecords(archiveRecords) {
     if (authState.mode === 'v2') {
       if (!authState.archiveKey) throw loginRequiredError('loginRequired');
-      await putRepoFile(ARCHIVE_PATH, await sealWithKey({ records: archiveRecords }, b64ToBytes(authState.archiveKey)), 'SRS: archive old records');
+      await putRepoFile(archivePath(), await sealWithKey({ records: archiveRecords }, b64ToBytes(authState.archiveKey)), 'SRS: archive old records');
       return;
     }
     const dataKey = getDataKey();
@@ -3966,7 +4237,7 @@
       err.code = 'NEEDKEY';
       throw err;
     }
-    await putRepoFile(ARCHIVE_PATH, await encryptPayload({ records: archiveRecords }, dataKey), 'SRS: archive old records');
+    await putRepoFile(archivePath(), await encryptPayload({ records: archiveRecords }, dataKey), 'SRS: archive old records');
   }
 
   function setSyncStatus(msg, kind) {
@@ -3991,12 +4262,14 @@
       receipts = data.receipts;
       purchaseOrders = data.purchaseOrders;
       suppliers = data.suppliers;
+      customers = data.customers;
       returns = data.returns;
       salesOrders = data.salesOrders;
       deliveries = data.deliveries;
       saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
     } catch (err) {
+      if (err.code === 'STALE') { refreshBtn.classList.remove('spinning'); return; }
       console.error(err);
       if (err.code === 'LOGIN') {
         refreshBtn.classList.remove('spinning');
@@ -4004,7 +4277,7 @@
         return;
       }
       try {
-        const cached = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY));
+        const cached = JSON.parse(localStorage.getItem(cacheKey()));
         if (cached) {
           records = cached.records || [];
           adminKeyHash = cached.adminKeyHash || '';
@@ -4015,15 +4288,16 @@
           receipts = cached.receipts || [];
           purchaseOrders = cached.purchaseOrders || [];
           suppliers = cached.suppliers || [];
+          customers = cached.customers || [];
           returns = cached.returns || [];
           salesOrders = cached.salesOrders || [];
           deliveries = cached.deliveries || [];
-          setSyncStatus((err.code === 'NEEDKEY' || err.code === 'BADKEY') ? err.message : t('offlineUsingCache'), 'err');
+          setSyncStatus((err.code === 'NEEDKEY' || err.code === 'BADKEY' || err.code === 'OUTDATED') ? err.message : t('offlineUsingCache'), 'err');
         } else {
           records = [];
           adminKeyHash = '';
           packingLists = [];
-          setSyncStatus((err.code === 'NEEDKEY' || err.code === 'BADKEY') ? err.message : t('fetchFailed'), 'err');
+          setSyncStatus((err.code === 'NEEDKEY' || err.code === 'BADKEY' || err.code === 'OUTDATED') ? err.message : (/404/.test(err.message) && curSiteId !== 'main' ? t('siteNotCreated') : t('fetchFailed')), 'err');
         }
       } catch (e2) {
         records = [];
@@ -4043,8 +4317,8 @@
     if (loginScreen.classList.contains('open')) return; // 已显示时不要清掉用户正在输入的内容
     if (wipe) {
       clearSession();
-      records = []; packingLists = []; adminKeyHash = ''; itemMaster = []; auditLog = []; locations = []; receipts = []; purchaseOrders = []; suppliers = []; returns = []; salesOrders = []; deliveries = [];
-      localStorage.removeItem(LOCAL_CACHE_KEY);
+      records = []; packingLists = []; adminKeyHash = ''; itemMaster = []; auditLog = []; locations = []; receipts = []; purchaseOrders = []; suppliers = []; customers = []; returns = []; salesOrders = []; deliveries = [];
+      localStorage.removeItem(cacheKey());
       isAdmin = false;
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
       updateAdminUI();
@@ -4245,7 +4519,7 @@
 
   manualForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!isAdmin) return;
+    if (!can('stock')) return;
     const item = manName.value.trim();
     const itemCode = manCode.value.trim();
     const qty = parseFloat(manQty.value);
@@ -4690,7 +4964,7 @@
             <td data-label="${t('colExpiry')}">${expiryLabel(t2.expiryDate)}</td>
             <td data-label="${t('colBalance')}" class="qty">${t2.runningBalance}</td>
             <td data-label="${t('colBy')}" title="${escapeHtml(t2.at || '')}">${escapeHtml(t2.by || '—')}</td>
-            ${isAdmin ? `<td data-label="">
+            ${can('stock') ? `<td data-label="">
               <button class="edit-btn" data-id="${t2.id}" title="${t('editRecordTitle')}">✎ ${t('editBtn')}</button>
               <button class="del-btn" data-id="${t2.id}" title="${t('deleteRecordTitle')}">✕ ${t('deleteBtn')}</button>
             </td>` : ''}
@@ -4703,7 +4977,7 @@
               <div class="batch-block">
                 <div class="batch-head">
                   <span>📦 ${t('batchesTitle')}</span>
-                  ${isAdmin ? `<span><button class="edit-btn move-btn" data-name="${escapeHtml(g.item)}">↔ ${t('moveBtn')}</button><button class="edit-btn count-btn" data-name="${escapeHtml(g.item)}">⚖ ${t('countAdjustBtn')}</button></span>` : ''}
+                  ${(can('adjust')) ? `<span><button class="edit-btn move-btn" data-name="${escapeHtml(g.item)}">↔ ${t('moveBtn')}</button><button class="edit-btn count-btn" data-name="${escapeHtml(g.item)}">⚖ ${t('countAdjustBtn')}</button></span>` : ''}
                 </div>
                 ${g.batches.length
                   ? `<div class="batch-list">${g.batches.map((b, i) => `<span class="batch-chip"><b>${i + 1}.</b> ${b.loc ? '📍' + escapeHtml(b.loc) + ' · ' : ''}${escapeHtml(b.batch || '—')} · ${expiryLabel(b.expiry)} · <b>${b.qty}</b> ${escapeHtml(g.uom)}</span>`).join('')}</div>`
@@ -4720,7 +4994,7 @@
                     <th>${t('colExpiry')}</th>
                     <th>${t('colBalance')}</th>
                     <th>${t('colBy')}</th>
-                    ${isAdmin ? '<th></th>' : ''}
+                    ${can('stock') ? '<th></th>' : ''}
                   </tr>
                 </thead>
                 <tbody>${txRows}</tbody>
@@ -4733,21 +5007,21 @@
         detailRow.querySelectorAll('.move-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (isAdmin) openTransfer(btn.dataset.name);
+            if (can('adjust')) openTransfer(btn.dataset.name);
           });
         });
 
         detailRow.querySelectorAll('.count-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (isAdmin) openStockTake(btn.dataset.name);
+            if (can('adjust')) openStockTake(btn.dataset.name);
           });
         });
 
         detailRow.querySelectorAll('.del-btn').forEach(btn => {
           btn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if (!isAdmin) return;
+            if (!can('stock')) return;
             if (!confirm(t('deleteConfirm'))) return;
             await deleteRecordAndSync(btn.dataset.id);
           });
@@ -4756,7 +5030,7 @@
         detailRow.querySelectorAll('.edit-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (!isAdmin) return;
+            if (!can('stock')) return;
             const rec = records.find(r => r.id === btn.dataset.id);
             if (rec) openEditRecordModal(rec);
           });
@@ -4839,7 +5113,7 @@
   }
 
   document.getElementById('importBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!can('stock')) return;
     const fileInput = document.getElementById('excelFile');
     const file = fileInput.files[0];
     const date = document.getElementById('importDate').value || new Date().toISOString().slice(0, 10);
@@ -4960,10 +5234,14 @@
   const adminNotice = document.getElementById('adminNotice');
 
   function updateAdminUI() {
-    document.body.classList.toggle('is-admin', isAdmin);
+    const fa = fullAdmin();
+    document.body.classList.toggle('is-admin', fa);
+    let anyPerm = fa;
+    PERM_KEYS.forEach(k => { const on = can(k); if (on) anyPerm = true; document.body.classList.toggle('p-' + k, on); });
+    adminToggleBtn.style.display = adminKeyAllowed() ? '' : 'none';
     adminBtnLabel.textContent = isAdmin ? t('logoutAdminBtn') : t('adminLoginBtn');
     adminToggleBtn.classList.toggle('active', isAdmin);
-    if (adminNotice) adminNotice.style.display = isAdmin ? 'none' : 'block';
+    if (adminNotice) adminNotice.style.display = anyPerm ? 'none' : 'block';
   }
 
   function openAdminModal() {
@@ -5084,6 +5362,81 @@
     if (document.visibilityState === 'visible') loadDataAndRender(true);
   });
 
+  // ================= 仓库切换 =================
+  const siteSelect = document.getElementById('siteSelect');
+  function renderSiteBar() {
+    document.body.dataset.site = curSiteId;
+    siteSelect.innerHTML = SITES.map(x => `<option value="${x.id}">${escapeHtml(siteName(x.id))}</option>`).join('');
+    siteSelect.value = curSiteId;
+    document.title = SITES.length > 1 ? 'SRS · ' + siteName() : 'SRS';
+  }
+  function emptyExtra() { return { itemMaster: [], auditLog: [], locations: [], receipts: [], purchaseOrders: [], suppliers: [], customers: [], returns: [], salesOrders: [], deliveries: [] }; }
+  function setSite(id) {
+    curSiteId = id;
+    try { localStorage.setItem(SITE_KEY, id); } catch (e) {}
+    records = []; packingLists = []; itemMaster = []; auditLog = []; locations = []; receipts = [];
+    purchaseOrders = []; suppliers = []; customers = []; returns = []; salesOrders = []; deliveries = [];
+    latestExtra = emptyExtra();
+    expanded = new Set(); currentPackingListId = null; currentView = 'choice';
+    try { plDraft = JSON.parse(localStorage.getItem(plDraftKey()) || '{}') || {}; } catch (e) { plDraft = {}; }
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    renderSiteBar();
+  }
+  async function switchSite(id) {
+    const prevId = curSiteId;
+    if (id === prevId) return;
+    const site = SITES.find(x => x.id === id);
+    const wasAdmin = isAdmin, prevHash = adminKeyHash;
+    try {
+      setSyncStatus(t('syncing'));
+      const text = await fetchRepoText(site.path);
+      if (text === null) {
+        // 该仓库还没有数据文件：管理员确认后建立（沿用当前的账号 / 管理员密钥）
+        if (!fullAdmin()) { alert(t('siteNotCreatedNonAdmin')); siteSelect.value = prevId; return; }
+        const cfg = getGhConfig();
+        if (!cfg || !cfg.token) { alert(t('ghConfigMissing')); siteSelect.value = prevId; return; }
+        if (!confirm(t('siteCreateConfirm', { name: siteName(id) }))) { siteSelect.value = prevId; return; }
+        setSite(id);
+        try {
+          await pushSharedData([], prevHash, [], undefined, { audit: [mkAudit('siteCreate', { name: siteName(id) })], itemMaster: [], locations: [], receipts: [], purchaseOrders: [], suppliers: [], customers: [], returns: [], salesOrders: [], deliveries: [] });
+        } catch (e) {
+          console.error(e);
+          setSite(prevId);
+          alert(t('syncFailed') + ': ' + e.message);
+          await loadDataAndRender(true);
+          return;
+        }
+      } else {
+        setSite(id);
+      }
+    } catch (e) {
+      console.error(e);
+      siteSelect.value = prevId;
+      setSyncStatus(t('fetchFailed'), 'err');
+      return;
+    }
+    await loadDataAndRender(false);
+    // 两个仓库的管理员密钥不同时，需要重新输入
+    if (wasAdmin && adminKeyHash !== prevHash) {
+      isAdmin = false;
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      updateAdminUI();
+      renderCurrentView();
+    }
+  }
+  siteSelect.addEventListener('change', () => switchSite(siteSelect.value));
+  document.getElementById('siteRenameBtn').addEventListener('click', () => {
+    if (!fullAdmin()) return;
+    const nm = prompt(t('siteRenamePrompt'), siteName());
+    if (nm === null || !nm.trim()) return;
+    let names = {};
+    try { names = JSON.parse(localStorage.getItem(SITE_NAMES_KEY) || '{}') || {}; } catch (e) {}
+    names[curSiteId] = nm.trim().slice(0, 30);
+    try { localStorage.setItem(SITE_NAMES_KEY, JSON.stringify(names)); } catch (e) {}
+    renderSiteBar();
+  });
+  renderSiteBar();
+
   // ================= 页面切换：Packing List / Stock Balance =================
   const choiceView = document.getElementById('choiceView');
   const packingListView = document.getElementById('packingListView');
@@ -5094,6 +5447,7 @@
   const homeBtn = document.getElementById('homeBtn');
 
   function renderCurrentView() {
+    updateAdminUI();
     choiceView.style.display = currentView === 'choice' ? 'block' : 'none';
     packingListView.style.display = currentView === 'packing' ? 'block' : 'none';
     packingDetailView.style.display = currentView === 'packingDetail' ? 'block' : 'none';
@@ -5174,7 +5528,7 @@
           <div class="pl-card-title">${escapeHtml(pl.title)}</div>
           <span class="pl-status-badge ${status}">${packingListStatusLabel(status)}</span>
         </div>
-        <div class="pl-card-meta">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''}</div>
+        <div class="pl-card-meta">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''}${plLockedDo(pl) ? ' · 🔒 ' + escapeHtml(plLockedDo(pl).no) : (pl.doNo ? ' · ↺ ' + escapeHtml(t('plReservedTag', { no: pl.doNo })) : '')}</div>
         <div class="pl-progress-bar"><div class="pl-progress-fill" style="width:${pct}%;"></div></div>
         <div class="pl-progress-label">${done}/${total} ${t('plItemsDoneLabel')}</div>
       `;
@@ -5197,6 +5551,8 @@
   function openNewPackingListModal() {
     document.getElementById('plTitle').value = '';
     document.getElementById('plPlatform').value = '';
+    document.getElementById('plCustomer').value = '';
+    refreshCustomerList();
     document.getElementById('plDate').valueAsDate = new Date();
     document.getElementById('plError').textContent = '';
     document.getElementById('plImportStatus').textContent = '';
@@ -5314,6 +5670,7 @@
   document.getElementById('plSaveBtn').addEventListener('click', async () => {
     const title = document.getElementById('plTitle').value.trim();
     const platform = document.getElementById('plPlatform').value.trim();
+    const plCustomer = document.getElementById('plCustomer').value.trim();
     const date = document.getElementById('plDate').value;
     const errEl = document.getElementById('plError');
 
@@ -5354,7 +5711,7 @@
     document.getElementById('plSaveBtn').disabled = true;
     const newPl = {
       id: 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      title, platform, date,
+      title, platform, customer: plCustomer, date,
       createdAt: new Date().toISOString(),
       items
     };
@@ -5395,10 +5752,9 @@
   }
 
   // ---- Packing List：先在本机暂存，最后“完成并保存”一次过写入 ----
-  const PL_DRAFT_KEY = 'srsPlDraft_v1';
   let plDraft = {};   // { plId: { itemId: { checked, qty, lines:[{label, qty}] } } }
-  try { plDraft = JSON.parse(localStorage.getItem(PL_DRAFT_KEY) || '{}') || {}; } catch (e) { plDraft = {}; }
-  function savePlDraft() { try { localStorage.setItem(PL_DRAFT_KEY, JSON.stringify(plDraft)); } catch (e) {} }
+  try { plDraft = JSON.parse(localStorage.getItem(plDraftKey()) || '{}') || {}; } catch (e) { plDraft = {}; }
+  function savePlDraft() { try { localStorage.setItem(plDraftKey(), JSON.stringify(plDraft)); } catch (e) {} }
   function plDraftOf(plId, itemId) { return (plDraft[plId] || {})[itemId] || null; }
   function setPlDraft(plId, itemId, d) { (plDraft[plId] = plDraft[plId] || {})[itemId] = d; savePlDraft(); }
   function clearPlDraft(plId, itemIds) {
@@ -5426,6 +5782,7 @@
       alert(t('ghConfigMissing'));
       return false;
     }
+    if (plLockedDo(pl)) { alert(t('plLockedAlert', { no: plLockedDo(pl).no })); return false; }
     const infos = entries.map(e => ({ a: 'plTake', d: { item: e.item.item, qty: e.lines.reduce((n, l) => n + l.qty, 0), pl: pl.title } }));
     return mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
       const alloc = makeAllocator(latestRecords);   // 按最新库存做 FEFO 批次分配；多个项目共用同一库存时会累计扣减
@@ -5667,10 +6024,15 @@
     }
 
     const { total, done } = packingListProgress(pl);
+    const lockedDo = plLockedDo(pl);
     headerEl.innerHTML = `
       <h2 style="margin:0 0 4px;">${escapeHtml(pl.title)}</h2>
-      <div class="pl-card-meta" style="margin-bottom:16px;">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''} · ${done}/${total} ${t('plItemsDoneLabel')}</div>
+      <div class="pl-card-meta" style="margin-bottom:${lockedDo || pl.doNo ? '8' : '16'}px;">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''} · ${done}/${total} ${t('plItemsDoneLabel')}</div>
+      ${lockedDo ? `<div class="modal-status" style="margin:0 0 16px; padding:10px 12px; border-radius:10px; background:rgba(234,88,12,.12); font-size:13px;">🔒 ${escapeHtml(t('plLockedBanner', { no: lockedDo.no }))}</div>`
+        : (pl.doNo ? `<div class="modal-status" style="margin:0 0 16px; padding:10px 12px; border-radius:10px; background:rgba(37,99,235,.10); font-size:13px;">↺ ${escapeHtml(t('plReservedBanner', { no: pl.doNo }))}</div>` : '')}
     `;
+    const delPlBtn = document.getElementById('deletePackingListBtn');
+    if (delPlBtn) delPlBtn.style.display = lockedDo ? 'none' : '';
 
     itemsEl.innerHTML = '';
     plPickCache = null;
@@ -5696,17 +6058,18 @@
                 ? `<span class="pl-status-badge incomplete">⚠ ${t('plIncompleteLabel')}</span>`
                 : `<span class="pl-status-badge completed">✓ ${t('plCompleteLabel')}</span>`}
               <div class="pl-done-check">${t('plDoneLabel', { qty: item.qtyTaken })}</div>
-              <button class="pl-undo-btn">${t('undoBtn')}</button>
+              ${lockedDo ? '' : `<button class="pl-undo-btn">${t('undoBtn')}</button>`}
             </div>
           </div>
         `;
         const undoBtn = row.querySelector('.pl-undo-btn');
-        undoBtn.addEventListener('click', async () => {
+        if (undoBtn) undoBtn.addEventListener('click', async () => {
           const cfg = getGhConfig();
           if (!cfg || !cfg.token) {
             alert(t('ghConfigMissing'));
             return;
           }
+          if (plLockedDo(pl)) { alert(t('plLockedAlert', { no: plLockedDo(pl).no })); return; }
           if (!confirm(t('undoConfirm'))) return;
           undoBtn.disabled = true;
           const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
@@ -5727,8 +6090,10 @@
           undoBtn.disabled = false;
           if (ok) renderCurrentView();
         });
+      } else if (lockedDo) {
+        row.innerHTML = `<div class="pl-item-top"><div><div class="pl-item-name">${escapeHtml(item.item)}</div><div class="pl-item-meta">${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div></div></div>`;
       } else {
-        if (isAdmin) {
+        if (can('packing')) {
           renderAdminAllocRow(row, pl, item);
         } else {
           renderLabourTakeRow(row, pl, item);
@@ -5787,15 +6152,23 @@
         table.items th { background: #f0f0f0; }
         td.num { text-align: right; }
         .totals { text-align: right; font-size: 13px; margin-top: 10px; font-weight: bold; }
-        .sign-row { display: flex; justify-content: space-between; margin-top: 60px; font-size: 12px; }
+        .sign-row { display: flex; justify-content: space-between; margin-top: 40px; font-size: 12px; break-inside: avoid; }
+        @page { size: A4; margin: 12mm; }
+        table.frame { width: 186mm; border-collapse: collapse; margin: 0; }
+        table.frame > tbody > tr > td { padding: 0; border: 0; }
+        td.fbody { vertical-align: top; }
+        td.ffoot { vertical-align: bottom; height: 1px; }
+        @media print { table.frame { height: 268mm; } }
+
         .sign-row div { width: 40%; border-top: 1px solid #333; text-align: center; padding-top: 6px; }
         .status-banner { text-align: center; font-weight: bold; margin: 10px 0; font-size: 13px; }
         .status-banner.completed { color: #1f9d63; }
         .status-banner.incomplete { color: #d64545; }
         .status-banner.open { color: #b8860b; }
-        @media print { body { padding: 10px; } }
+        @media print { body { padding: 0; margin: 0; } }
       </style>
       </head><body>
+        <table class="frame"><tbody><tr><td class="fbody">
         <div class="center">
           <h1>${DO_COMPANY.name}</h1>
           <div class="small"><b>${DO_COMPANY.regLine}</b></div>
@@ -5818,10 +6191,13 @@
           <tbody>${rows}</tbody>
         </table>
         <div class="totals">Total Ordered: ${totalOrdered} &nbsp;&nbsp; Total Delivered: ${totalTaken}</div>
+        </td></tr><tr><td class="ffoot">
         <div class="sign-row">
           <div>Authorised Signature</div>
           <div>Recipient's Chop and Signature</div>
         </div>
+        </td></tr></tbody></table>
+        <script>(function(){function fit(){var f=document.querySelector('table.frame');if(!f)return;f.style.height='auto';var pg=268*3.7795275591;var h=f.getBoundingClientRect().height;var n=Math.max(1,Math.ceil(h/pg));f.style.height=(n*268)+'mm';}window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);})();<\/script>
       </body></html>
     `;
   }
@@ -5886,18 +6262,33 @@
     XLSX.writeFile(wb, `DO_${pl.title.replace(/[^\w-]+/g, '_')}.xlsx`);
   }
 
-  document.getElementById('exportDoPdfBtn').addEventListener('click', () => {
+  document.getElementById('exportDoPdfBtn').addEventListener('click', async () => {
     const pl = packingLists.find(p => p.id === currentPackingListId);
-    if (pl) exportPackingListToPdf(pl);
+    if (!pl) return;
+    const w = window.open('', '_blank');   // 先同步打开窗口，避免联网之后被浏览器当作弹窗拦截
+    try {
+      const d = await ensureDoFromPl(pl.id);
+      if (!d) { if (w) w.close(); return; }
+      renderCurrentView();
+      printDelivery(d, w);
+    } catch (e) { console.error(e); if (w) w.close(); alert(t('syncFailed') + ': ' + e.message); }
   });
-  document.getElementById('exportDoExcelBtn').addEventListener('click', () => {
+  document.getElementById('exportDoExcelBtn').addEventListener('click', async () => {
     const pl = packingLists.find(p => p.id === currentPackingListId);
-    if (pl) exportPackingListToExcel(pl);
+    if (!pl) return;
+    try {
+      const d = await ensureDoFromPl(pl.id);
+      if (!d) return;
+      renderCurrentView();
+      exportDeliveryExcel(d);
+    } catch (e) { console.error(e); alert(t('syncFailed') + ': ' + e.message); }
   });
 
   document.getElementById('deletePackingListBtn').addEventListener('click', async () => {
-    if (!isAdmin || !currentPackingListId) return;
+    if (!can('packing') || !currentPackingListId) return;
     if (!confirm(t('deletePackingListConfirm'))) return;
+    const linkedDo = deliveries.find(x => x.plId === currentPackingListId);
+    if (linkedDo) { alert(t('plLockedAlert', { no: linkedDo.no })); return; }
     const idToDelete = currentPackingListId;
     const plTitle = (packingLists.find(p => p.id === idToDelete) || {}).title || '';
     const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => ({
@@ -5939,15 +6330,25 @@
   const expandedDOs = new Set();
   const doFilter = document.getElementById('doFilter');
 
+  function customerAddrOf(name) {
+    const k = (name || '').trim().toLowerCase();
+    const c = k && customers.find(x => x.name.toLowerCase() === k);
+    return c ? (c.address || '') : '';
+  }
   function refreshCustomerList() {
     const m = new Map();
-    salesOrders.concat(deliveries).map(x => x.customer).filter(Boolean).forEach(n => { const k = n.toLowerCase(); if (!m.has(k)) m.set(k, n); });
+    customers.concat(salesOrders, deliveries, packingLists).map(x => x.customer || x.name).filter(Boolean).forEach(n => { const k = n.toLowerCase(); if (!m.has(k)) m.set(k, n); });
     document.getElementById('customerList').innerHTML = Array.from(m.values()).sort().map(x => `<option value="${escapeHtml(x)}">`).join('');
   }
   function stockAvail(item, itemCode) {
     const g = buildGroups().find(x => x.key === groupKey({ item, itemCode }));
     return g ? { n: g.balance, uom: g.uom } : { n: 0, uom: '' };
   }
+  // DO 编号：已经被某个 Packing List 保留的号码（DO 被删除后留下的 pl.doNo）不会被别的单据占用
+  function nextDoNo(dos, pls, year) {
+    return nextNo('DO', dos.concat((pls || []).filter(p => p.doNo).map(p => ({ no: p.doNo }))), year);
+  }
+  function plLockedDo(pl) { return pl ? deliveries.find(x => x.plId === pl.id) : null; }
   function nextNo(prefix, list, year) {
     let seq = 0;
     const re = new RegExp('^' + prefix + '-(\\d{4})-(\\d+)$');
@@ -5990,7 +6391,7 @@
         ${open ? `<div class="grn-lines">
           ${so.lines.map(l => { const left = r4(l.qty - (got[l.id] || 0)); return `<div class="grn-l">${escapeHtml((l.itemCode ? l.itemCode + ' · ' : '') + l.item)} — ${t('soShippedOf', { got: got[l.id] || 0, qty: l.qty })} ${escapeHtml(l.uom || '')}${left > 0 && st !== 'cancelled' ? ` <span class="qc-tag">${t('soBackorder', { n: left })}</span>` : ''}</div>`; }).join('')}
           ${so.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(so.note)}</div>` : ''}
-          ${isAdmin ? `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          ${can('delivery') ? `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
             ${(st === 'open' || st === 'partial') ? `<button class="export-btn so-ship">🚚 ${t('soShipBtn')}</button><button class="export-btn so-close">✔ ${t('soCloseBtn')}</button>` : ''}
             ${st === 'open' ? `<button class="danger-btn so-cancel">✖ ${t('soCancelBtn')}</button>` : ''}
           </div>` : ''}</div>` : ''}`;
@@ -6048,7 +6449,7 @@
     row.querySelector('.grn-remove').addEventListener('click', () => row.remove());
   }
   document.getElementById('newSoBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!can('delivery')) return;
     document.getElementById('soDate').value = new Date().toISOString().slice(0, 10);
     ['soCustomer', 'soPlatform', 'soRequested', 'soNote'].forEach(id => { document.getElementById(id).value = ''; });
     refreshCustomerList();
@@ -6060,7 +6461,7 @@
   document.getElementById('soAddLineBtn').addEventListener('click', addSoLine);
   document.getElementById('soCancel').addEventListener('click', () => soModal.classList.remove('open'));
   document.getElementById('soSave').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!can('delivery')) return;
     const err = document.getElementById('soError');
     const date = document.getElementById('soDate').value;
     const customer = document.getElementById('soCustomer').value.trim();
@@ -6148,23 +6549,42 @@
     });
     if (!n) addDoLine();
   });
-  function openDoModal(soId) {
-    if (!isAdmin) return;
-    document.getElementById('doDate').value = new Date().toISOString().slice(0, 10);
+  let doEditing = null;   // 正在修改的 DO（手动建立、未签收的才能修改）
+  function openDoModal(soId, editDo) {
+    if (!can('delivery')) return;
+    doEditing = editDo || null;
+    const soSel = document.getElementById('doSo');
+    document.getElementById('doTitleH').textContent = editDo ? t('doEditTitle', { no: editDo.no }) : t('doTitle');
+    const noteEl = document.getElementById('doEditNote');
+    noteEl.style.display = editDo ? 'block' : 'none';
+    noteEl.textContent = editDo ? t('doEditNote', { no: editDo.no }) : '';
+    document.getElementById('doDate').value = (editDo && editDo.date) || new Date().toISOString().slice(0, 10);
     ['doCustomer', 'doPlatform', 'doRef', 'doNote'].forEach(id => { document.getElementById(id).value = ''; });
     refreshCustomerList();
     document.getElementById('doError').textContent = '';
     doLines.innerHTML = '';
     fillDoSoSelect(soId || '');
-    if (soId) document.getElementById('doSo').dispatchEvent(new Event('change')); else addDoLine();
+    soSel.disabled = !!editDo;
+    if (editDo) {
+      if (editDo.soId && !Array.from(soSel.options).some(o => o.value === editDo.soId)) {
+        soSel.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(editDo.soId)}">${escapeHtml(editDo.soNo || '')}</option>`);
+      }
+      soSel.value = editDo.soId || '';
+      document.getElementById('doCustomer').value = editDo.customer || '';
+      document.getElementById('doPlatform').value = editDo.platform || '';
+      document.getElementById('doRef').value = editDo.ref || '';
+      document.getElementById('doNote').value = editDo.note || '';
+      editDo.lines.forEach(l => addDoLine({ item: l.item, itemCode: l.itemCode || '', qty: l.origQty != null ? l.origQty : l.qty,
+        uom: l.origQty != null ? l.origUom : l.uom, soLineId: l.soLineId || '' }));
+    } else if (soId) document.getElementById('doSo').dispatchEvent(new Event('change')); else addDoLine();
     doModal.classList.add('open');
   }
   document.getElementById('newDoBtn').addEventListener('click', () => openDoModal(''));
   document.getElementById('doAddLineBtn').addEventListener('click', () => addDoLine());
-  document.getElementById('doCancel').addEventListener('click', () => doModal.classList.remove('open'));
+  document.getElementById('doCancel').addEventListener('click', () => { doModal.classList.remove('open'); doEditing = null; });
 
   document.getElementById('doSave').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!can('delivery')) return;
     const err = document.getElementById('doError');
     const date = document.getElementById('doDate').value;
     const soId = document.getElementById('doSo').value;
@@ -6186,10 +6606,15 @@
     btn.disabled = true; err.textContent = '';
     try {
       const latest = await fetchSharedData();
+      const ed = doEditing;
+      const oldDo = ed ? latest.deliveries.find(x => x.id === ed.id) : null;
+      if (ed && !oldDo) { err.textContent = t('doEditGone'); btn.disabled = false; return; }
+      if (oldDo && oldDo.pod) { err.textContent = t('doEditSigned'); btn.disabled = false; return; }
+      const baseRecs = ed ? latest.records.filter(r => r.doId !== ed.id) : latest.records;   // 修改时先把旧 DO 扣掉的库存放回，再按新内容重新扣
       // 库存检查：同一货物的多行合并计算
       const need = new Map();
       lines.forEach(l => { const k = groupKey(l); need.set(k, r4((need.get(k) || 0) + l.qty)); });
-      const groups = buildGroups(latest.records);
+      const groups = buildGroups(baseRecs);
       for (const [k, n] of need) {
         const g = groups.find(x => x.key === k);
         const have = g ? g.balance : 0;
@@ -6200,9 +6625,9 @@
         }
       }
       const so = soId ? latest.salesOrders.find(x => x.id === soId) : null;
-      const no = nextNo('DO', latest.deliveries, date.slice(0, 4));
-      const doId = 'do_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-      const alloc = makeAllocator(latest.records);
+      const no = ed ? ed.no : nextDoNo(latest.deliveries, latest.packingLists, date.slice(0, 4));
+      const doId = ed ? ed.id : 'do_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      const alloc = makeAllocator(baseRecs);
       const newRecs = [];
       const dlines = lines.map(l => {
         const pieces = alloc(l.item, l.itemCode, l.qty).map(x => {
@@ -6219,12 +6644,15 @@
         if (l.origQty != null) { out.origQty = l.origQty; out.origUom = l.origUom; }
         return out;
       });
-      const d = { id: doId, no, date, soId: so ? so.id : '', soNo: so ? so.no : '', customer, platform,
+      const d0 = { id: doId, no, date, soId: so ? so.id : '', soNo: so ? so.no : '', customer, customerAddr: customerAddrOf(customer), platform,
         ref: document.getElementById('doRef').value.trim(), note: document.getElementById('doNote').value.trim(),
         status: 'shipped', pod: null, lines: dlines, by: actorName(), at: new Date().toISOString() };
-      const merged = latest.records.concat(newRecs);
+      const d = oldDo ? Object.assign({}, oldDo, d0, { by: oldDo.by, at: oldDo.at, editedBy: actorName(), editedAt: new Date().toISOString() }) : d0;
+      const merged = baseRecs.concat(newRecs);
       await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
-        { deliveries: latest.deliveries.concat([d]), audit: [mkAudit('doCreate', { no, n: lines.length, customer: customer || '—' })] });
+        { deliveries: oldDo ? latest.deliveries.map(x => x.id === doId ? d : x) : latest.deliveries.concat([d]),
+          audit: [mkAudit(oldDo ? 'doEdit' : 'doCreate', { no, n: lines.length, customer: customer || '—' })] });
+      doEditing = null;
       records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
       saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
@@ -6237,9 +6665,17 @@
 
   // ---- 出库单列表 / 签收 / 打印 ----
   function doLineText(l) {
-    const lots = (l.pieces || []).filter(p => p.batch || p.expiryDate).map(p => (p.batch ? '🏷 ' + p.batch : '') + (p.expiryDate ? ' ' + p.expiryDate : '') + ' × ' + p.qty).join('; ');
+    const lots = (l.pieces || []).filter(p => p.expiryDate).map(p => '📅 ' + p.expiryDate + ' × ' + p.qty).join('; ');
     return (l.itemCode ? l.itemCode + ' · ' : '') + l.item + ' × ' + l.qty + ' ' + (l.uom || '')
       + (l.origQty != null ? ' (' + t('convFrom', { qty: l.origQty, uom: l.origUom || '' }) + ')' : '') + (lots ? ' — ' + lots : '');
+  }
+  // 出库单的过期日期：取各行出库批次的过期日期；多个不同日期时显示 最早 ~ 最晚
+  function doExpiryText(d) {
+    const ex = [];
+    (d.lines || []).forEach(l => (l.pieces || []).forEach(p => { if (p.expiryDate) ex.push(p.expiryDate); }));
+    if (!ex.length) return '—';
+    ex.sort();
+    return ex[0] === ex[ex.length - 1] ? ex[0] : ex[0] + ' ~ ' + ex[ex.length - 1];
   }
   function renderDeliveries() {
     const q = doFilter.value.trim().toLowerCase();
@@ -6254,17 +6690,18 @@
       const card = document.createElement('div');
       card.className = 'grn-card';
       card.innerHTML = `
-        <div class="grn-top"><span class="grn-no">🚚 ${escapeHtml(d.no)}</span><span class="po-status ${st}">${t(d.pod ? 'doStatusDelivered' : 'doStatusShipped')}</span></div>
-        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(d.customer || '—')}${d.platform ? ' · 🚢 ' + escapeHtml(d.platform) : ''} · ${escapeHtml(d.date || '')}${d.soNo ? ' · ' + escapeHtml(d.soNo) : ''} · ${t('grnLinesCount', { n: d.lines.length })}${d.by ? ' · ' + escapeHtml(d.by) : ''}</div>
+        <div class="grn-top"><span class="grn-no">🚚 ${escapeHtml(d.no)}</span><span class="expiry-tag ok">📅 ${escapeHtml(doExpiryText(d))}</span></div>
+        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(d.customer || '—')}${d.platform ? ' · 🚢 ' + escapeHtml(d.platform) : ''} · ${escapeHtml(d.date || '')}${d.soNo ? ' · ' + escapeHtml(d.soNo) : ''}${d.plTitle ? ' · 📋 ' + escapeHtml(d.plTitle) : ''} · ${t('grnLinesCount', { n: d.lines.length })}${d.by ? ' · ' + escapeHtml(d.by) : ''}</div>
         ${open ? `<div class="grn-lines">
           ${d.lines.map(l => `<div class="grn-l">${escapeHtml(doLineText(l))}</div>`).join('')}
           ${d.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(d.note)}</div>` : ''}
           ${d.pod ? `<div class="pl-item-meta" style="margin-top:6px;">✅ ${t('podInfo', { name: d.pod.name, date: d.pod.date })}${d.pod.note ? ' · ' + escapeHtml(d.pod.note) : ''}</div>` : ''}
           <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
             ${d.pod ? '' : `<button class="export-btn do-pod">✍ ${t('doPodBtn')}</button>`}
+            ${can('delivery') && !d.plId && !d.pod ? `<button class="export-btn do-edit">✎ ${t('doEditBtn')}</button>` : ''}
             <button class="export-btn do-print">🖨 ${t('doPrintBtn')}</button>
             <button class="export-btn do-export">📄 ${t('grnExportBtn')}</button>
-            ${isAdmin ? `<button class="danger-btn do-del">🗑 ${t('doDeleteBtn')}</button>` : ''}
+            ${can('delivery') ? `<button class="danger-btn do-del">🗑 ${t('doDeleteBtn')}</button>` : ''}
           </div></div>` : ''}`;
       card.addEventListener('click', () => {
         if (expandedDOs.has(d.id)) expandedDOs.delete(d.id); else expandedDOs.add(d.id);
@@ -6273,17 +6710,20 @@
       box.appendChild(card);
       const on = (sel, fn) => card.querySelectorAll(sel).forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); fn(b); }));
       on('.do-pod', () => openPod(d));
+      on('.do-edit', () => openDoModal('', d));
       on('.do-print', () => printDelivery(d));
       on('.do-export', () => exportDeliveryExcel(d));
       on('.do-del', async (b) => {
-        if (!isAdmin || !confirm(t('doDeleteConfirm', { no: d.no }))) return;
+        if (!can('delivery') || !confirm(t(d.plId ? 'doDeleteConfirmPl' : 'doDeleteConfirm', { no: d.no }))) return;
         b.disabled = true;
         try {
           const latest = await fetchSharedData();
           const merged = latest.records.filter(r => r.doId !== d.id);
-          await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
+          // 来自 Packing List 的 DO：把号码保留给它（旧版生成的 DO 没有记录号码时在这里补上）
+          const pls = d.plId ? latest.packingLists.map(p => (p.id === d.plId && !p.doNo) ? Object.assign({}, p, { doNo: d.no }) : p) : latest.packingLists;
+          await pushSharedData(merged, latest.adminKeyHash, pls, undefined,
             { deliveries: latest.deliveries.filter(x => x.id !== d.id), audit: [mkAudit('doDelete', { no: d.no })] });
-          records = merged; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+          records = merged; adminKeyHash = latest.adminKeyHash; packingLists = pls;
           saveLocalCache();
           setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
         } catch (e) { console.error(e); alert(t('syncFailed') + ': ' + e.message); }
@@ -6332,48 +6772,111 @@
 
   function exportDeliveryExcel(d) {
     if (typeof XLSX === 'undefined') { alert(t('xlsxLibFailed')); return; }
-    const aoa = [['DO', d.no], ['Date', d.date || ''], ['Customer', d.customer || ''], ['Vessel/Platform', d.platform || ''], ['SO', d.soNo || ''], ['Ref', d.ref || ''],
-      ['POD', d.pod ? d.pod.name + ' · ' + d.pod.date : ''], [], ['Code', 'Item', 'Qty', 'UOM', 'Batch', 'Expiry']];
+    const addr = d.customerAddr || customerAddrOf(d.customer);
+    const aoa = [['DO', d.no], ['Date', d.date || ''], ['Customer', d.customer || ''], ['Address', addr.replace(/\n/g, ', ')], ['Vessel/Platform', d.platform || ''], ['SO', d.soNo || ''], ['Ref', [d.plTitle, d.ref].filter(Boolean).join(' / ')],
+      ['POD', d.pod ? d.pod.name + ' · ' + d.pod.date : ''], [], ['Code', 'Item', 'Qty', 'UOM', 'Expiry']];
     d.lines.forEach(l => {
-      const ps = (l.pieces && l.pieces.length) ? l.pieces : [{ batch: '', expiryDate: '', qty: l.qty }];
-      ps.forEach(p => aoa.push([l.itemCode || '', l.item, p.qty, l.uom || '', p.batch || '', p.expiryDate || '']));
+      const by = new Map();   // 同一过期日期的数量合并成一行
+      (l.pieces && l.pieces.length ? l.pieces : [{ expiryDate: '', qty: l.qty }]).forEach(p => by.set(p.expiryDate || '', r4((by.get(p.expiryDate || '') || 0) + p.qty)));
+      Array.from(by.entries()).sort().forEach(([ex, q]) => aoa.push([l.itemCode || '', l.item, q, l.uom || '', ex]));
     });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'DO');
     XLSX.writeFile(wb, d.no + '.xlsx');
   }
-  function printDelivery(d) {
+  function printDelivery(d, w0) {
     const e = escapeHtml;
+    const t = (k) => translations.en[k] || k;   // 给客户的 DO 一律用英文
+    const expOf = (l) => Array.from(new Set((l.pieces || []).map(p => p.expiryDate).filter(Boolean))).sort().map(x => e(x)).join('<br>');
     const rows = d.lines.map((l, i) => {
-      const lots = (l.pieces || []).filter(p => p.batch || p.expiryDate).map(p => e((p.batch || '') + (p.expiryDate ? ' / ' + p.expiryDate : ''))).join('<br>');
-      return `<tr><td>${i + 1}</td><td>${e(l.itemCode || '')}</td><td>${e(l.item)}</td><td style="text-align:right">${l.qty}</td><td>${e(l.uom || '')}</td><td>${lots}</td></tr>`;
+      return `<tr><td>${i + 1}</td><td>${e(l.itemCode || '')}</td><td>${e(l.item)}</td><td class="r">${l.qty}</td><td>${e(l.uom || '')}</td><td>${expOf(l)}</td></tr>`;
     }).join('');
+    const refs = [d.soNo, d.plTitle, d.ref].filter(Boolean).join(' / ');
+    const addr = d.customerAddr || customerAddrOf(d.customer);
+    const toBlock = [d.customer ? `<div><b>${e(d.customer)}</b></div>` : '', addr ? `<div>${e(addr).replace(/\n/g, '<br>')}</div>` : '', d.platform ? `<div>${e(d.platform)}</div>` : ''].join('') || '-';
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${e(d.no)}</title><style>
-      body{font-family:Arial,Helvetica,sans-serif;font-size:13px;margin:28px;color:#111}
-      h1{font-size:20px;margin:0}h2{font-size:16px;margin:2px 0 14px}
-      table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top}th{background:#f0f0f0}
-      .meta td{border:none;padding:2px 8px 2px 0}.sig{display:flex;gap:40px;margin-top:60px}.sig div{flex:1;border-top:1px solid #000;padding-top:6px}
-      @media print{body{margin:12mm}}</style></head><body>
-      <h1>FU SHENG ENTERPRISE</h1><h2>${e(t('doPrintTitle'))} ${e(d.no)}</h2>
-      <table class="meta"><tr><td><b>${e(t('dateLabel'))}</b></td><td>${e(d.date || '')}</td><td><b>${e(t('customerLabel'))}</b></td><td>${e(d.customer || '')}</td></tr>
-      <tr><td><b>${e(t('platformLabel'))}</b></td><td>${e(d.platform || '')}</td><td><b>SO / Ref</b></td><td>${e([d.soNo, d.ref].filter(Boolean).join(' / '))}</td></tr></table>
-      <table><thead><tr><th>#</th><th>${e(t('itemCodeLabel'))}</th><th>${e(t('itemNameLabel'))}</th><th>${e(t('qtyLabel'))}</th><th>${e(t('uomLabel'))}</th><th>${e(t('batchLabel'))} / ${e(t('expiryDateLabel'))}</th></tr></thead><tbody>${rows}</tbody></table>
+      body{font-family:Arial,Helvetica,sans-serif;font-size:12px;margin:28px;color:#111}
+      .center{text-align:center}h1{font-size:20px;margin:0 0 4px}.small{font-size:11px;margin:2px 0}
+      h2{font-size:16px;margin:18px 0 14px;text-align:center}
+      .info{display:flex;justify-content:space-between;margin-bottom:12px}.info td{padding:1px 8px 1px 0;vertical-align:top;border:none}
+      table{width:100%;border-collapse:collapse}table.items{margin-top:8px}th,td{border:none;padding:6px 8px;text-align:left;vertical-align:top}th{border-bottom:1px solid #000}td.r{text-align:right}
+      .info table{width:auto}.to{line-height:1.45;max-width:60%}
+      .sig{display:flex;gap:40px;margin-top:40px;break-inside:avoid}.sig div{flex:1;border-top:1px solid #000;padding-top:6px}
+      @page{size:A4;margin:12mm}table.frame{width:186mm;border-collapse:collapse;margin:0}table.frame>tbody>tr>td{padding:0;border:0}td.fbody{vertical-align:top}td.ffoot{vertical-align:bottom;height:1px}
+      @media print{body{margin:0}table.frame{height:268mm}}</style></head><body>
+      <table class="frame"><tbody><tr><td class="fbody">
+      <div class="center"><h1>${e(DO_COMPANY.name)}</h1>
+        <div class="small"><b>${e(DO_COMPANY.regLine)}</b></div><div class="small">${e(DO_COMPANY.address)}</div>
+        <div class="small">${e(DO_COMPANY.contact)}</div><div class="small">${e(DO_COMPANY.email)}</div></div>
+      <h2>${e(t('doPrintTitle'))}</h2>
+      <div class="info">
+        <div class="to"><div><b>${e(t('customerLabel'))}</b></div>${toBlock}</div>
+        <table><tr><td>No.</td><td><b>${e(d.no)}</b></td></tr><tr><td>${e(t('dateLabel'))}</td><td>${e(d.date || '')}</td></tr>${refs ? `<tr><td>Ref</td><td>${e(refs)}</td></tr>` : ''}</table>
+      </div>
+      <table class="items"><thead><tr><th>#</th><th>${e(t('itemCodeLabel'))}</th><th>${e(t('itemNameLabel'))}</th><th class="r">${e(t('qtyLabel'))}</th><th>${e(t('uomLabel'))}</th><th>${e(t('expiryDateLabel'))}</th></tr></thead><tbody>${rows}</tbody></table>
       ${d.note ? `<p>${e(d.note)}</p>` : ''}
+      </td></tr><tr><td class="ffoot">
       <div class="sig"><div>${e(t('printDeliveredBy'))}</div><div>${e(t('printReceivedBy'))}${d.pod ? '<br>' + e(d.pod.name + ' · ' + d.pod.date) : ''}</div></div>
+      </td></tr></tbody></table>
+      <script>(function(){function fit(){var f=document.querySelector('table.frame');if(!f)return;f.style.height='auto';var pg=268*3.7795275591;var h=f.getBoundingClientRect().height;var n=Math.max(1,Math.ceil(h/pg));f.style.height=(n*268)+'mm';}window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);})();<\/script>
       <script>window.onload=function(){window.print()}<\/script></body></html>`;
     const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-    const w = window.open(url, '_blank');
-    if (!w) alert(t('popupBlocked'));
+    const w = w0 || window.open(url, '_blank');
+    if (!w) { alert(translations[currentLang].popupBlocked || translations.en.popupBlocked); return; }
+    if (w0) w0.location.href = url;
+  }
+
+  // ---- 从 Packing List 生成 DO（只生成单据，不再扣库存——库存在备货时已经扣过了）----
+  async function ensureDoFromPl(plId, preOpened) {
+    const pl0 = packingLists.find(p => p.id === plId);
+    if (!pl0) return null;
+    const have = deliveries.find(x => x.plId === plId);
+    if (have) return have;
+    if (!can('delivery')) { alert(t('doFromPlAdminOnly')); return null; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { alert(t('ghConfigMissing')); return null; }
+    const pending = pl0.items.filter(i => !i.done).length;
+    if (pending) { alert(t('doFromPlNeedAll', { n: pending })); return null; }
+    const latest = await fetchSharedData();
+    const exist = latest.deliveries.find(x => x.plId === plId);
+    if (exist) { deliveries = latest.deliveries; return exist; }
+    const pl = latest.packingLists.find(p => p.id === plId) || pl0;
+    let custName = (pl.customer || '').trim();
+    if (!custName) {
+      const ans = prompt(t('doFromPlAskCustomer'), '');
+      if (ans === null) return null;
+      custName = ans.trim();
+    }
+    const lines = [];
+    pl.items.filter(i => i.done && i.qtyTaken > 0).forEach(i => {
+      if (Array.isArray(i.allocations) && i.allocations.length) {
+        i.allocations.forEach(al => lines.push({ item: al.item, itemCode: al.itemCode || '', qty: al.qty, uom: al.uom || i.uom || '',
+          pieces: (al.batches || []).map(x => ({ batch: x.batch || '', expiryDate: x.expiryDate || '', loc: x.loc || '', qty: x.qty })) }));
+      } else {
+        lines.push({ item: i.item, itemCode: i.itemCode || '', qty: i.qtyTaken, uom: i.uom || '', pieces: [] });
+      }
+    });
+    const date = new Date().toISOString().slice(0, 10);
+    const no = (pl.doNo && !latest.deliveries.some(x => x.no === pl.doNo)) ? pl.doNo : nextDoNo(latest.deliveries, latest.packingLists, date.slice(0, 4));
+    const d = { id: 'do_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), no, date, soId: '', soNo: '',
+      customer: custName, customerAddr: customerAddrOf(custName), platform: pl.platform || '', ref: '', note: '', status: 'shipped', pod: null, lines,
+      plId: pl.id, plTitle: pl.title, by: actorName(), at: new Date().toISOString() };
+    const pls = latest.packingLists.map(p => p.id === plId ? Object.assign({}, p, { doNo: no }) : p);
+    await pushSharedData(latest.records, latest.adminKeyHash, pls, undefined,
+      { deliveries: latest.deliveries.concat([d]), audit: [mkAudit('doCreate', { no, n: lines.length, customer: custName || '—' })] });
+    records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = pls;
+    saveLocalCache();
+    setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+    return d;
   }
 
   // ================= 备份与恢复（管理员）=================
-  const BK_LAST_KEY = 'srsLastBackup';
   const bkModal = document.getElementById('backupModal');
   let bkLoaded = null;   // 已读取的备份文件内容
 
   function bkLastText() {
     let iso = '';
-    try { iso = localStorage.getItem(BK_LAST_KEY) || ''; } catch (e) {}
+    try { iso = localStorage.getItem(bkLastKey()) || ''; } catch (e) {}
     if (!iso) return '';
     const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
     return t('bkLastAt', { date: iso.slice(0, 10), n: days });
@@ -6381,15 +6884,15 @@
   function renderBackupReminder() {
     const el = document.getElementById('backupReminder');
     let iso = '';
-    try { iso = localStorage.getItem(BK_LAST_KEY) || ''; } catch (e) {}
+    try { iso = localStorage.getItem(bkLastKey()) || ''; } catch (e) {}
     const days = iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) : 9999;
-    const show = isAdmin && days > 30;
+    const show = fullAdmin() && days > 30;
     el.style.display = show ? 'block' : 'none';
     el.textContent = '💾 ' + (iso ? t('bkRemindOld', { n: days }) : t('bkRemindNever'));
   }
   document.getElementById('backupReminder').addEventListener('click', () => document.getElementById('backupBtn').click());
 
-  const BK_FIELDS = ['records', 'packingLists', 'itemMaster', 'locations', 'receipts', 'purchaseOrders', 'suppliers', 'returns', 'salesOrders', 'deliveries'];
+  const BK_FIELDS = ['records', 'packingLists', 'itemMaster', 'locations', 'receipts', 'purchaseOrders', 'suppliers', 'customers', 'returns', 'salesOrders', 'deliveries'];
   function bkCounts(d) {
     const c = {};
     BK_FIELDS.forEach(k => { c[k] = Array.isArray(d[k]) ? d[k].length : 0; });
@@ -6399,7 +6902,7 @@
     const latest = await fetchSharedData();   // 总是取最新的共享数据
     const data = {};
     BK_FIELDS.forEach(k => { data[k] = latest[k] || []; });
-    const bk = { srsBackup: 1, app: 'SRS', createdAt: new Date().toISOString(), createdBy: actorName(), data };
+    const bk = { srsBackup: 1, app: 'SRS', site: curSiteId, siteName: siteName(), createdAt: new Date().toISOString(), createdBy: actorName(), data };
     if (includeArchive) {
       try { bk.archive = await fetchArchiveRecords(); } catch (e) { bk.archive = []; }
     }
@@ -6408,7 +6911,7 @@
   }
   async function downloadBackup(bk, password, prefix) {
     const text = password ? await encryptPayload(bk, password) : JSON.stringify(bk);
-    const name = (prefix || 'srs-backup') + '-' + new Date().toISOString().slice(0, 10) + (password ? '' : '-PLAIN') + '.json';
+    const name = (prefix || 'srs-backup') + (curSiteId === 'main' ? '' : '-' + curSiteId) + '-' + new Date().toISOString().slice(0, 10) + (password ? '' : '-PLAIN') + '.json';
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
     a.download = name;
@@ -6418,7 +6921,7 @@
   }
 
   document.getElementById('backupBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!fullAdmin()) return;
     document.getElementById('bkLast').textContent = bkLastText() || t('bkNever');
     ['bkError', 'bkRestoreError'].forEach(id => { document.getElementById(id).textContent = ''; });
     document.getElementById('bkPreview').textContent = '';
@@ -6440,7 +6943,7 @@
     try {
       const bk = await buildBackup(document.getElementById('bkIncludeArchive').checked);
       await downloadBackup(bk, pw);
-      try { localStorage.setItem(BK_LAST_KEY, new Date().toISOString()); } catch (e) {}
+      try { localStorage.setItem(bkLastKey(), new Date().toISOString()); } catch (e) {}
       document.getElementById('bkLast').textContent = bkLastText();
       err.style.color = 'var(--in)';
       err.textContent = t('bkDone', { n: bk.counts.records });
@@ -6469,7 +6972,7 @@
       if (!parsed || parsed.srsBackup !== 1 || !parsed.data || !Array.isArray(parsed.data.records)) { err.textContent = t('bkInvalid'); return; }
       bkLoaded = { bk: parsed, encrypted, password: encrypted ? document.getElementById('bkRestorePassword').value : '' };
       const c = parsed.counts || bkCounts(parsed.data);
-      const cur = bkCounts({ records, packingLists, itemMaster, locations, receipts, purchaseOrders, suppliers, returns, salesOrders, deliveries });
+      const cur = bkCounts({ records, packingLists, itemMaster, locations, receipts, purchaseOrders, suppliers, customers, returns, salesOrders, deliveries });
       const lbl = { records: t('bkRecords'), packingLists: 'Packing List', receipts: 'GRN', purchaseOrders: 'PO', salesOrders: 'SO', deliveries: 'DO', returns: 'RTN', itemMaster: t('bkMaster') };
       prev.innerHTML = `<b>${t('bkPreviewHead', { date: escapeHtml((parsed.createdAt || '').slice(0, 16).replace('T', ' ')) })}</b><br>` +
         Object.keys(lbl).map(k => `${escapeHtml(lbl[k])}: ${c[k] || 0} <span style="opacity:.6">(${t('bkNow')} ${cur[k] || 0})</span>`).join(' · ')
@@ -6480,10 +6983,11 @@
   });
 
   document.getElementById('bkRestoreBtn').addEventListener('click', async () => {
-    if (!isAdmin || !bkLoaded) return;
+    if (!fullAdmin() || !bkLoaded) return;
     const err = document.getElementById('bkRestoreError');
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
+    if ((bkLoaded.bk.site || 'main') !== curSiteId && !confirm(t('bkSiteMismatch', { from: bkLoaded.bk.siteName || bkLoaded.bk.site || 'main', to: siteName() }))) return;
     if (!confirm(t('bkRestoreConfirm', { n: bkLoaded.bk.data.records.length }))) return;
     const withArchive = document.getElementById('bkRestoreArchiveWrap').style.display !== 'none' && document.getElementById('bkRestoreArchive').checked;
     const btn = document.getElementById('bkRestoreBtn');
@@ -6497,11 +7001,11 @@
       if (withArchive) await pushArchiveRecords(bkLoaded.bk.archive);
       const d = bkLoaded.bk.data;
       const opts = { audit: [mkAudit('restore', { date: (bkLoaded.bk.createdAt || '').slice(0, 10), n: d.records.length })] };
-      ['itemMaster', 'locations', 'receipts', 'purchaseOrders', 'suppliers', 'returns', 'salesOrders', 'deliveries'].forEach(k => { opts[k] = Array.isArray(d[k]) ? d[k] : []; });
+      ['itemMaster', 'locations', 'receipts', 'purchaseOrders', 'suppliers', 'customers', 'returns', 'salesOrders', 'deliveries'].forEach(k => { opts[k] = Array.isArray(d[k]) ? d[k] : []; });
       await pushSharedData(d.records, latest.adminKeyHash, Array.isArray(d.packingLists) ? d.packingLists : [], undefined, opts);
       records = d.records; adminKeyHash = latest.adminKeyHash; packingLists = Array.isArray(d.packingLists) ? d.packingLists : [];
       saveLocalCache();
-      try { localStorage.removeItem(PL_DRAFT_KEY); plDraft = {}; } catch (e) {}
+      try { localStorage.removeItem(plDraftKey()); plDraft = {}; } catch (e) {}
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
       bkModal.classList.remove('open');
       bkLoaded = null;
@@ -6763,7 +7267,7 @@
     document.getElementById('srBody').innerHTML = html;
   }
   document.getElementById('stockReportBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!can('reports')) return;
     const now = new Date();
     document.getElementById('srFrom').value = new Date(now.getFullYear(), now.getMonth(), 2).toISOString().slice(0, 10).slice(0, 8) + '01';
     document.getElementById('srTo').value = now.toISOString().slice(0, 10);
@@ -6829,7 +7333,7 @@
     }));
   }
   document.getElementById('suppliersBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!can('receiving')) return;
     supError.textContent = ''; supClearForm(); renderSuppliersModal(); suppliersModal.classList.add('open');
   });
   document.getElementById('supClose').addEventListener('click', () => suppliersModal.classList.remove('open'));
@@ -6852,6 +7356,54 @@
     renderSuppliersModal();
   });
 
+  // ---- 客户登记（公司名 + 地址）----
+  const customersModal = document.getElementById('customersModal');
+  const cuError = document.getElementById('cuError');
+  let cuEditingId = '';
+  function cuClearForm() { document.getElementById('cuName').value = ''; document.getElementById('cuAddr').value = ''; cuEditingId = ''; }
+  function renderCustomersModal() {
+    const rows = customers.slice().sort((a, b) => a.name.localeCompare(b.name)).map(x => `<div class="user-row">
+      <span>🏢 <b>${escapeHtml(x.name)}</b><br><span class="me" style="white-space:pre-line;">${escapeHtml(x.address || '')}</span></span>
+      <span><button class="edit-btn cu-edit" data-id="${escapeHtml(x.id)}">${t('editBtn')}</button><button class="del-btn cu-del" data-id="${escapeHtml(x.id)}">✕</button></span></div>`);
+    const el = document.getElementById('cuList');
+    el.innerHTML = rows.join('') || `<div class="pl-item-meta">${t('cuEmpty')}</div>`;
+    el.querySelectorAll('.cu-edit').forEach(b => b.addEventListener('click', () => {
+      const x = customers.find(y => y.id === b.dataset.id); if (!x) return;
+      cuEditingId = x.id;
+      document.getElementById('cuName').value = x.name; document.getElementById('cuAddr').value = x.address || '';
+    }));
+    el.querySelectorAll('.cu-del').forEach(b => b.addEventListener('click', async () => {
+      const x = customers.find(y => y.id === b.dataset.id); if (!x || !confirm(t('cuDeleteConfirm', { name: x.name }))) return;
+      cuError.textContent = '';
+      try { await pushExtra({ customers: customers.filter(y => y.id !== x.id), audit: [mkAudit('cuDel', { name: x.name })] }); }
+      catch (e) { cuError.textContent = t('syncFailed') + ': ' + e.message; }
+      renderCustomersModal(); refreshCustomerList();
+    }));
+  }
+  document.querySelectorAll('.js-customers-btn').forEach(b => b.addEventListener('click', () => {
+    if (!(can('delivery') || can('packing'))) return;
+    cuError.textContent = ''; cuClearForm(); renderCustomersModal(); customersModal.classList.add('open');
+  }));
+  document.getElementById('cuClose').addEventListener('click', () => customersModal.classList.remove('open'));
+  document.getElementById('cuSaveBtn').addEventListener('click', async () => {
+    const name = document.getElementById('cuName').value.trim();
+    const address = document.getElementById('cuAddr').value.replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean).join('\n');
+    if (!name) { cuError.textContent = t('cuNameReq'); return; }
+    if (customers.some(x => x.id !== cuEditingId && x.name.toLowerCase() === name.toLowerCase())) { cuError.textContent = t('cuExists'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { cuError.textContent = t('ghConfigMissing'); return; }
+    cuError.textContent = '';
+    const rec = { id: cuEditingId || 'cu_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name, address };
+    try {
+      await pushExtra({
+        customers: cuEditingId ? customers.map(x => x.id === cuEditingId ? rec : x) : customers.concat([rec]),
+        audit: [mkAudit('cuSave', { name })]
+      });
+      cuClearForm();
+    } catch (e) { cuError.textContent = t('syncFailed') + ': ' + e.message; }
+    renderCustomersModal(); refreshCustomerList();
+  });
+
   // ---- 退货 ----
   const rtnModal = document.getElementById('rtnModal');
   let rtnCtx = null;
@@ -6859,7 +7411,7 @@
     return (list || returns).filter(x => x.recId === recId).reduce((n, x) => r4(n + x.qty), 0);
   }
   function openReturn(receipt, line) {
-    if (!isAdmin) return;
+    if (!can('receiving')) return;
     rtnCtx = { receiptId: receipt.id, recId: line.recId };
     const max = r4(line.qty - rtnQtyOf(line.recId));
     document.getElementById('rtnInfo').textContent = receipt.no + ' · ' + receiptLineText(line);
@@ -6873,7 +7425,7 @@
   }
   document.getElementById('rtnCancel').addEventListener('click', () => rtnModal.classList.remove('open'));
   document.getElementById('rtnSave').addEventListener('click', async () => {
-    if (!isAdmin || !rtnCtx) return;
+    if (!can('receiving') || !rtnCtx) return;
     const err = document.getElementById('rtnError');
     const qty = parseFloat(document.getElementById('rtnQty').value);
     const date = document.getElementById('rtnDate').value;
@@ -6939,10 +7491,10 @@
       card.innerHTML = `
         <div class="grn-top"><span class="grn-no">↩ ${escapeHtml(x.no)}</span><span class="pl-card-meta" style="margin:0;">${escapeHtml(x.date || '')}</span></div>
         <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(x.supplier || '—')} · ${escapeHtml(x.grnNo || '')} · ${escapeHtml((x.itemCode ? x.itemCode + ' · ' : '') + x.item)} × ${x.qty} ${escapeHtml(x.uom || '')} · ${t('rtnR_' + x.reason)}${x.note ? ' · ' + escapeHtml(x.note) : ''}${x.wasQc === 'reject' ? ' · ' + t('qcRejectedTag') : ''}</div>
-        ${isAdmin ? `<div style="margin-top:8px;"><button class="danger-btn rtn-del">🗑 ${t('rtnUndoBtn')}</button></div>` : ''}`;
+        ${can('receiving') ? `<div style="margin-top:8px;"><button class="danger-btn rtn-del">🗑 ${t('rtnUndoBtn')}</button></div>` : ''}`;
       box.appendChild(card);
       card.querySelectorAll('.rtn-del').forEach(b => b.addEventListener('click', async () => {
-        if (!isAdmin || !confirm(t('rtnDeleteConfirm', { no: x.no }))) return;
+        if (!can('receiving') || !confirm(t('rtnDeleteConfirm', { no: x.no }))) return;
         b.disabled = true;
         try {
           const latest = await fetchSharedData();
@@ -7099,7 +7651,7 @@
         ${open ? `<div class="grn-lines">
           ${po.lines.map(l => `<div class="grn-l">${escapeHtml((l.itemCode ? l.itemCode + ' · ' : '') + l.item)} — ${t('poReceivedOf', { got: got[l.id] || 0, qty: l.qty })} ${escapeHtml(l.uom || '')}</div>`).join('')}
           ${po.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(po.note)}</div>` : ''}
-          ${isAdmin ? `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          ${can('receiving') ? `<div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
             ${(st === 'open' || st === 'partial') ? `<button class="export-btn po-receive">📥 ${t('poReceiveBtn')}</button><button class="export-btn po-close">✔ ${t('poCloseBtn')}</button>` : ''}
             ${st === 'open' ? `<button class="danger-btn po-cancel">✖ ${t('poCancelBtn')}</button>` : ''}
           </div>` : ''}</div>` : ''}`;
@@ -7154,7 +7706,7 @@
     row.querySelector('.grn-remove').addEventListener('click', () => row.remove());
   }
   document.getElementById('newPoBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!can('receiving')) return;
     document.getElementById('poDate').value = new Date().toISOString().slice(0, 10);
     ['poSupplier', 'poExpected', 'poNote'].forEach(id => { document.getElementById(id).value = ''; });
     refreshSupplierList();
@@ -7166,7 +7718,7 @@
   document.getElementById('poAddLineBtn').addEventListener('click', addPoLine);
   document.getElementById('poCancel').addEventListener('click', () => poModal.classList.remove('open'));
   document.getElementById('poSave').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!can('receiving')) return;
     const err = document.getElementById('poError');
     const date = document.getElementById('poDate').value;
     const supplier = document.getElementById('poSupplier').value.trim();
@@ -7242,11 +7794,11 @@
         <div class="grn-top"><span class="grn-no">📥 ${escapeHtml(r.no)}</span><span class="pl-card-meta" style="margin:0;">${escapeHtml(r.date || '')}</span></div>
         <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(r.supplier || '—')}${r.ref ? ' · ' + escapeHtml(r.ref) : ''}${r.poNo && r.poNo !== r.ref ? ' · ' + escapeHtml(r.poNo) : ''} · ${t('grnLinesCount', { n: r.lines.length })}${r.by ? ' · ' + escapeHtml(r.by) : ''}</div>
         ${open ? `<div class="grn-lines">
-          ${r.lines.map(l => `<div class="grn-l">${escapeHtml(receiptLineText(l))}${l.qc === 'hold' ? ` <span class="qc-tag">${t('qcHoldTag')}</span>` : ''}${l.qc === 'reject' ? ` <span class="qc-tag rej">${t('qcRejectedTag')}</span>` : ''}${(l.qc === 'hold' && isAdmin) ? `<span class="qc-btns"><button class="qc-pass" data-rec="${escapeHtml(l.recId)}">✅ ${t('qcPassBtn')}</button><button class="qc-rej" data-rec="${escapeHtml(l.recId)}">⛔ ${t('qcRejectBtn')}</button></span>` : ''}${rtnQtyOf(l.recId) > 0 ? ` <span class="qc-tag">${t('rtnReturnedTag', { n: rtnQtyOf(l.recId) })}</span>` : ''}${(isAdmin && l.qc !== 'hold' && r4(l.qty - rtnQtyOf(l.recId)) > 0) ? `<span class="qc-btns"><button class="rtn-btn" data-rec="${escapeHtml(l.recId)}">↩ ${t('rtnBtn')}</button></span>` : ''}</div>`).join('')}
+          ${r.lines.map(l => `<div class="grn-l">${escapeHtml(receiptLineText(l))}${l.qc === 'hold' ? ` <span class="qc-tag">${t('qcHoldTag')}</span>` : ''}${l.qc === 'reject' ? ` <span class="qc-tag rej">${t('qcRejectedTag')}</span>` : ''}${(l.qc === 'hold' && can('receiving')) ? `<span class="qc-btns"><button class="qc-pass" data-rec="${escapeHtml(l.recId)}">✅ ${t('qcPassBtn')}</button><button class="qc-rej" data-rec="${escapeHtml(l.recId)}">⛔ ${t('qcRejectBtn')}</button></span>` : ''}${rtnQtyOf(l.recId) > 0 ? ` <span class="qc-tag">${t('rtnReturnedTag', { n: rtnQtyOf(l.recId) })}</span>` : ''}${(can('receiving') && l.qc !== 'hold' && r4(l.qty - rtnQtyOf(l.recId)) > 0) ? `<span class="qc-btns"><button class="rtn-btn" data-rec="${escapeHtml(l.recId)}">↩ ${t('rtnBtn')}</button></span>` : ''}</div>`).join('')}
           ${r.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(r.note)}</div>` : ''}
           <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
             <button class="export-btn grn-export" data-id="${escapeHtml(r.id)}">📄 ${t('grnExportBtn')}</button>
-            ${isAdmin ? `<button class="danger-btn grn-del" data-id="${escapeHtml(r.id)}">🗑 ${t('grnDeleteBtn')}</button>` : ''}
+            ${can('receiving') ? `<button class="danger-btn grn-del" data-id="${escapeHtml(r.id)}">🗑 ${t('grnDeleteBtn')}</button>` : ''}
           </div></div>` : ''}`;
       card.addEventListener('click', () => {
         if (expandedReceipts.has(r.id)) expandedReceipts.delete(r.id); else expandedReceipts.add(r.id);
@@ -7260,7 +7812,7 @@
       }));
       card.querySelectorAll('.qc-pass, .qc-rej').forEach(b => b.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (!isAdmin) return;
+        if (!can('receiving')) return;
         const result = b.classList.contains('qc-pass') ? 'pass' : 'reject';
         const line = r.lines.find(x => x.recId === b.dataset.rec);
         if (!line || !confirm(t('qcConfirm', { item: line.item, result: result === 'pass' ? t('qcPass') : t('qcReject') }))) return;
@@ -7290,7 +7842,7 @@
       card.querySelectorAll('.grn-export').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); exportReceiptExcel(r); }));
       card.querySelectorAll('.grn-del').forEach(b => b.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (!isAdmin || !confirm(t('grnDeleteConfirm', { no: r.no }))) return;
+        if (!can('receiving') || !confirm(t('grnDeleteConfirm', { no: r.no }))) return;
         b.disabled = true;
         try {
           const latest = await fetchSharedData();
@@ -7340,7 +7892,7 @@
       <div class="field"><label>${t('batchLabel')}</label><input type="text" class="gl-batch" autocomplete="off" value="${escapeHtml(pre.batch || '')}"></div>
       <div class="field"><label>${t('expiryDateLabel')}</label><input type="date" class="gl-exp" value="${escapeHtml(pre.expiryDate || '')}"></div>
       <div class="field"><label>${t('locationLabel')}</label><input type="text" class="gl-loc" list="locList" autocomplete="off" value="${escapeHtml(pre.loc || '')}"></div>
-      <div class="field" data-admin-only><label>${t('priceLabel')}</label><input type="number" class="gl-price" min="0" step="any" value="${pre.price || ''}"></div>
+      <div class="field" data-perm="receiving"><label>${t('priceLabel')}</label><input type="number" class="gl-price" min="0" step="any" value="${pre.price || ''}"></div>
       <div class="field"><label>${t('qcLabel')}</label><select class="gl-qc">
         <option value="pass"${(pre.qc || 'pass') === 'pass' ? ' selected' : ''}>${t('qcPass')}</option>
         <option value="hold"${pre.qc === 'hold' ? ' selected' : ''}>${t('qcHold')}</option>
@@ -7375,7 +7927,7 @@
   }
 
   document.getElementById('newReceiptBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!can('receiving')) return;
     document.getElementById('grnDate').value = new Date().toISOString().slice(0, 10);
     ['grnSupplier', 'grnRef', 'grnNote'].forEach(id => { document.getElementById(id).value = ''; });
     refreshSupplierList();
@@ -7416,7 +7968,7 @@
   document.getElementById('grnCancel').addEventListener('click', () => grnModal.classList.remove('open'));
 
   document.getElementById('grnSave').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!can('receiving')) return;
     const err = document.getElementById('grnError');
     const date = document.getElementById('grnDate').value;
     const supplier = document.getElementById('grnSupplier').value.trim();
@@ -7545,7 +8097,7 @@
   }
 
   document.getElementById('locationsBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!can('master')) return;
     locError.textContent = '';
     renderLocationsModal();
     locationsModal.classList.add('open');
@@ -7584,7 +8136,7 @@
     tfLot.innerHTML = g ? g.batches.map((b, i) => `<option value="${i}">${escapeHtml(lotLabel(b, g.uom))}</option>`).join('') : '';
   }
   function openTransfer(itemName) {
-    if (!isAdmin) return;
+    if (!can('adjust')) return;
     tfGroups = buildGroups().filter(g => g.batches.length).sort((a, b) => a.item.localeCompare(b.item));
     document.getElementById('tfItemList').innerHTML = tfGroups.map(g => `<option value="${escapeHtml(groupLabel(g))}">`).join('');
     const pre = tfGroups.find(g => g.item === itemName);
@@ -7601,7 +8153,7 @@
   document.getElementById('tfCancel').addEventListener('click', () => transferModal.classList.remove('open'));
 
   document.getElementById('tfApply').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!can('adjust')) return;
     const err = document.getElementById('tfError');
     const g0 = tfGroups.find(x => groupLabel(x) === tfItem.value.trim());
     const lot0 = g0 && g0.batches[Number(tfLot.value)];
@@ -7687,7 +8239,7 @@
   }
 
   function openStockTake(filterText) {
-    if (!isAdmin) return;
+    if (!can('adjust')) return;
     stCounts = new Map();
     stFilter.value = filterText || '';
     document.getElementById('stNote').value = '';
@@ -7701,7 +8253,7 @@
   document.getElementById('stCancel').addEventListener('click', () => stockTakeModal.classList.remove('open'));
 
   document.getElementById('stApply').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!can('adjust')) return;
     const err = document.getElementById('stError');
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
@@ -7824,7 +8376,7 @@
   }
 
   document.getElementById('masterBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!can('master')) return;
     masterDraft = new Map();
     masterNew = [];
     masterDeleted = new Set();
@@ -7847,7 +8399,7 @@
   });
 
   document.getElementById('masterSave').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!can('master')) return;
     const err = document.getElementById('masterError');
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
@@ -7892,11 +8444,11 @@
     add: 'actAdd', import: 'actImport', edit: 'actEdit', delete: 'actDelete',
     plCreate: 'actPlCreate', plDelete: 'actPlDelete', plTake: 'actPlTake', plUndo: 'actPlUndo',
     clearAll: 'actClearAll', archive: 'actArchive', adjust: 'actAdjust', master: 'actMaster',
-    userAdd: 'actUserAdd', userRemove: 'actUserRemove', enable: 'actEnable',
+    userAdd: 'actUserAdd', userPerm: 'actUserPerm', userRemove: 'actUserRemove', enable: 'actEnable',
     locAdd: 'actLocAdd', locDel: 'actLocDel', transfer: 'actTransfer', grn: 'actGrn', grnDelete: 'actGrnDelete',
     poCreate: 'actPoCreate', poClose: 'actPoClose', poCancel: 'actPoCancel', qcRelease: 'actQc',
-    supSave: 'actSupSave', supDel: 'actSupDel', rtn: 'actRtn', rtnDelete: 'actRtnDelete',
-    restore: 'actRestore', soCreate: 'actSoCreate', soClose: 'actSoClose', soCancel: 'actSoCancel', doCreate: 'actDoCreate', doPod: 'actDoPod', doDelete: 'actDoDelete'
+    doEdit: 'actDoEdit', cuSave: 'actCuSave', cuDel: 'actCuDel', supSave: 'actSupSave', supDel: 'actSupDel', rtn: 'actRtn', rtnDelete: 'actRtnDelete',
+    restore: 'actRestore', siteCreate: 'actSiteCreate', soCreate: 'actSoCreate', soClose: 'actSoClose', soCancel: 'actSoCancel', doCreate: 'actDoCreate', doPod: 'actDoPod', doDelete: 'actDoDelete'
   };
   function auditText(e) {
     const key = AUDIT_KEYS[e.a];
@@ -7922,7 +8474,7 @@
     st.className = 'modal-status';
   }
   document.getElementById('activityBtn').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!fullAdmin()) return;
     activityFilter.value = '';
     activityModal.classList.add('open');
     renderActivity();
@@ -7935,19 +8487,60 @@
   const usersModal = document.getElementById('usersModal');
   const usersError = document.getElementById('usersError');
 
+  const permLabelKey = { stock: 'permStockShort', adjust: 'permAdjustShort', master: 'permMasterShort', reports: 'permReportsShort', packing: 'permPackingShort', receiving: 'permReceivingShort', delivery: 'permDeliveryShort' };
+  function permSummary(m) {
+    if (!m || m.role === 'admin') return 'admin';
+    return (m.perms && m.perms.length) ? m.perms.join(',') : 'readonly';
+  }
+  function userAccessTags(u) {
+    if (u.role === 'admin') return `<span class="perm-tag">${t('permTagAdmin')}</span>`;
+    const ps = (u.perms || []).filter(k => PERM_KEYS.includes(k));
+    if (!ps.length) return `<span class="perm-tag">${t('permTagReadonly')}</span>`;
+    return ps.map(k => `<span class="perm-tag">${t(permLabelKey[k])}</span>`).join('');
+  }
+  function syncRoleUi() {
+    const role = document.getElementById('userRole').value;
+    document.getElementById('userPermGrid').style.display = role === 'custom' ? 'grid' : 'none';
+  }
+  function fillAccessForm(u) {
+    const role = u && u.role === 'admin' ? 'admin' : (u && (u.perms || []).length ? 'custom' : 'readonly');
+    document.getElementById('userRole').value = role;
+    document.querySelectorAll('.perm-cb').forEach(cb => { cb.checked = !!(u && (u.perms || []).includes(cb.dataset.p)); });
+    syncRoleUi();
+  }
+  function readAccessForm() {
+    const role = document.getElementById('userRole').value;
+    if (role === 'admin') return { role: 'admin', perms: [] };
+    if (role === 'readonly') return { role: 'user', perms: [] };
+    const perms = [...document.querySelectorAll('.perm-cb')].filter(cb => cb.checked).map(cb => cb.dataset.p);
+    return { role: 'user', perms };
+  }
+  document.getElementById('userRole').addEventListener('change', syncRoleUi);
+
   function renderUsersModal() {
     const v2 = authState.mode === 'v2';
     document.getElementById('usersSub').textContent = t(v2 ? 'usersSub' : 'usersEnableSub');
     document.getElementById('usersEnableWarn').style.display = v2 ? 'none' : 'block';
     document.getElementById('usersAddBtn').textContent = t(v2 ? 'userAddBtn' : 'enableAccountsBtn');
+    document.getElementById('userAccessBox').style.display = v2 ? '' : 'none';
+    syncRoleUi();
     const listEl = document.getElementById('usersList');
     const entries = Object.entries(authState.usersPayload || {});
     listEl.innerHTML = v2 && entries.length
       ? entries.map(([uid, u]) => `<div class="user-row">
-          <span>👤 ${escapeHtml(u.id)} ${uid === session.uid ? `<span class="me">(${t('userYou')})</span>` : ''}</span>
-          ${uid === session.uid ? '' : `<button class="del-btn" data-uid="${uid}">✕ ${t('userRemoveBtn')}</button>`}
+          <span>👤 ${escapeHtml(u.id)} ${uid === session.uid ? `<span class="me">(${t('userYou')})</span>` : ''}<br>${userAccessTags(u)}</div>
+          <span style="display:flex; gap:6px;"><button class="edit-btn perm-edit-btn" data-uid="${uid}">✎ ${t('permEditBtn')}</button>
+          ${uid === session.uid ? '' : `<button class="del-btn" data-uid="${uid}">✕ ${t('userRemoveBtn')}</button>`}</span>
         </div>`).join('')
       : '';
+    listEl.querySelectorAll('.perm-edit-btn').forEach(btn => btn.addEventListener('click', () => {
+      const u = authState.usersPayload[btn.dataset.uid];
+      if (!u) return;
+      document.getElementById('userNewId').value = u.id;
+      document.getElementById('userNewPw').value = '';
+      fillAccessForm(u);
+      usersError.textContent = t('permPwBlank');
+    }));
     listEl.querySelectorAll('.del-btn').forEach(btn => btn.addEventListener('click', async () => {
       if (!confirm(t('userRemoveConfirm'))) return;
       btn.disabled = true;
@@ -7963,25 +8556,38 @@
   }
 
   document.getElementById('usersBtn').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!fullAdmin()) return;
     usersError.textContent = '';
     document.getElementById('userNewId').value = '';
     document.getElementById('userNewPw').value = '';
+    fillAccessForm(null);
     usersModal.classList.add('open');
     renderUsersModal();
   });
   document.getElementById('usersClose').addEventListener('click', () => usersModal.classList.remove('open'));
 
   // 添加用户 / 重设密码（主密钥不变）；未启用账号时，第一个用户即触发转换
-  async function addOrResetUser(id, password) {
+  async function addOrResetUser(id, password, meta) {
     const latest = await fetchSharedData();
-    const e = await buildUserEntries(id, password, session.master);
+    const e = await buildUserEntries(id, password, session.master, meta);
     const envUsers = Object.assign({}, authState.envUsers, { [e.uid]: e.env });
     const usersPayload = Object.assign({}, authState.usersPayload, { [e.uid]: e.payload });
     await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, {
       master: session.master, envUsers, usersPayload,
       archiveKey: authState.archiveKey, archiveKeyPrev: authState.archiveKeyPrev
     }, { audit: [mkAudit('userAdd', { id: id.trim() })] });
+  }
+
+  // 只更新权限（不改密码）
+  async function setUserAccess(uid, meta) {
+    const latest = await fetchSharedData();
+    const cur = (authState.usersPayload || {})[uid];
+    if (!cur) throw new Error('user not found');
+    const usersPayload = Object.assign({}, authState.usersPayload, { [uid]: Object.assign({}, cur, meta) });
+    await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, {
+      master: session.master, envUsers: authState.envUsers, usersPayload,
+      archiveKey: authState.archiveKey, archiveKeyPrev: authState.archiveKeyPrev
+    }, { audit: [mkAudit('userPerm', { id: cur.id, perms: permSummary(meta) })] });
   }
 
   // 启用账号：把现有（旧版）数据转换为 v2，并创建第一个用户（通常是管理员自己）
@@ -7991,7 +8597,7 @@
     try { archived = await fetchArchiveRaw(); } catch (e) { archived = null; }
     const master = rand32();
     const archiveKey = bytesToB64(rand32());
-    const first = await buildUserEntries(id, password, master);
+    const first = await buildUserEntries(id, password, master, { role: 'admin', perms: [] });
     await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, {
       master, envUsers: { [first.uid]: first.env }, usersPayload: { [first.uid]: first.payload },
       archiveKey, archiveKeyPrev: ''
@@ -8028,22 +8634,28 @@
   }
 
   document.getElementById('usersAddBtn').addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!fullAdmin()) return;
     const id = document.getElementById('userNewId').value.trim();
     const pw = document.getElementById('userNewPw').value;
-    if (!id || pw.length < 6) { usersError.textContent = t('userPwTooShort'); return; }
+    const v2 = authState.mode === 'v2';
+    const existingUid = v2 && id ? await userUid(id) : '';
+    const permOnly = v2 && !pw && existingUid && (authState.usersPayload || {})[existingUid];
+    if (!id || (!permOnly && pw.length < 6)) { usersError.textContent = t(id && v2 && !permOnly ? 'permNeedPw' : 'userPwTooShort'); return; }
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) { usersError.textContent = t('ghConfigMissing'); return; }
     const btn = document.getElementById('usersAddBtn');
     btn.disabled = true;
     usersError.textContent = '';
     try {
-      if (authState.mode === 'v2') await addOrResetUser(id, pw);
+      if (permOnly) await setUserAccess(existingUid, readAccessForm());
+      else if (v2) await addOrResetUser(id, pw, readAccessForm());
       else await enableAccounts(id, pw);
       document.getElementById('userNewId').value = '';
       document.getElementById('userNewPw').value = '';
       usersError.textContent = '';
       updateUserBadge();
+      updateAdminUI();
+      renderCurrentView();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
     } catch (err) {
       console.error(err);
@@ -8121,7 +8733,7 @@
   }
 
   document.getElementById('archiveBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!fullAdmin()) return;
     const d = new Date();
     d.setFullYear(d.getFullYear() - 1);
     archiveCutoff.value = d.toISOString().slice(0, 10);
@@ -8135,7 +8747,7 @@
   archivePasswordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') archiveConfirmBtn.click(); });
 
   archiveConfirmBtn.addEventListener('click', async () => {
-    if (!isAdmin) return;
+    if (!fullAdmin()) return;
     const cutoff = archiveCutoff.value;
     if (!cutoff) return;
     if (!archivePasswordInput.value || (await sha256(archivePasswordInput.value)) !== adminKeyHash) {
@@ -8220,7 +8832,7 @@
   const clearAllConfirmBtn = document.getElementById('clearAllConfirm');
 
   document.getElementById('clearAllStockBtn').addEventListener('click', () => {
-    if (!isAdmin) return;
+    if (!fullAdmin()) return;
     clearAllPasswordInput.value = '';
     clearAllError.textContent = '';
     clearAllModal.classList.add('open');
@@ -8300,7 +8912,7 @@
   editTypeOut.addEventListener('click', () => setEditType('OUT'));
 
   function openEditRecordModal(rec) {
-    if (!isAdmin) return;
+    if (!can('stock')) return;
     editingRecordId = rec.id;
     editName.value = rec.item || '';
     editCode.value = rec.itemCode || '';
@@ -8324,7 +8936,7 @@
 
   editRecordForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!isAdmin || !editingRecordId) return;
+    if (!can('stock') || !editingRecordId) return;
 
     const item = editName.value.trim();
     const itemCode = editCode.value.trim();

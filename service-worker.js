@@ -4,7 +4,7 @@
 //     只有在断网时才回退到缓存副本。
 //   - 其他本地资源（HTML/CSS/JS/图标）：cache-first + 后台更新，支持离线打开。
 
-const CACHE_NAME = 'srs-cache-v3';
+const CACHE_NAME = 'srs-cache-v4';
 
 // 需要预缓存的同源资源（请确保这些文件与 service-worker.js 在同一目录下）
 const LOCAL_ASSETS = [
@@ -79,6 +79,30 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         } catch (err) {
           const cached = await caches.match(event.request);
+          if (cached) return cached;
+          throw err;
+        }
+      })()
+    );
+    return;
+  }
+
+  // 页面本身（index.html）：network-first，保证打开的总是最新版程序，断网时才用缓存。
+  // 这样不会有人用着旧版程序把新版的数据覆盖掉。
+  const reqUrl = new URL(event.request.url);
+  const isPage = event.request.mode === 'navigate' || reqUrl.pathname.endsWith('/index.html') || reqUrl.pathname.endsWith('/');
+  if (isPage && reqUrl.origin === self.location.origin) {
+    event.respondWith(
+      (async () => {
+        try {
+          const networkResponse = await fetch(event.request, { cache: 'no-cache' });
+          if (networkResponse && networkResponse.ok) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        } catch (err) {
+          const cached = await caches.match(event.request) || await caches.match('./index.html');
           if (cached) return cached;
           throw err;
         }
