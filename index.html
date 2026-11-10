@@ -2161,6 +2161,16 @@
       pickFromHint: '取货位置：{list}',
       receiptFilterPh: '搜索收货单号、供应商、货物…',
       receiptsEmpty: '还没有收货单。',
+      plDoListBanner: '已生成：{list}。已送出的行已锁定；其余行可以继续备货，再生成下一张 DO。要修改已送出的行：先到「出库」页删除对应的 DO。',
+      plCarryTag: '↪ 上次没送完的余量',
+      plPartialNote: '原要求 {orig}，这次备了一部分，余 {rest} 已转到下面一行，留给下次出货。',
+      plDropRestBtn: '不补了',
+      plDropRestConfirm: '不再补送「{item}」剩下的 {qty}？这一行会被移除。',
+      plDeliveredTag: '已送出：{no}',
+      plUndoDelivered: '这一行已经送出（{no}），不能撤销。请先到「出库」页删除 {no}。',
+      plUndoChildFirst: '这一行的余量已经备好了，请先撤销余量那一行。',
+      doFromPlMore: '将为新备好的 {n} 行生成新的 DO（{no}）。要重印之前的 DO，请到「出库」页。继续吗？',
+      actPlDropRest: '不再补送：{item}（{pl}）',
       permTitle: '权限',
       permRoleReadonly: '只读（只能查看）',
       permRoleCustom: '自定义（勾选可做的操作）',
@@ -2753,6 +2763,16 @@
       pickFromHint: 'Pick from: {list}',
       receiptFilterPh: 'Search receipt no., supplier, item…',
       receiptsEmpty: 'No receipts yet.',
+      plDoListBanner: 'Generated: {list}. Rows already delivered are locked; you can keep picking the other rows and make the next DO. To change a delivered row: delete its DO on the Delivery page first.',
+      plCarryTag: '↪ Balance left from last time',
+      plPartialNote: 'Requested {orig}; only part was picked this time. The balance of {rest} moved to the row below for the next delivery.',
+      plDropRestBtn: 'No more',
+      plDropRestConfirm: 'Stop delivering the remaining {qty} of "{item}"? This row will be removed.',
+      plDeliveredTag: 'Delivered: {no}',
+      plUndoDelivered: 'This row has been delivered ({no}) and cannot be undone. Delete {no} on the Delivery page first.',
+      plUndoChildFirst: 'The balance row has already been picked. Undo that row first.',
+      doFromPlMore: 'A new DO ({no}) will be made for the {n} newly picked row(s). To reprint an earlier DO, go to the Delivery page. Continue?',
+      actPlDropRest: 'Stopped delivering balance: {item} ({pl})',
       permTitle: 'Access',
       permRoleReadonly: 'View only',
       permRoleCustom: 'Custom (tick what they can do)',
@@ -3345,6 +3365,16 @@
       pickFromHint: 'Ambil dari: {list}',
       receiptFilterPh: 'Cari no. resit, pembekal, barang…',
       receiptsEmpty: 'Belum ada resit.',
+      plDoListBanner: 'Dijana: {list}. Baris yang telah dihantar dikunci; anda boleh terus mengambil baris lain dan buat DO seterusnya. Untuk mengubah baris yang telah dihantar: padam DO berkenaan di halaman Penghantaran dahulu.',
+      plCarryTag: '↪ Baki dari kali lepas',
+      plPartialNote: 'Diminta {orig}; hanya sebahagian diambil kali ini. Baki {rest} dipindahkan ke baris di bawah untuk penghantaran seterusnya.',
+      plDropRestBtn: 'Tak perlu lagi',
+      plDropRestConfirm: 'Berhenti menghantar baki {qty} bagi "{item}"? Baris ini akan dibuang.',
+      plDeliveredTag: 'Dihantar: {no}',
+      plUndoDelivered: 'Baris ini telah dihantar ({no}) dan tidak boleh dibatalkan. Padam {no} di halaman Penghantaran dahulu.',
+      plUndoChildFirst: 'Baris baki sudah diambil. Batalkan baris itu dahulu.',
+      doFromPlMore: 'DO baharu ({no}) akan dibuat untuk {n} baris yang baru diambil. Untuk cetak semula DO terdahulu, pergi ke halaman Penghantaran. Teruskan?',
+      actPlDropRest: 'Berhenti menghantar baki: {item} ({pl})',
       permTitle: 'Akses',
       permRoleReadonly: 'Lihat sahaja',
       permRoleCustom: 'Tersuai (tandakan apa yang boleh dibuat)',
@@ -5491,6 +5521,11 @@
   });
 
   // ================= Packing List：列表页 =================
+  function plReservedNo(pl) {
+    if (!pl) return '';
+    const it = (pl.items || []).find(i => i.doNoRes && !i.doId);
+    return it ? it.doNoRes : (pl.doNo || '');
+  }
   function packingListProgress(pl) {
     const total = pl.items.length;
     const done = pl.items.filter(i => i.done).length;
@@ -5528,7 +5563,7 @@
           <div class="pl-card-title">${escapeHtml(pl.title)}</div>
           <span class="pl-status-badge ${status}">${packingListStatusLabel(status)}</span>
         </div>
-        <div class="pl-card-meta">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''}${plLockedDo(pl) ? ' · 🔒 ' + escapeHtml(plLockedDo(pl).no) : (pl.doNo ? ' · ↺ ' + escapeHtml(t('plReservedTag', { no: pl.doNo })) : '')}</div>
+        <div class="pl-card-meta">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''}${plDos(pl).length ? ' · 🔒 ' + escapeHtml(plDos(pl).map(x => x.no).join(', ')) : (plReservedNo(pl) ? ' · ↺ ' + escapeHtml(t('plReservedTag', { no: plReservedNo(pl) })) : '')}</div>
         <div class="pl-progress-bar"><div class="pl-progress-fill" style="width:${pct}%;"></div></div>
         <div class="pl-progress-label">${done}/${total} ${t('plItemsDoneLabel')}</div>
       `;
@@ -5782,7 +5817,6 @@
       alert(t('ghConfigMissing'));
       return false;
     }
-    if (plLockedDo(pl)) { alert(t('plLockedAlert', { no: plLockedDo(pl).no })); return false; }
     const infos = entries.map(e => ({ a: 'plTake', d: { item: e.item.item, qty: e.lines.reduce((n, l) => n + l.qty, 0), pl: pl.title } }));
     return mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
       const alloc = makeAllocator(latestRecords);   // 按最新库存做 FEFO 批次分配；多个项目共用同一库存时会累计扣减
@@ -5822,8 +5856,20 @@
         targetItem.qtyTaken = totalQty;
         targetItem.completedAt = new Date().toISOString();
         targetItem.takenBy = actorName();
-        targetItem.status = (totalQty === targetItem.qtyRequested) ? 'complete' : 'incomplete';
         targetItem.allocations = allocations;
+        if (totalQty > 0 && totalQty < targetItem.qtyRequested) {
+          // 只备了一部分：这一行按实际数量结算，余量自动变成下面一行，留给下一次出货
+          const rest = Math.round((targetItem.qtyRequested - totalQty) * 10000) / 10000;
+          targetItem.qtyOrig = targetItem.qtyRequested;
+          targetItem.qtyRequested = totalQty;
+          targetItem.status = 'complete';
+          const child = { id: 'it_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), item: targetItem.item, itemCode: targetItem.itemCode || '',
+            uom: targetItem.uom || '', qtyRequested: rest, done: false, carryOf: targetItem.id };
+          const at = targetPl.items.indexOf(targetItem);
+          targetPl.items.splice(at + 1, 0, child);
+        } else {
+          targetItem.status = (totalQty === targetItem.qtyRequested) ? 'complete' : 'incomplete';
+        }
       });
       return { packingLists: latestPackingLists, records: latestRecords.concat(newRecords) };
     }, infos);
@@ -6024,15 +6070,16 @@
     }
 
     const { total, done } = packingListProgress(pl);
-    const lockedDo = plLockedDo(pl);
+    const lockedDo = plDos(pl).length ? plDos(pl) : null;
+    const resNo = plReservedNo(pl);
     headerEl.innerHTML = `
       <h2 style="margin:0 0 4px;">${escapeHtml(pl.title)}</h2>
-      <div class="pl-card-meta" style="margin-bottom:${lockedDo || pl.doNo ? '8' : '16'}px;">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''} · ${done}/${total} ${t('plItemsDoneLabel')}</div>
-      ${lockedDo ? `<div class="modal-status" style="margin:0 0 16px; padding:10px 12px; border-radius:10px; background:rgba(234,88,12,.12); font-size:13px;">🔒 ${escapeHtml(t('plLockedBanner', { no: lockedDo.no }))}</div>`
-        : (pl.doNo ? `<div class="modal-status" style="margin:0 0 16px; padding:10px 12px; border-radius:10px; background:rgba(37,99,235,.10); font-size:13px;">↺ ${escapeHtml(t('plReservedBanner', { no: pl.doNo }))}</div>` : '')}
+      <div class="pl-card-meta" style="margin-bottom:${lockedDo || resNo ? '8' : '16'}px;">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''} · ${done}/${total} ${t('plItemsDoneLabel')}</div>
+      ${lockedDo ? `<div class="modal-status" style="margin:0 0 16px; padding:10px 12px; border-radius:10px; background:rgba(234,88,12,.12); font-size:13px;">🔒 ${escapeHtml(t('plDoListBanner', { list: lockedDo.map(x => x.no).join(', ') }))}</div>` : ''}
+      ${resNo ? `<div class="modal-status" style="margin:0 0 16px; padding:10px 12px; border-radius:10px; background:rgba(37,99,235,.10); font-size:13px;">↺ ${escapeHtml(t('plReservedBanner', { no: resNo }))}</div>` : ''}
     `;
     const delPlBtn = document.getElementById('deletePackingListBtn');
-    if (delPlBtn) delPlBtn.style.display = lockedDo ? 'none' : '';
+    if (delPlBtn) delPlBtn.style.display = lockedDo ? 'none' : '';  // 已有 DO 的清单不能删除
 
     itemsEl.innerHTML = '';
     plPickCache = null;
@@ -6044,13 +6091,15 @@
     pl.items.forEach(item => {
       const row = document.createElement('div');
       row.className = 'pl-item-row' + (item.done ? ' done' : '');
+      const rowDo = plRowDo(pl, item);
       if (item.done) {
         const isIncomplete = item.status === 'incomplete' || item.qtyTaken !== item.qtyRequested;
         row.innerHTML = `
           <div class="pl-item-top">
             <div>
               <div class="pl-item-name">${escapeHtml(item.item)}</div>
-              <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div>
+              <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}${item.carryOf ? ' · ' + t('plCarryTag') : ''}</div>
+              ${item.qtyOrig ? `<div class="pl-item-meta">↪ ${escapeHtml(t('plPartialNote', { orig: item.qtyOrig, rest: Math.round((item.qtyOrig - item.qtyTaken) * 10000) / 10000 }))}</div>` : ''}
               ${(item.allocations || []).map(a => `<div class="pl-item-meta">📦 ${escapeHtml((a.itemCode ? a.itemCode + ' · ' : '') + a.item)} × ${a.qty} ${escapeHtml(a.uom || '')}${(a.batches && a.batches.some(b => b.batch || b.expiryDate || b.loc)) ? ' — ' + escapeHtml(a.batches.map(b => (b.loc ? '📍' + b.loc + ' ' : '') + (b.batch || '—') + (b.expiryDate ? ' (' + b.expiryDate + ')' : '') + ' ×' + b.qty).join(', ')) : ''}</div>`).join('')}
             </div>
             <div style="text-align:right;">
@@ -6058,7 +6107,7 @@
                 ? `<span class="pl-status-badge incomplete">⚠ ${t('plIncompleteLabel')}</span>`
                 : `<span class="pl-status-badge completed">✓ ${t('plCompleteLabel')}</span>`}
               <div class="pl-done-check">${t('plDoneLabel', { qty: item.qtyTaken })}</div>
-              ${lockedDo ? '' : `<button class="pl-undo-btn">${t('undoBtn')}</button>`}
+              ${rowDo ? `<div class="pl-item-meta">🔒 ${escapeHtml(t('plDeliveredTag', { no: rowDo.no }))}</div>` : `<button class="pl-undo-btn">${t('undoBtn')}</button>`}
             </div>
           </div>
         `;
@@ -6069,7 +6118,10 @@
             alert(t('ghConfigMissing'));
             return;
           }
-          if (plLockedDo(pl)) { alert(t('plLockedAlert', { no: plLockedDo(pl).no })); return; }
+          const curDo = plRowDo(packingLists.find(p => p.id === pl.id) || pl, item);
+          if (curDo) { alert(t('plUndoDelivered', { no: curDo.no })); return; }
+          const kid = ((packingLists.find(p => p.id === pl.id) || pl).items || []).find(i => i.carryOf === item.id && i.done);
+          if (kid) { alert(t('plUndoChildFirst')); return; }
           if (!confirm(t('undoConfirm'))) return;
           undoBtn.disabled = true;
           const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
@@ -6082,6 +6134,11 @@
                 targetItem.completedAt = null;
                 targetItem.status = null;
                 targetItem.allocations = null;
+                if (targetItem.qtyOrig) {   // 取消分批：恢复原要求数量，并移除自动生成的余量行
+                  targetItem.qtyRequested = targetItem.qtyOrig;
+                  targetItem.qtyOrig = null;
+                  targetPl.items = targetPl.items.filter(i => !(i.carryOf === targetItem.id && !i.done));
+                }
               }
             }
             const newRecords = latestRecords.filter(r => r.sourcePackingListItemId !== item.id);
@@ -6090,13 +6147,32 @@
           undoBtn.disabled = false;
           if (ok) renderCurrentView();
         });
-      } else if (lockedDo) {
-        row.innerHTML = `<div class="pl-item-top"><div><div class="pl-item-name">${escapeHtml(item.item)}</div><div class="pl-item-meta">${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div></div></div>`;
       } else {
         if (can('packing')) {
           renderAdminAllocRow(row, pl, item);
         } else {
           renderLabourTakeRow(row, pl, item);
+        }
+        if (item.carryOf && can('packing')) {   // 余量行：可以选择不再补送
+          const dropBtn = document.createElement('button');
+          dropBtn.className = 'pl-undo-btn';
+          dropBtn.style.margin = '6px 0 0 12px';
+          dropBtn.textContent = t('plDropRestBtn');
+          dropBtn.addEventListener('click', async () => {
+            if (!confirm(t('plDropRestConfirm', { item: item.item, qty: item.qtyRequested }))) return;
+            dropBtn.disabled = true;
+            const ok = await mutatePackingListsAndSync((latestPackingLists, latestRecords) => {
+              const tp = latestPackingLists.find(p => p.id === pl.id);
+              if (tp) tp.items = tp.items.filter(i => !(i.id === item.id && !i.done));
+              return { packingLists: latestPackingLists, records: latestRecords };
+            }, { a: 'plDropRest', d: { item: item.item, pl: pl.title } });
+            if (ok) renderCurrentView(); else dropBtn.disabled = false;
+          });
+          row.appendChild(dropBtn);
+          const tag = document.createElement('div');
+          tag.className = 'pl-item-meta';
+          tag.textContent = t('plCarryTag');
+          row.insertBefore(tag, row.firstChild);
         }
       }
       itemsEl.appendChild(row);
@@ -6346,9 +6422,18 @@
   }
   // DO 编号：已经被某个 Packing List 保留的号码（DO 被删除后留下的 pl.doNo）不会被别的单据占用
   function nextDoNo(dos, pls, year) {
-    return nextNo('DO', dos.concat((pls || []).filter(p => p.doNo).map(p => ({ no: p.doNo }))), year);
+    const res = [];
+    (pls || []).forEach(p => { if (p.doNo) res.push({ no: p.doNo }); (p.items || []).forEach(i => { if (i.doNoRes) res.push({ no: i.doNoRes }); }); });
+    return nextNo('DO', dos.concat(res), year);
   }
-  function plLockedDo(pl) { return pl ? deliveries.find(x => x.plId === pl.id) : null; }
+  // 一个 Packing List 可以有多张 DO（分批发货）。plDos = 属于它的 DO；旧版（没有 itemIds）的 DO 视为包含当时全部已备好的行
+  function plDos(pl) { return pl ? deliveries.filter(x => x.plId === pl.id) : []; }
+  function plLockedDo(pl) { return plDos(pl)[0] || null; }   // 仅用于“是否有 DO”
+  function plRowDo(pl, item) {   // 这一行已被哪张 DO 送出（没有则 null）
+    if (!pl || !item || !item.done) return null;
+    if (item.doId) return deliveries.find(x => x.id === item.doId) || null;
+    return deliveries.find(x => x.plId === pl.id && !x.itemIds) || null;
+  }
   function nextNo(prefix, list, year) {
     let seq = 0;
     const re = new RegExp('^' + prefix + '-(\\d{4})-(\\d+)$');
@@ -6720,7 +6805,12 @@
           const latest = await fetchSharedData();
           const merged = latest.records.filter(r => r.doId !== d.id);
           // 来自 Packing List 的 DO：把号码保留给它（旧版生成的 DO 没有记录号码时在这里补上）
-          const pls = d.plId ? latest.packingLists.map(p => (p.id === d.plId && !p.doNo) ? Object.assign({}, p, { doNo: d.no }) : p) : latest.packingLists;
+          // 来自 Packing List 的 DO：这张 DO 的行恢复为“未送”，号码保留给这些行；旧版 DO（没有 itemIds）则把号码保留在 Packing List 上
+          const pls = d.plId ? latest.packingLists.map(p => {
+            if (p.id !== d.plId) return p;
+            if (!d.itemIds) return p.doNo ? p : Object.assign({}, p, { doNo: d.no });
+            return Object.assign({}, p, { items: p.items.map(i => i.doId === d.id ? Object.assign({}, i, { doId: '', doNo: '', doNoRes: d.no }) : i) });
+          }) : latest.packingLists;
           await pushSharedData(merged, latest.adminKeyHash, pls, undefined,
             { deliveries: latest.deliveries.filter(x => x.id !== d.id), audit: [mkAudit('doDelete', { no: d.no })] });
           records = merged; adminKeyHash = latest.adminKeyHash; packingLists = pls;
@@ -6830,25 +6920,39 @@
   async function ensureDoFromPl(plId, preOpened) {
     const pl0 = packingLists.find(p => p.id === plId);
     if (!pl0) return null;
-    const have = deliveries.find(x => x.plId === plId);
-    if (have) return have;
+    const lastDoOf = (list) => list.filter(x => x.plId === plId).sort((x, y) => (y.at || '').localeCompare(x.at || ''))[0] || null;
+    // 还没送出的、已备好的行（旧版 DO 视为已包含当时全部已备好的行）
+    const readyOf = (pl, dos) => pl.items.filter(i => i.done && i.qtyTaken > 0 && !i.doId && !dos.some(x => x.plId === pl.id && !x.itemIds));
+    if (!readyOf(pl0, deliveries).length) {
+      const have = lastDoOf(deliveries);
+      if (have) return have;   // 没有新备好的货：直接给最近一张 DO（重印）
+      alert(t('doFromPlNone')); return null;
+    }
     if (!can('delivery')) { alert(t('doFromPlAdminOnly')); return null; }
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) { alert(t('ghConfigMissing')); return null; }
-    const pending = pl0.items.filter(i => !i.done).length;
-    if (pending) { alert(t('doFromPlNeedAll', { n: pending })); return null; }
     const latest = await fetchSharedData();
-    const exist = latest.deliveries.find(x => x.plId === plId);
-    if (exist) { deliveries = latest.deliveries; return exist; }
     const pl = latest.packingLists.find(p => p.id === plId) || pl0;
-    let custName = (pl.customer || '').trim();
+    const ready = readyOf(pl, latest.deliveries);
+    if (!ready.length) { deliveries = latest.deliveries; return lastDoOf(latest.deliveries); }
+    const date = new Date().toISOString().slice(0, 10);
+    // 号码：这些行共同保留的号码（删除旧 DO 时留下的）可用就沿用，否则取下一个
+    const resSet = new Set(ready.map(i => i.doNoRes || ''));
+    let cand = (resSet.size === 1 && [...resSet][0]) ? [...resSet][0] : '';
+    if (!cand && pl.doNo && !ready.some(i => i.doNoRes)) cand = pl.doNo;   // 旧版保留的号码
+    const no = (cand && !latest.deliveries.some(x => x.no === cand)) ? cand : nextDoNo(latest.deliveries, latest.packingLists, date.slice(0, 4));
+    if (latest.deliveries.some(x => x.plId === plId && x.itemIds) || latest.deliveries.some(x => x.plId === plId)) {
+      if (!confirm(t('doFromPlMore', { n: ready.length, no }))) return null;
+    }
+    const prevDo = lastDoOf(latest.deliveries);
+    let custName = (pl.customer || (prevDo && prevDo.customer) || '').trim();
     if (!custName) {
       const ans = prompt(t('doFromPlAskCustomer'), '');
       if (ans === null) return null;
       custName = ans.trim();
     }
     const lines = [];
-    pl.items.filter(i => i.done && i.qtyTaken > 0).forEach(i => {
+    ready.forEach(i => {
       if (Array.isArray(i.allocations) && i.allocations.length) {
         i.allocations.forEach(al => lines.push({ item: al.item, itemCode: al.itemCode || '', qty: al.qty, uom: al.uom || i.uom || '',
           pieces: (al.batches || []).map(x => ({ batch: x.batch || '', expiryDate: x.expiryDate || '', loc: x.loc || '', qty: x.qty })) }));
@@ -6856,12 +6960,14 @@
         lines.push({ item: i.item, itemCode: i.itemCode || '', qty: i.qtyTaken, uom: i.uom || '', pieces: [] });
       }
     });
-    const date = new Date().toISOString().slice(0, 10);
-    const no = (pl.doNo && !latest.deliveries.some(x => x.no === pl.doNo)) ? pl.doNo : nextDoNo(latest.deliveries, latest.packingLists, date.slice(0, 4));
     const d = { id: 'do_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), no, date, soId: '', soNo: '',
       customer: custName, customerAddr: customerAddrOf(custName), platform: pl.platform || '', ref: '', note: '', status: 'shipped', pod: null, lines,
-      plId: pl.id, plTitle: pl.title, by: actorName(), at: new Date().toISOString() };
-    const pls = latest.packingLists.map(p => p.id === plId ? Object.assign({}, p, { doNo: no }) : p);
+      plId: pl.id, plTitle: pl.title, itemIds: ready.map(i => i.id), by: actorName(), at: new Date().toISOString() };
+    const readyIds = new Set(ready.map(i => i.id));
+    const pls = latest.packingLists.map(p => p.id !== plId ? p : Object.assign({}, p, {
+      doNo: '',
+      items: p.items.map(i => readyIds.has(i.id) ? Object.assign({}, i, { doId: d.id, doNo: no, doNoRes: '' }) : i)
+    }));
     await pushSharedData(latest.records, latest.adminKeyHash, pls, undefined,
       { deliveries: latest.deliveries.concat([d]), audit: [mkAudit('doCreate', { no, n: lines.length, customer: custName || '—' })] });
     records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = pls;
@@ -8442,7 +8548,7 @@
   // ================= 操作日志（管理员）=================
   const AUDIT_KEYS = {
     add: 'actAdd', import: 'actImport', edit: 'actEdit', delete: 'actDelete',
-    plCreate: 'actPlCreate', plDelete: 'actPlDelete', plTake: 'actPlTake', plUndo: 'actPlUndo',
+    plCreate: 'actPlCreate', plDelete: 'actPlDelete', plTake: 'actPlTake', plUndo: 'actPlUndo', plDropRest: 'actPlDropRest',
     clearAll: 'actClearAll', archive: 'actArchive', adjust: 'actAdjust', master: 'actMaster',
     userAdd: 'actUserAdd', userPerm: 'actUserPerm', userRemove: 'actUserRemove', enable: 'actEnable',
     locAdd: 'actLocAdd', locDel: 'actLocDel', transfer: 'actTransfer', grn: 'actGrn', grnDelete: 'actGrnDelete',
