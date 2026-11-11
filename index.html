@@ -2197,6 +2197,7 @@
       pickFromHint: '取货位置：{list}',
       receiptFilterPh: '搜索收货单号、供应商、货物…',
       receiptsEmpty: '还没有收货单。',
+      scanBarcodeDup: '条码 {code} 已经被「{item}」使用了。同一个条码只能对应一个货物，保存时会报错，请检查。',
       plNewHeaderHint: '先开号码。保存后会进入这张 Packing List，选好部门再添加或导入物品。',
       plAddTitle: '添加物品',
       plAddHint: '先选部门，再添加或导入这个部门的物品。要改某个物品的部门，在下面那一行的「部门」下拉框直接改。',
@@ -2819,6 +2820,7 @@
       pickFromHint: 'Pick from: {list}',
       receiptFilterPh: 'Search receipt no., supplier, item…',
       receiptsEmpty: 'No receipts yet.',
+      scanBarcodeDup: 'Barcode {code} is already used by "{item}". One barcode can only belong to one item, so saving will fail — please check.',
       plNewHeaderHint: 'Open the number first. After saving you go into this Packing List, pick a department, then add or import items.',
       plAddTitle: 'Add items',
       plAddHint: 'Pick the department first, then add or import its items. To change an item\'s department, use the Dept dropdown on its row below.',
@@ -3441,6 +3443,7 @@
       pickFromHint: 'Ambil dari: {list}',
       receiptFilterPh: 'Cari no. resit, pembekal, barang…',
       receiptsEmpty: 'Belum ada resit.',
+      scanBarcodeDup: 'Kod bar {code} sudah digunakan oleh "{item}". Satu kod bar hanya untuk satu barang, simpanan akan gagal — sila semak.',
       plNewHeaderHint: 'Buka nombor dahulu. Selepas simpan anda masuk ke Packing List ini, pilih jabatan, kemudian tambah atau import barang.',
       plAddTitle: 'Tambah barang',
       plAddHint: 'Pilih jabatan dahulu, kemudian tambah atau import barangnya. Untuk tukar jabatan sesuatu barang, guna pilihan Jabatan pada barisnya di bawah.',
@@ -8784,12 +8787,24 @@
           <input data-f="factor" type="number" min="0" step="any" placeholder="${t('factorLabel')}" value="${masterVal(r, 'factor') || ''}">
           <input data-f="price" type="number" min="0" step="any" placeholder="${t('priceMasterLabel')}" value="${masterVal(r, 'price') || ''}">
           <input data-f="minStock" type="number" min="0" step="any" placeholder="${t('minStockShort')}" value="${masterVal(r, 'minStock') || ''}">
-          <input data-f="barcode" placeholder="${t('barcodeLabel')}" value="${escapeHtml(String(masterVal(r, 'barcode')))}">
+          <div style="display:flex; gap:4px; min-width:0;"><input data-f="barcode" placeholder="${t('barcodeLabel')}" value="${escapeHtml(String(masterVal(r, 'barcode')))}" style="min-width:0;"><button type="button" class="scan-btn m-scan" title="${escapeHtml(t('scanBtn'))}" style="padding:4px 8px;">📷</button></div>
           <input data-f="loc" list="locList" placeholder="${t('defaultLocLabel')}" value="${escapeHtml(String(masterVal(r, 'loc')))}">
           <select data-f="dept" class="dept-sel" title="${escapeHtml(t('deptLabel'))}">${deptOptionsHtml(String(masterVal(r, 'dept')), t('deptNoneOpt'))}</select>
         </div>
       </div>`).join('');
     list.querySelectorAll('.mrow').forEach(div => {
+      const scanBtn = div.querySelector('.m-scan');
+      if (scanBtn) scanBtn.addEventListener('click', () => {
+        const input = div.querySelector('input[data-f="barcode"]');
+        scanInto(input, (code) => {
+          // 同一个条码不能对应两个货物：检查已保存的主档，以及这页里其他行刚填的条码
+          const me = normU(div.querySelector('.mname').textContent);
+          const saved = masterByBarcode(code);
+          const other = Array.from(list.querySelectorAll('.mrow')).find(o => o !== div && normU(o.querySelector('input[data-f="barcode"]').value) === normU(code));
+          const clash = other ? other.querySelector('.mname').textContent.trim() : (saved && !me.includes(normU(saved.item)) ? saved.item : '');
+          if (clash) alert(t('scanBarcodeDup', { code, item: clash }));
+        });
+      });
       const delBtn = div.querySelector('.m-del');
       if (delBtn) delBtn.addEventListener('click', () => {
         const row = shown.find(x => x.key === div.dataset.key);
