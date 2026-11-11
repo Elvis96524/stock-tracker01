@@ -974,6 +974,11 @@
     margin-bottom: 10px;
   }
   .pl-new-item-row select, .dept-sel { border: 1px solid var(--border); border-radius: 8px; padding: 9px 6px; font-size: 13px; width: 100%; background: var(--card, #fff); color: inherit; }
+  .pl-add-row { grid-template-columns: 2fr 1fr 1fr 1fr auto !important; }
+  .dept-fbtn { border: 1px solid var(--border); background: transparent; color: inherit; border-radius: 16px; padding: 4px 11px; font-size: 12.5px; cursor: pointer; }
+  .dept-fbtn.active { background: var(--accent, #2563eb); color: #fff; border-color: transparent; }
+  .dept-move { margin-top: 6px; display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+  .dept-move select { max-width: 150px; padding: 4px 6px; }
   .dept-head { margin: 16px 0 6px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
   .dept-head span { font-weight: 500; font-size: 12px; color: var(--muted); }
   .dept-chip { display:inline-block; font-size: 11px; padding: 1px 7px; border-radius: 8px; background: rgba(100,116,139,.14); margin-right: 4px; }
@@ -1080,10 +1085,10 @@
       <div id="userDeptBox" style="display:none; margin:-4px 0 10px;">
         <div class="sub" style="margin:0 0 4px;" data-i18n="permPackDepts">可备货的部门</div>
         <div class="perm-grid" style="grid-template-columns:1fr 1fr; margin:0;">
-          <label><input type="checkbox" class="dept-cb" data-d="freezer" checked><span>❄️ Freezer</span></label>
-          <label><input type="checkbox" class="dept-cb" data-d="chiller" checked><span>🧊 Chiller</span></label>
           <label><input type="checkbox" class="dept-cb" data-d="dry" checked><span>📦 Dry</span></label>
-          <label><input type="checkbox" class="dept-cb" data-d="cleaning" checked><span>🧽 Cleaning</span></label>
+          <label><input type="checkbox" class="dept-cb" data-d="chiller" checked><span>🧊 Chiller</span></label>
+          <label><input type="checkbox" class="dept-cb" data-d="freezer" checked><span>❄️ Freezer</span></label>
+          <label><input type="checkbox" class="dept-cb" data-d="cleaning" checked><span>🧪 Chemical</span></label>
         </div>
       </div>
       <div class="sub" id="userPermNote" data-i18n="permNote"></div>
@@ -1495,6 +1500,7 @@
         <button class="admin-btn js-customers-btn" data-perm="delivery packing" data-i18n="customersBtn">🏢 客户</button>
         <button class="admin-btn" id="newPackingListBtn" data-perm="packing" data-i18n="newPackingListBtn">+ New</button>
       </div>
+      <select id="plListDeptFilter" class="dept-sel" style="max-width:220px; margin-bottom:10px;"></select>
       <div id="packingListsContainer"></div>
       <div class="empty" id="packingListEmpty" style="display:none;" data-i18n="packingListEmptyText">暂无 Packing List。</div>
     </div>
@@ -1509,14 +1515,13 @@
       <input type="text" id="plPlatform" data-i18n-ph="platformLabel" autocomplete="off">
       <input type="date" id="plDate">
 
-      <div class="pl-import-row">
-        <label for="plExcelFile" class="pl-import-label" data-i18n="plImportExcelBtn">📄 从 Excel 导入货物</label>
-        <input type="file" id="plExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">
+      <div class="sub" data-i18n="plNewHeaderHint">先开号码。保存后进入这张 Packing List，选好部门再添加或导入物品。</div>
+      <div style="display:none;">
+        <input type="file" id="plExcelFile" accept=".xlsx,.xls,.csv">
+        <div class="modal-status" id="plImportStatus"></div>
+        <div id="plItemsContainer"></div>
+        <button type="button" id="plAddItemBtn"></button>
       </div>
-      <div class="modal-status" id="plImportStatus" style="text-align:left; margin-bottom:10px;"></div>
-
-      <div id="plItemsContainer"></div>
-      <button type="button" class="lock-alt-link" id="plAddItemBtn" style="margin-bottom:12px;" data-i18n="addItemBtn">+ Add item</button>
       <div class="modal-error" id="plError"></div>
       <div class="modal-btn-row">
         <button class="btn-secondary" id="plCancelBtn" data-i18n="cancelBtn">取消</button>
@@ -1655,6 +1660,9 @@
         <div class="field"><input type="text" id="masterNewCode" data-i18n-ph="itemCodeLabel" autocomplete="off"></div>
       </div>
       <button class="export-btn" id="masterAddBtn" style="margin-bottom:10px;" data-i18n="masterAddBtn">＋ 新增货物</button>
+      <button class="export-btn" id="masterImportBtn" style="margin-bottom:10px;" data-i18n="masterImportBtn">📥 从 Excel 导入</button>
+      <input type="file" id="masterExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">
+      <div class="sub" data-i18n="masterImportHint"></div>
       <datalist id="masterCatList"></datalist>
       <div class="modal-status" id="masterStatus"></div>
       <div id="masterList" style="margin-bottom:14px;"></div>
@@ -1772,6 +1780,21 @@
         <button class="admin-btn" id="exportDoPdfBtn" data-i18n="exportDoPdfBtn">📄 Export DO (PDF)</button>
         <button class="admin-btn" id="exportDoExcelBtn" data-i18n="exportDoExcelBtn">📊 Export DO (Excel)</button>
       </div>
+      <div id="plAddPanel" data-perm="packing" style="border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:14px;">
+        <div style="font-weight:700; margin-bottom:2px;" data-i18n="plAddTitle">添加物品</div>
+        <div class="pl-item-meta" style="margin-bottom:8px;" data-i18n="plAddHint">先选部门，再添加或导入这个部门的物品。</div>
+        <select id="plAddDept" class="dept-sel" style="margin-bottom:10px; max-width:260px;"></select>
+        <div id="plAddRows"></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">
+          <button type="button" class="export-btn" id="plAddRowBtn" data-i18n="addItemBtn">+ Add item</button>
+          <label for="plAddExcel" class="pl-import-label" data-i18n="plImportExcelBtn">📄 从 Excel 导入货物</label>
+          <input type="file" id="plAddExcel" accept=".xlsx,.xls,.csv" style="display:none;">
+        </div>
+        <div class="modal-status" id="plAddStatus" style="text-align:left;"></div>
+        <div class="modal-error" id="plAddError"></div>
+        <button type="button" class="pl-done-btn" id="plAddSaveBtn" style="width:100%;"></button>
+      </div>
+      <div id="plDeptFilterBar" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;"></div>
       <div id="packingDetailItems"></div>
       <div id="plSaveBar" style="display:none;">
         <div class="pl-item-meta" style="flex:1 1 100%; margin:0;" data-i18n="plSaveHint">勾选已备好的项目；最后点“完成并保存”一次过扣库存，中途不会保存。</div>
@@ -2174,6 +2197,19 @@
       pickFromHint: '取货位置：{list}',
       receiptFilterPh: '搜索收货单号、供应商、货物…',
       receiptsEmpty: '还没有收货单。',
+      plNewHeaderHint: '先开号码。保存后会进入这张 Packing List，选好部门再添加或导入物品。',
+      plAddTitle: '添加物品',
+      plAddHint: '先选部门，再添加或导入这个部门的物品。要改某个物品的部门，在下面那一行的「部门」下拉框直接改。',
+      plAddSaveBtn: '保存到 {dept}',
+      plAddNoPerm: '你没有这个部门的备货权限。',
+      plNoItemsYet: '这张 Packing List 还没有物品。先在上面选部门，再添加或导入。',
+      deptFilterAll: '全部部门',
+      deptMoveLabel: '部门：',
+      actPlAddItems: '添加物品到 {pl}：{dept} × {n}',
+      actPlSetDept: '改部门：{item} → {dept}（{pl}）',
+      masterImportBtn: '📥 从 Excel 导入',
+      masterImportHint: 'Excel 第一行写列名：Item Code、Item Name、Category、UOM、Pack UOM、Factor、Price、Min Stock、Barcode、Location、Department（部门：Freezer / Chiller / Dry / Cleaning）。同名或同编号的货物会更新有填写的栏位，没有的会新增。',
+      masterImportDone: '已读取：更新 {upd} 个、新增 {add} 个、跳过 {skip} 行；部门看不懂 {bad} 行。请检查后按「保存」才会生效。',
       deptLabel: '部门', deptNone: '未分部门', deptNoneOpt: '— 部门 —',
       plDeptViewOnly: '只能查看（没有这个部门的备货权限）',
       permPackDepts: '可备货的部门',
@@ -2783,6 +2819,19 @@
       pickFromHint: 'Pick from: {list}',
       receiptFilterPh: 'Search receipt no., supplier, item…',
       receiptsEmpty: 'No receipts yet.',
+      plNewHeaderHint: 'Open the number first. After saving you go into this Packing List, pick a department, then add or import items.',
+      plAddTitle: 'Add items',
+      plAddHint: 'Pick the department first, then add or import its items. To change an item\'s department, use the Dept dropdown on its row below.',
+      plAddSaveBtn: 'Save to {dept}',
+      plAddNoPerm: 'You have no picking access for this department.',
+      plNoItemsYet: 'This Packing List has no items yet. Pick a department above, then add or import.',
+      deptFilterAll: 'All departments',
+      deptMoveLabel: 'Dept:',
+      actPlAddItems: 'Added items to {pl}: {dept} × {n}',
+      actPlSetDept: 'Changed dept: {item} → {dept} ({pl})',
+      masterImportBtn: '📥 Import from Excel',
+      masterImportHint: 'Put column names in row 1: Item Code, Item Name, Category, UOM, Pack UOM, Factor, Price, Min Stock, Barcode, Location, Department (Freezer / Chiller / Dry / Cleaning). Items with the same name or code are updated (only filled cells); new ones are added.',
+      masterImportDone: 'Read: {upd} updated, {add} new, {skip} skipped; {bad} row(s) with an unrecognised department. Press Save to apply.',
       deptLabel: 'Department', deptNone: 'No department', deptNoneOpt: '— Dept —',
       plDeptViewOnly: 'view only (no picking access for this department)',
       permPackDepts: 'Departments they can pick for',
@@ -3392,6 +3441,19 @@
       pickFromHint: 'Ambil dari: {list}',
       receiptFilterPh: 'Cari no. resit, pembekal, barang…',
       receiptsEmpty: 'Belum ada resit.',
+      plNewHeaderHint: 'Buka nombor dahulu. Selepas simpan anda masuk ke Packing List ini, pilih jabatan, kemudian tambah atau import barang.',
+      plAddTitle: 'Tambah barang',
+      plAddHint: 'Pilih jabatan dahulu, kemudian tambah atau import barangnya. Untuk tukar jabatan sesuatu barang, guna pilihan Jabatan pada barisnya di bawah.',
+      plAddSaveBtn: 'Simpan ke {dept}',
+      plAddNoPerm: 'Anda tiada akses mengambil untuk jabatan ini.',
+      plNoItemsYet: 'Packing List ini belum ada barang. Pilih jabatan di atas, kemudian tambah atau import.',
+      deptFilterAll: 'Semua jabatan',
+      deptMoveLabel: 'Jabatan:',
+      actPlAddItems: 'Tambah barang ke {pl}: {dept} × {n}',
+      actPlSetDept: 'Tukar jabatan: {item} → {dept} ({pl})',
+      masterImportBtn: '📥 Import dari Excel',
+      masterImportHint: 'Letakkan nama lajur pada baris 1: Item Code, Item Name, Category, UOM, Pack UOM, Factor, Price, Min Stock, Barcode, Location, Department (Freezer / Chiller / Dry / Cleaning). Barang dengan nama atau kod sama dikemas kini (sel yang diisi sahaja); yang baharu ditambah.',
+      masterImportDone: 'Dibaca: {upd} dikemas kini, {add} baharu, {skip} dilangkau; {bad} baris jabatan tidak dikenali. Tekan Simpan untuk melaksanakan.',
       deptLabel: 'Jabatan', deptNone: 'Tiada jabatan', deptNoneOpt: '— Jabatan —',
       plDeptViewOnly: 'lihat sahaja (tiada akses ambil untuk jabatan ini)',
       permPackDepts: 'Jabatan yang boleh diambil',
@@ -3883,8 +3945,8 @@
     return isAdmin ? 'admin' : 'device';
   }
   // ---- 部门（Packing List 分区）----
-  const PL_DEPTS = ['freezer', 'chiller', 'dry', 'cleaning'];
-  const DEPT_NAME = { freezer: '❄️ Freezer', chiller: '🧊 Chiller', dry: '📦 Dry', cleaning: '🧽 Cleaning' };
+  const PL_DEPTS = ['dry', 'chiller', 'freezer', 'cleaning'];   // 'cleaning' 对外显示为 Chemical（内部编号不变，保证旧数据兼容）
+  const DEPT_NAME = { dry: '📦 Dry', chiller: '🧊 Chiller', freezer: '❄️ Freezer', cleaning: '🧪 Chemical' };
   const deptOf = (x) => (x && PL_DEPTS.includes(x.dept)) ? x.dept : '';
   const deptName = (d) => d ? DEPT_NAME[d] : t('deptNone');
   function deptOptionsHtml(sel, noneLabel) {
@@ -5602,10 +5664,18 @@
     return t('plStatusOpen');
   }
 
+  let plListDept = '';
+  let plDeptFilter = '';
   function renderPackingListView() {
     const container = document.getElementById('packingListsContainer');
     const emptyEl = document.getElementById('packingListEmpty');
-    const sorted = packingLists.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const lf = document.getElementById('plListDeptFilter');
+    if (!lf.dataset.init || lf.dataset.lang !== currentLang) {
+      lf.innerHTML = `<option value="">${escapeHtml(t('deptFilterAll'))}</option>` + PL_DEPTS.map(d => `<option value="${d}">${escapeHtml(DEPT_NAME[d])}</option>`).join('');
+      lf.value = plListDept; lf.dataset.init = '1'; lf.dataset.lang = currentLang;
+      lf.addEventListener('change', () => { plListDept = lf.value; renderPackingListView(); });
+    }
+    const sorted = packingLists.filter(pl => !plListDept || (pl.items || []).some(i => deptOf(i) === plListDept)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     container.innerHTML = '';
     emptyEl.style.display = sorted.length ? 'none' : 'block';
@@ -5642,7 +5712,7 @@
   let plItemRows = [];
 
   function openNewPackingListModal() {
-    document.getElementById('plTitle').value = '';
+    document.getElementById('plTitle').value = nextNo('PL', packingLists.map(x => ({ no: x.title })), String(new Date().getFullYear()));
     document.getElementById('plPlatform').value = '';
     document.getElementById('plCustomer').value = '';
     refreshCustomerList();
@@ -5652,7 +5722,6 @@
     document.getElementById('plImportStatus').className = 'modal-status';
     plItemRows = [];
     plItemsContainer.innerHTML = '';
-    addPlItemRow();
     newPackingListModal.classList.add('open');
   }
 
@@ -5724,7 +5793,7 @@
         const codeKeys = ['item code', 'code', 'sku', 'item no', 'item number', 'part no'];
         const qtyKeys = ['quantity', 'qty'];
         const uomKeys = ['uom', 'unit', 'unit of measure'];
-        const deptKeys = ['department', 'dept', '部门', 'jabatan'];
+        const deptKeys = ['department', 'dept', '部门', 'jabatan'];  // （旧入口，已不用）
 
         // 清空目前的空白行，只保留导入结果
         plItemRows.slice().forEach(rowId => {
@@ -5767,6 +5836,125 @@
     reader.readAsArrayBuffer(file);
   });
 
+  // ---- Packing List 详情里：选部门 → 添加 / 导入物品 ----
+  let plAddRowIds = [];
+  function renderPlAddPanel(pl) {
+    const sel = document.getElementById('plAddDept');
+    const prev = sel.value;
+    const allowed = PL_DEPTS.filter(d => canPackDept(d));
+    sel.innerHTML = allowed.map(d => `<option value="${d}">${escapeHtml(DEPT_NAME[d])}</option>`).join('');
+    if (allowed.includes(prev)) sel.value = prev; else if (allowed.includes(plDeptFilter)) sel.value = plDeptFilter;
+    if (!plAddRowIds.length) addPlAddRow();
+    refreshPlAddSave();
+  }
+  function refreshPlAddSave() {
+    const sel = document.getElementById('plAddDept');
+    const nm = sel.value ? DEPT_NAME[sel.value].replace(/^\S+\s/, '') : '';
+    document.getElementById('plAddSaveBtn').textContent = t('plAddSaveBtn', { dept: nm });
+    document.getElementById('plAddSaveBtn').disabled = !sel.value;
+  }
+  function addPlAddRow(prefill) {
+    prefill = prefill || {};
+    const rowId = 'pladd_' + Math.random().toString(36).slice(2, 8);
+    plAddRowIds.push(rowId);
+    const row = document.createElement('div');
+    row.className = 'pl-new-item-row pl-add-row';
+    row.id = rowId;
+    row.innerHTML = `
+      <input type="text" class="pl-item-name-input" placeholder="${t('itemNameLabel')}" list="itemNameList" autocomplete="off" value="${escapeHtml(prefill.item || '')}">
+      <input type="text" class="pl-item-code-input" placeholder="${t('itemCodeLabel')}" autocomplete="off" value="${escapeHtml(prefill.itemCode || '')}">
+      <input type="number" class="pl-item-qty-input" placeholder="${t('qtyLabel')}" min="0" step="any" value="${prefill.qty || ''}">
+      <input type="text" class="pl-item-uom-input" placeholder="${t('uomLabel')}" autocomplete="off" value="${escapeHtml(prefill.uom || '')}">
+      <button type="button" class="pl-remove-item-btn">✕</button>`;
+    document.getElementById('plAddRows').appendChild(row);
+    const nameInput = row.querySelector('.pl-item-name-input');
+    const codeInput = row.querySelector('.pl-item-code-input');
+    const uomInput = row.querySelector('.pl-item-uom-input');
+    nameInput.addEventListener('input', () => {
+      const match = getNameToCodeMap()[nameInput.value.trim().toLowerCase()];
+      if (match) codeInput.value = match;
+      const known = records.find(r => r.uom && r.item.trim().toLowerCase() === nameInput.value.trim().toLowerCase());
+      if (known && !uomInput.value) uomInput.value = known.uom;
+    });
+    row.querySelector('.pl-remove-item-btn').addEventListener('click', () => { row.remove(); plAddRowIds = plAddRowIds.filter(id => id !== rowId); });
+  }
+  document.getElementById('plAddDept').addEventListener('change', refreshPlAddSave);
+  document.getElementById('plAddRowBtn').addEventListener('click', () => addPlAddRow());
+  document.getElementById('plAddExcel').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const st = document.getElementById('plAddStatus');
+    if (!file) return;
+    if (typeof XLSX === 'undefined') { st.textContent = t('xlsxLibFailed'); st.className = 'modal-status err'; return; }
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+        if (!rows.length) { st.textContent = t('noRowsFound'); st.className = 'modal-status err'; return; }
+        const nameKeys = ['item name', 'item', 'name', 'description', 'product'];
+        const codeKeys = ['item code', 'code', 'sku', 'item no', 'item number', 'part no'];
+        const qtyKeys = ['quantity', 'qty'];
+        const uomKeys = ['uom', 'unit', 'unit of measure'];
+        // 去掉空白行，再追加导入的行
+        plAddRowIds.slice().forEach(id => { const r = document.getElementById(id); if (r && !r.querySelector('.pl-item-name-input').value.trim() && !r.querySelector('.pl-item-qty-input').value) { r.remove(); plAddRowIds = plAddRowIds.filter(x => x !== id); } });
+        let added = 0, skipped = 0;
+        rows.forEach(row => {
+          const nk = findKey(row, nameKeys), ck = findKey(row, codeKeys), qk = findKey(row, qtyKeys), uk = findKey(row, uomKeys);
+          const item = nk ? String(row[nk]).trim() : '';
+          const itemCode = ck ? String(row[ck]).trim() : '';
+          const qty = qk ? parseFloat(row[qk]) : NaN;
+          const uom = uk ? String(row[uk]).trim() : '';
+          if (!item || !qty || isNaN(qty) || qty <= 0) { skipped++; return; }
+          addPlAddRow({ item, itemCode, qty, uom });
+          added++;
+        });
+        if (!plAddRowIds.length) addPlAddRow();
+        st.textContent = skipped ? t('importedPartial', { count: added, skipped }) : t('plImportedOk', { count: added });
+        st.className = 'modal-status ok';
+      } catch (err) { console.error(err); st.textContent = t('fileReadError'); st.className = 'modal-status err'; }
+      e.target.value = '';
+    };
+    reader.readAsArrayBuffer(file);
+  });
+  document.getElementById('plAddSaveBtn').addEventListener('click', async () => {
+    const dept = document.getElementById('plAddDept').value;
+    const errEl = document.getElementById('plAddError');
+    errEl.textContent = '';
+    if (!dept || !canPackDept(dept)) { errEl.textContent = t('plAddNoPerm'); return; }
+    const pl0 = packingLists.find(p => p.id === currentPackingListId);
+    if (!pl0) return;
+    const newItems = [];
+    plAddRowIds.forEach(id => {
+      const row = document.getElementById(id);
+      if (!row) return;
+      const name = row.querySelector('.pl-item-name-input').value.trim();
+      const code = row.querySelector('.pl-item-code-input').value.trim();
+      const qty = parseFloat(row.querySelector('.pl-item-qty-input').value);
+      const typedUom = row.querySelector('.pl-item-uom-input').value.trim();
+      if (name && qty > 0) {
+        const known = records.find(r => r.item.trim().toLowerCase() === name.toLowerCase());
+        newItems.push({ id: 'pli_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), item: name, itemCode: code,
+          uom: typedUom || (known ? known.uom : ''), qtyRequested: qty, dept, done: false, qtyTaken: null, completedAt: null });
+      }
+    });
+    if (!newItems.length) { errEl.textContent = t('plNeedAtLeastOneItem'); return; }
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token) { errEl.textContent = t('ghConfigMissing'); return; }
+    const btn = document.getElementById('plAddSaveBtn');
+    btn.disabled = true;
+    const ok = await mutatePackingListsAndSync((latestPLs, latestRecs) => {
+      const tp = latestPLs.find(x => x.id === pl0.id);
+      if (tp) newItems.forEach(it => tp.items.push(it));
+      return { packingLists: latestPLs, records: latestRecs };
+    }, { a: 'plAddItems', d: { pl: pl0.title, n: newItems.length, dept: DEPT_NAME[dept].replace(/^\S+\s/, '') } });
+    btn.disabled = false;
+    if (!ok) return;
+    plAddRowIds = [];
+    document.getElementById('plAddRows').innerHTML = '';
+    document.getElementById('plAddStatus').textContent = '';
+    renderCurrentView();
+  });
+
   document.getElementById('plSaveBtn').addEventListener('click', async () => {
     const title = document.getElementById('plTitle').value.trim();
     const platform = document.getElementById('plPlatform').value.trim();
@@ -5806,11 +5994,6 @@
       }
     });
 
-    if (!items.length) {
-      errEl.textContent = t('plNeedAtLeastOneItem');
-      return;
-    }
-
     document.getElementById('plSaveBtn').disabled = true;
     const newPl = {
       id: 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -5827,6 +6010,11 @@
 
     if (ok) {
       newPackingListModal.classList.remove('open');
+      currentPackingListId = newPl.id;   // 直接进入这张 PL，选部门再添加物品
+      plDeptFilter = '';
+      plAddRowIds = [];
+      document.getElementById('plAddRows').innerHTML = '';
+      currentView = 'packingDetail';
       renderCurrentView();
     } else {
       errEl.textContent = t('syncFailed');
@@ -6157,9 +6345,21 @@
     sharedList.id = 'plStockListShared';
     sharedList.innerHTML = plPickCache.map(o => `<option value="${escapeHtml(o.label)}" label="${escapeHtml(t('plStockBalanceHint', { bal: o.group.balance, uom: o.group.uom }))}"></option>`).join('');
     itemsEl.appendChild(sharedList);
+    renderPlAddPanel(pl);
+    // 部门筛选条
+    const fb = document.getElementById('plDeptFilterBar');
+    const dprog = deptProgress(pl);
+    const cnt = (d) => { const x = dprog.find(y => y.d === d); return x ? x.total : 0; };
+    const chips = [['', t('deptFilterAll') + ' ' + pl.items.length]].concat(PL_DEPTS.map(d => [d, DEPT_NAME[d] + ' ' + cnt(d)]));
+    if (cnt('')) chips.push(['none', t('deptNone') + ' ' + cnt('')]);
+    if (plDeptFilter && !chips.some(c => c[0] === plDeptFilter)) plDeptFilter = '';
+    fb.innerHTML = pl.items.length ? chips.map(c => `<button type="button" class="dept-fbtn${c[0] === plDeptFilter ? ' active' : ''}" data-f="${c[0]}">${escapeHtml(c[1])}</button>`).join('') : '';
+    fb.querySelectorAll('.dept-fbtn').forEach(b => b.addEventListener('click', () => { plDeptFilter = b.dataset.f; renderPackingDetail(); }));
+    if (!pl.items.length) itemsEl.insertAdjacentHTML('beforeend', `<div class="empty">${escapeHtml(t('plNoItemsYet'))}</div>`);
     const anyDept = pl.items.some(i => deptOf(i));
     const orderedItems = [];
-    PL_DEPTS.concat(['']).forEach(d => pl.items.filter(i => deptOf(i) === d).forEach(i => orderedItems.push(i)));
+    const passF = (i) => !plDeptFilter || (plDeptFilter === 'none' ? deptOf(i) === '' : deptOf(i) === plDeptFilter);
+    PL_DEPTS.concat(['']).forEach(d => pl.items.filter(i => deptOf(i) === d && passF(i)).forEach(i => orderedItems.push(i)));
     let lastDept = null;
     orderedItems.forEach(item => {
       if (anyDept && deptOf(item) !== lastDept) {
@@ -6256,6 +6456,23 @@
           tag.textContent = t('plCarryTag');
           row.insertBefore(tag, row.firstChild);
         }
+      }
+      if (!rowDo && canPackDept(deptOf(item))) {   // 直接在 PL 里改这一行的部门
+        const mv = document.createElement('div');
+        mv.className = 'dept-move';
+        mv.innerHTML = `<span>${escapeHtml(t('deptMoveLabel'))}</span><select class="dept-sel">${[''].concat(PL_DEPTS).map(d => `<option value="${d}"${d === deptOf(item) ? ' selected' : ''}${canPackDept(d) ? '' : ' disabled'}>${escapeHtml(d ? DEPT_NAME[d] : t('deptNoneOpt'))}</option>`).join('')}</select>`;
+        mv.querySelector('select').addEventListener('change', async (ev) => {
+          const nd = ev.target.value;
+          ev.target.disabled = true;
+          const ok = await mutatePackingListsAndSync((latestPLs, latestRecs) => {
+            const tp = latestPLs.find(x => x.id === pl.id);
+            const ti = tp && tp.items.find(x => x.id === item.id);
+            if (ti && !ti.doId) ti.dept = nd;
+            return { packingLists: latestPLs, records: latestRecs };
+          }, { a: 'plSetDept', d: { item: item.item, pl: pl.title, dept: nd ? DEPT_NAME[nd].replace(/^\S+\s/, '') : '—' } });
+          renderCurrentView();
+        });
+        row.appendChild(mv);
       }
       itemsEl.appendChild(row);
     });
@@ -8590,8 +8807,8 @@
       }));
     });
     const st = document.getElementById('masterStatus');
-    st.textContent = rows.length > shown.length ? t('archiveCount', { shown: shown.length, total: rows.length }) : '';
-    st.className = 'modal-status';
+    if (rows.length > shown.length) { st.textContent = t('archiveCount', { shown: shown.length, total: rows.length }); st.className = 'modal-status'; }
+    else if (!st.dataset.keep) { st.textContent = ''; st.className = 'modal-status'; }
   }
 
   document.getElementById('masterBtn').addEventListener('click', () => {
@@ -8600,6 +8817,7 @@
     masterNew = [];
     masterDeleted = new Set();
     masterFilter.value = '';
+    delete document.getElementById('masterStatus').dataset.keep;
     document.getElementById('masterError').textContent = '';
     renderMasterList();
     masterModal.classList.add('open');
@@ -8615,6 +8833,78 @@
     document.getElementById('masterNewCode').value = '';
     masterFilter.value = name;
     renderMasterList();
+  });
+
+  // ---- 从 Excel 导入货物主档（只放进草稿，按「保存」才生效）----
+  function parseDept(v) {
+    const x = String(v || '').trim().toLowerCase();
+    if (!x) return '';
+    if (PL_DEPTS.includes(x)) return x;
+    if (/^(fz|frozen|freezer|冷冻|冻)/.test(x)) return 'freezer';
+    if (/^(chill|冷藏|冷)/.test(x)) return 'chiller';
+    if (/^(dry|干)/.test(x)) return 'dry';
+    if (/^(clean|chem|清洁|洗|化学)/.test(x)) return 'cleaning';
+    return null;   // 看不懂
+  }
+  document.getElementById('masterImportBtn').addEventListener('click', () => document.getElementById('masterExcelFile').click());
+  document.getElementById('masterExcelFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const st = document.getElementById('masterStatus');
+    if (!file) return;
+    if (typeof XLSX === 'undefined') { st.textContent = t('xlsxLibFailed'); st.className = 'modal-status err'; return; }
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+        if (!rows.length) { st.textContent = t('noRowsFound'); st.className = 'modal-status err'; return; }
+        const K = {
+          name: ['item name', 'item', 'name', 'description', 'product', '名称', '货物'],
+          code: ['item code', 'code', 'sku', 'item no', 'item number', '编号', '货号'],
+          category: ['category', '分类'],
+          uom: ['uom', 'unit', 'base uom', '单位'],
+          altUom: ['pack uom', 'alt uom', 'alt. uom', 'pack unit', '包装单位'],
+          factor: ['factor', 'pack qty', 'qty per pack', 'conversion', '每包装数量'],
+          price: ['price', 'unit price', 'cost', '单价'],
+          minStock: ['min stock', 'minimum stock', 'min', 'reorder', '最低库存'],
+          barcode: ['barcode', 'ean', 'upc', '条码'],
+          loc: ['default location', 'location', 'loc', '默认库位', '库位'],
+          dept: ['department', 'dept', '部门', 'jabatan']
+        };
+        const base = masterRows();
+        let upd = 0, add = 0, skip = 0, badDept = 0;
+        rows.forEach(rw => {
+          const g = (k) => { const key = findKey(rw, K[k]); return key ? String(rw[key]).trim() : ''; };
+          const name = g('name'), code = g('code');
+          if (!name && !code) { skip++; return; }
+          const f = {};
+          ['category', 'uom', 'altUom', 'barcode', 'loc'].forEach(k => { const v = g(k); if (v) f[k] = v; });
+          ['factor', 'price', 'minStock'].forEach(k => { const v = parseFloat(g(k)); if (v > 0) f[k] = v; });
+          const dv = g('dept');
+          if (dv) { const d = parseDept(dv); if (d === null) badDept++; else if (d) f.dept = d; }
+          let r = base.find(x => (code && normU(x.itemCode) === normU(code)) || (name && normU(x.item) === normU(name)));
+          if (r) upd++;
+          else {
+            const n = { id: 'im_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), item: name || code, itemCode: code };
+            masterNew.push(n);
+            r = { key: 'n:' + n.id, item: n.item, itemCode: n.itemCode, m: null, isNew: true, id: n.id };
+            base.push(r);
+            add++;
+          }
+          const d0 = masterDraft.get(r.key) || {};
+          masterDraft.set(r.key, Object.assign(d0, f));
+        });
+        renderMasterList();
+        st.dataset.keep = '1';
+        st.textContent = t('masterImportDone', { upd, add, skip, bad: badDept });
+        st.className = 'modal-status ok';
+      } catch (err) {
+        console.error(err);
+        st.textContent = t('fileReadError'); st.className = 'modal-status err';
+      }
+      e.target.value = '';
+    };
+    reader.readAsArrayBuffer(file);
   });
 
   document.getElementById('masterSave').addEventListener('click', async () => {
@@ -8661,7 +8951,7 @@
   // ================= 操作日志（管理员）=================
   const AUDIT_KEYS = {
     add: 'actAdd', import: 'actImport', edit: 'actEdit', delete: 'actDelete',
-    plCreate: 'actPlCreate', plDelete: 'actPlDelete', plTake: 'actPlTake', plUndo: 'actPlUndo', plDropRest: 'actPlDropRest',
+    plCreate: 'actPlCreate', plDelete: 'actPlDelete', plTake: 'actPlTake', plUndo: 'actPlUndo', plAddItems: 'actPlAddItems', plSetDept: 'actPlSetDept', plDropRest: 'actPlDropRest',
     clearAll: 'actClearAll', archive: 'actArchive', adjust: 'actAdjust', master: 'actMaster',
     userAdd: 'actUserAdd', userPerm: 'actUserPerm', userRemove: 'actUserRemove', enable: 'actEnable',
     locAdd: 'actLocAdd', locDel: 'actLocDel', transfer: 'actTransfer', grn: 'actGrn', grnDelete: 'actGrnDelete',
