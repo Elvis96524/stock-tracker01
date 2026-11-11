@@ -968,11 +968,15 @@
 
   .pl-new-item-row {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1.2fr auto;
     gap: 8px;
     align-items: center;
     margin-bottom: 10px;
   }
+  .pl-new-item-row select, .dept-sel { border: 1px solid var(--border); border-radius: 8px; padding: 9px 6px; font-size: 13px; width: 100%; background: var(--card, #fff); color: inherit; }
+  .dept-head { margin: 16px 0 6px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .dept-head span { font-weight: 500; font-size: 12px; color: var(--muted); }
+  .dept-chip { display:inline-block; font-size: 11px; padding: 1px 7px; border-radius: 8px; background: rgba(100,116,139,.14); margin-right: 4px; }
   .pl-new-item-row input {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -1072,6 +1076,15 @@
         <label><input type="checkbox" class="perm-cb" data-p="packing"><span data-i18n="permPacking"></span></label>
         <label><input type="checkbox" class="perm-cb" data-p="receiving"><span data-i18n="permReceiving"></span></label>
         <label><input type="checkbox" class="perm-cb" data-p="delivery"><span data-i18n="permDelivery"></span></label>
+      </div>
+      <div id="userDeptBox" style="display:none; margin:-4px 0 10px;">
+        <div class="sub" style="margin:0 0 4px;" data-i18n="permPackDepts">可备货的部门</div>
+        <div class="perm-grid" style="grid-template-columns:1fr 1fr; margin:0;">
+          <label><input type="checkbox" class="dept-cb" data-d="freezer" checked><span>❄️ Freezer</span></label>
+          <label><input type="checkbox" class="dept-cb" data-d="chiller" checked><span>🧊 Chiller</span></label>
+          <label><input type="checkbox" class="dept-cb" data-d="dry" checked><span>📦 Dry</span></label>
+          <label><input type="checkbox" class="dept-cb" data-d="cleaning" checked><span>🧽 Cleaning</span></label>
+        </div>
       </div>
       <div class="sub" id="userPermNote" data-i18n="permNote"></div>
     </div>
@@ -2161,6 +2174,13 @@
       pickFromHint: '取货位置：{list}',
       receiptFilterPh: '搜索收货单号、供应商、货物…',
       receiptsEmpty: '还没有收货单。',
+      deptLabel: '部门', deptNone: '未分部门', deptNoneOpt: '— 部门 —',
+      plDeptViewOnly: '只能查看（没有这个部门的备货权限）',
+      permPackDepts: '可备货的部门',
+      doDeptTitle: '这张 DO 要包含哪些部门？',
+      doDeptSub: '勾选的部门已备好的行会合成一张 DO；没勾的留在 Packing List 里，之后可以另开 DO。',
+      doDeptRows: '{n} 行已备好',
+      doDeptGo: '生成 DO',
       plDoListBanner: '已生成：{list}。已送出的行已锁定；其余行可以继续备货，再生成下一张 DO。要修改已送出的行：先到「出库」页删除对应的 DO。',
       plCarryTag: '↪ 上次没送完的余量',
       plPartialNote: '原要求 {orig}，这次备了一部分，余 {rest} 已转到下面一行，留给下次出货。',
@@ -2763,6 +2783,13 @@
       pickFromHint: 'Pick from: {list}',
       receiptFilterPh: 'Search receipt no., supplier, item…',
       receiptsEmpty: 'No receipts yet.',
+      deptLabel: 'Department', deptNone: 'No department', deptNoneOpt: '— Dept —',
+      plDeptViewOnly: 'view only (no picking access for this department)',
+      permPackDepts: 'Departments they can pick for',
+      doDeptTitle: 'Which departments go on this DO?',
+      doDeptSub: 'Ticked departments\' ready rows become one DO; unticked rows stay in the Packing List for another DO later.',
+      doDeptRows: '{n} row(s) ready',
+      doDeptGo: 'Make DO',
       plDoListBanner: 'Generated: {list}. Rows already delivered are locked; you can keep picking the other rows and make the next DO. To change a delivered row: delete its DO on the Delivery page first.',
       plCarryTag: '↪ Balance left from last time',
       plPartialNote: 'Requested {orig}; only part was picked this time. The balance of {rest} moved to the row below for the next delivery.',
@@ -3365,6 +3392,13 @@
       pickFromHint: 'Ambil dari: {list}',
       receiptFilterPh: 'Cari no. resit, pembekal, barang…',
       receiptsEmpty: 'Belum ada resit.',
+      deptLabel: 'Jabatan', deptNone: 'Tiada jabatan', deptNoneOpt: '— Jabatan —',
+      plDeptViewOnly: 'lihat sahaja (tiada akses ambil untuk jabatan ini)',
+      permPackDepts: 'Jabatan yang boleh diambil',
+      doDeptTitle: 'Jabatan mana dalam DO ini?',
+      doDeptSub: 'Baris siap bagi jabatan yang ditanda menjadi satu DO; yang tidak ditanda kekal dalam Packing List untuk DO lain kemudian.',
+      doDeptRows: '{n} baris siap',
+      doDeptGo: 'Buat DO',
       plDoListBanner: 'Dijana: {list}. Baris yang telah dihantar dikunci; anda boleh terus mengambil baris lain dan buat DO seterusnya. Untuk mengubah baris yang telah dihantar: padam DO berkenaan di halaman Penghantaran dahulu.',
       plCarryTag: '↪ Baki dari kali lepas',
       plPartialNote: 'Diminta {orig}; hanya sebahagian diambil kali ini. Baki {rest} dipindahkan ke baris di bawah untuk penghantaran seterusnya.',
@@ -3848,6 +3882,22 @@
     if (typeof authState !== 'undefined' && authState.mode === 'v2' && session && session.id) return session.id;
     return isAdmin ? 'admin' : 'device';
   }
+  // ---- 部门（Packing List 分区）----
+  const PL_DEPTS = ['freezer', 'chiller', 'dry', 'cleaning'];
+  const DEPT_NAME = { freezer: '❄️ Freezer', chiller: '🧊 Chiller', dry: '📦 Dry', cleaning: '🧽 Cleaning' };
+  const deptOf = (x) => (x && PL_DEPTS.includes(x.dept)) ? x.dept : '';
+  const deptName = (d) => d ? DEPT_NAME[d] : t('deptNone');
+  function deptOptionsHtml(sel, noneLabel) {
+    return `<option value="">${escapeHtml(noneLabel)}</option>` + PL_DEPTS.map(d => `<option value="${d}"${d === sel ? ' selected' : ''}>${escapeHtml(DEPT_NAME[d])}</option>`).join('');
+  }
+  function deptProgress(pl) {
+    const out = [];
+    PL_DEPTS.concat(['']).forEach(d => {
+      const its = (pl.items || []).filter(i => deptOf(i) === d);
+      if (its.length) out.push({ d, total: its.length, done: its.filter(i => i.done).length });
+    });
+    return out;
+  }
   const PERM_KEYS = ['stock', 'adjust', 'master', 'reports', 'packing', 'receiving', 'delivery'];
   function myUserEntry() {
     if (typeof authState === 'undefined' || authState.mode !== 'v2' || !session || !session.uid) return null;
@@ -3867,6 +3917,13 @@
     if (fullAdmin()) return true;
     const u = myUserEntry();
     return !!(u && Array.isArray(u.perms) && u.perms.includes(p));
+  }
+  // 备货权限按部门：没有设置 pdepts = 全部部门；没分部门的行，任何有 Packing List 权限的人都能备
+  function canPackDept(d) {
+    if (!can('packing')) return false;
+    if (fullAdmin() || !d) return true;
+    const u = myUserEntry();
+    return !(u && Array.isArray(u.pdepts)) || u.pdepts.includes(d);
   }
   function mkAudit(a, d) {
     return { at: new Date().toISOString(), by: actorName(), a, d: d || {} };
@@ -5566,6 +5623,7 @@
         <div class="pl-card-meta">${escapeHtml(pl.platform || '')}${pl.platform ? ' · ' : ''}${pl.date || ''}${plDos(pl).length ? ' · 🔒 ' + escapeHtml(plDos(pl).map(x => x.no).join(', ')) : (plReservedNo(pl) ? ' · ↺ ' + escapeHtml(t('plReservedTag', { no: plReservedNo(pl) })) : '')}</div>
         <div class="pl-progress-bar"><div class="pl-progress-fill" style="width:${pct}%;"></div></div>
         <div class="pl-progress-label">${done}/${total} ${t('plItemsDoneLabel')}</div>
+        ${deptProgress(pl).some(x => x.d) ? `<div style="margin-top:6px;">${deptProgress(pl).map(x => `<span class="dept-chip">${escapeHtml(deptName(x.d))} ${x.done}/${x.total}</span>`).join('')}</div>` : ''}
       `;
       card.addEventListener('click', () => {
         currentPackingListId = pl.id;
@@ -5610,6 +5668,7 @@
       <input type="text" class="pl-item-code-input" placeholder="${t('itemCodeLabel')}" autocomplete="off" value="${escapeHtml(prefill.itemCode || '')}">
       <input type="number" class="pl-item-qty-input" placeholder="${t('qtyLabel')}" min="1" step="any" value="${prefill.qty || ''}">
       <input type="text" class="pl-item-uom-input" placeholder="${t('uomLabel')}" autocomplete="off" value="${escapeHtml(prefill.uom || '')}">
+      <select class="pl-item-dept-input">${deptOptionsHtml(PL_DEPTS.includes(prefill.dept) ? prefill.dept : '', t('deptNoneOpt'))}</select>
       <button type="button" class="pl-remove-item-btn">✕</button>
     `;
     plItemsContainer.appendChild(row);
@@ -5621,9 +5680,12 @@
       const map = getNameToCodeMap();
       const match = map[nameInput.value.trim().toLowerCase()];
       if (match) codeInput.value = match;
+      const deptSel = row.querySelector('.pl-item-dept-input');
+      if (!deptSel.value) { const mm = findMaster(nameInput.value, codeInput.value); if (mm && PL_DEPTS.includes(mm.dept)) deptSel.value = mm.dept; }
       const known = records.find(r => r.uom && r.item.trim().toLowerCase() === nameInput.value.trim().toLowerCase());
       if (known && !uomInput.value) uomInput.value = known.uom;
     });
+    if (!prefill.dept && (prefill.item || prefill.itemCode)) { const mm = findMaster(prefill.item, prefill.itemCode); if (mm && PL_DEPTS.includes(mm.dept)) row.querySelector('.pl-item-dept-input').value = mm.dept; }
     row.querySelector('.pl-remove-item-btn').addEventListener('click', () => {
       row.remove();
       plItemRows = plItemRows.filter(id => id !== rowId);
@@ -5662,6 +5724,7 @@
         const codeKeys = ['item code', 'code', 'sku', 'item no', 'item number', 'part no'];
         const qtyKeys = ['quantity', 'qty'];
         const uomKeys = ['uom', 'unit', 'unit of measure'];
+        const deptKeys = ['department', 'dept', '部门', 'jabatan'];
 
         // 清空目前的空白行，只保留导入结果
         plItemRows.slice().forEach(rowId => {
@@ -5680,9 +5743,11 @@
           const itemCode = codeKey ? String(row[codeKey]).trim() : '';
           const qty = qtyKey ? parseFloat(row[qtyKey]) : NaN;
           const uom = uomKey ? String(row[uomKey]).trim() : '';
+          const deptKey = findKey(row, deptKeys);
+          const dept = deptKey ? String(row[deptKey]).trim().toLowerCase() : '';
 
           if (!item || !qty || isNaN(qty) || qty <= 0) { skipped++; return; }
-          addPlItemRow({ item, itemCode, qty, uom });
+          addPlItemRow({ item, itemCode, qty, uom, dept });
           added++;
         });
 
@@ -5722,6 +5787,8 @@
       const code = row.querySelector('.pl-item-code-input').value.trim();
       const qty = parseFloat(row.querySelector('.pl-item-qty-input').value);
       const typedUom = row.querySelector('.pl-item-uom-input').value.trim();
+      let dept = row.querySelector('.pl-item-dept-input').value;
+      if (!dept) { const mm = findMaster(name, code); if (mm && PL_DEPTS.includes(mm.dept)) dept = mm.dept; }
       if (name && qty > 0) {
         // 从既有库存记录里找 UOM
         const known = records.find(r => r.item.trim().toLowerCase() === name.toLowerCase());
@@ -5731,6 +5798,7 @@
           itemCode: code,
           uom: typedUom || (known ? known.uom : ''),
           qtyRequested: qty,
+          dept: PL_DEPTS.includes(dept) ? dept : '',
           done: false,
           qtyTaken: null,
           completedAt: null
@@ -5812,6 +5880,7 @@
   // 一次过提交：标记多个 Packing List 项目已发放，并为每条分配在库存中生成 OUT 记录（扣库存，先到期先出）
   // entries: [{ item, lines: [{ stock: {item,itemCode,uom}, qty }] }]
   async function commitPackingBatch(pl, entries) {
+    if (!can('packing') || (entries || []).some(e => !canPackDept(deptOf(e.item)))) { alert(t('adminRequiredNotice')); return false; }
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) {
       alert(t('ghConfigMissing'));
@@ -5864,7 +5933,7 @@
           targetItem.qtyRequested = totalQty;
           targetItem.status = 'complete';
           const child = { id: 'it_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), item: targetItem.item, itemCode: targetItem.itemCode || '',
-            uom: targetItem.uom || '', qtyRequested: rest, done: false, carryOf: targetItem.id };
+            uom: targetItem.uom || '', qtyRequested: rest, dept: targetItem.dept || '', done: false, carryOf: targetItem.id };
           const at = targetPl.items.indexOf(targetItem);
           targetPl.items.splice(at + 1, 0, child);
         } else {
@@ -6088,7 +6157,19 @@
     sharedList.id = 'plStockListShared';
     sharedList.innerHTML = plPickCache.map(o => `<option value="${escapeHtml(o.label)}" label="${escapeHtml(t('plStockBalanceHint', { bal: o.group.balance, uom: o.group.uom }))}"></option>`).join('');
     itemsEl.appendChild(sharedList);
-    pl.items.forEach(item => {
+    const anyDept = pl.items.some(i => deptOf(i));
+    const orderedItems = [];
+    PL_DEPTS.concat(['']).forEach(d => pl.items.filter(i => deptOf(i) === d).forEach(i => orderedItems.push(i)));
+    let lastDept = null;
+    orderedItems.forEach(item => {
+      if (anyDept && deptOf(item) !== lastDept) {
+        lastDept = deptOf(item);
+        const dp = deptProgress(pl).find(x => x.d === lastDept) || { done: 0, total: 0 };
+        const h = document.createElement('div');
+        h.className = 'dept-head';
+        h.innerHTML = `<div>${escapeHtml(deptName(lastDept))}</div><span>${dp.done}/${dp.total}${canPackDept(lastDept) ? '' : ' · ' + escapeHtml(t('plDeptViewOnly'))}</span>`;
+        itemsEl.appendChild(h);
+      }
       const row = document.createElement('div');
       row.className = 'pl-item-row' + (item.done ? ' done' : '');
       const rowDo = plRowDo(pl, item);
@@ -6107,7 +6188,7 @@
                 ? `<span class="pl-status-badge incomplete">⚠ ${t('plIncompleteLabel')}</span>`
                 : `<span class="pl-status-badge completed">✓ ${t('plCompleteLabel')}</span>`}
               <div class="pl-done-check">${t('plDoneLabel', { qty: item.qtyTaken })}</div>
-              ${rowDo ? `<div class="pl-item-meta">🔒 ${escapeHtml(t('plDeliveredTag', { no: rowDo.no }))}</div>` : `<button class="pl-undo-btn">${t('undoBtn')}</button>`}
+              ${rowDo ? `<div class="pl-item-meta">🔒 ${escapeHtml(t('plDeliveredTag', { no: rowDo.no }))}</div>` : (canPackDept(deptOf(item)) ? `<button class="pl-undo-btn">${t('undoBtn')}</button>` : '')}
             </div>
           </div>
         `;
@@ -6148,12 +6229,13 @@
           if (ok) renderCurrentView();
         });
       } else {
-        if (can('packing')) {
+        if (canPackDept(deptOf(item))) {
           renderAdminAllocRow(row, pl, item);
         } else {
-          renderLabourTakeRow(row, pl, item);
+          // 没有 Packing List 权限：只能查看，不能备货（也不会出现保存栏）
+          row.innerHTML = `<div class="pl-item-top"><div><div class="pl-item-name">${escapeHtml(item.item)}</div><div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}${item.carryOf ? ' · ' + t('plCarryTag') : ''}</div></div></div>`;
         }
-        if (item.carryOf && can('packing')) {   // 余量行：可以选择不再补送
+        if (item.carryOf && canPackDept(deptOf(item))) {   // 余量行：可以选择不再补送
           const dropBtn = document.createElement('button');
           dropBtn.className = 'pl-undo-btn';
           dropBtn.style.margin = '6px 0 0 12px';
@@ -6782,7 +6864,7 @@
           ${d.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(d.note)}</div>` : ''}
           ${d.pod ? `<div class="pl-item-meta" style="margin-top:6px;">✅ ${t('podInfo', { name: d.pod.name, date: d.pod.date })}${d.pod.note ? ' · ' + escapeHtml(d.pod.note) : ''}</div>` : ''}
           <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-            ${d.pod ? '' : `<button class="export-btn do-pod">✍ ${t('doPodBtn')}</button>`}
+            ${d.pod || !can('delivery') ? '' : `<button class="export-btn do-pod">✍ ${t('doPodBtn')}</button>`}
             ${can('delivery') && !d.plId && !d.pod ? `<button class="export-btn do-edit">✎ ${t('doEditBtn')}</button>` : ''}
             <button class="export-btn do-print">🖨 ${t('doPrintBtn')}</button>
             <button class="export-btn do-export">📄 ${t('grnExportBtn')}</button>
@@ -6917,6 +6999,25 @@
   }
 
   // ---- 从 Packing List 生成 DO（只生成单据，不再扣库存——库存在备货时已经扣过了）----
+  function pickDoDepts(readyRows, groups) {
+    return new Promise(resolve => {
+      const ov = document.createElement('div');
+      ov.className = 'modal-overlay open';
+      ov.innerHTML = `<div class="modal-card" style="max-width:420px;">
+        <h2>${escapeHtml(t('doDeptTitle'))}</h2>
+        <div class="sub">${escapeHtml(t('doDeptSub'))}</div>
+        <div class="perm-grid" style="margin:10px 0 14px;">${PL_DEPTS.concat(['']).filter(d => groups.includes(d)).map(d =>
+          `<label><input type="checkbox" class="dd-cb" data-d="${d}" checked><span>${escapeHtml(deptName(d))} — ${escapeHtml(t('doDeptRows', { n: readyRows.filter(i => deptOf(i) === d).length }))}</span></label>`).join('')}</div>
+        <div class="modal-btn-row"><button class="btn-secondary" id="ddCancel">${escapeHtml(t('cancelBtn'))}</button><button class="btn-primary" id="ddGo">${escapeHtml(t('doDeptGo'))}</button></div></div>`;
+      document.body.appendChild(ov);
+      const done = (v) => { ov.remove(); resolve(v); };
+      ov.querySelector('#ddCancel').addEventListener('click', () => done(null));
+      ov.querySelector('#ddGo').addEventListener('click', () => {
+        const ch = [...ov.querySelectorAll('.dd-cb')].filter(c => c.checked).map(c => c.dataset.d);
+        done(ch.length ? ch : null);
+      });
+    });
+  }
   async function ensureDoFromPl(plId, preOpened) {
     const pl0 = packingLists.find(p => p.id === plId);
     if (!pl0) return null;
@@ -6933,15 +7034,26 @@
     if (!cfg || !cfg.token) { alert(t('ghConfigMissing')); return null; }
     const latest = await fetchSharedData();
     const pl = latest.packingLists.find(p => p.id === plId) || pl0;
-    const ready = readyOf(pl, latest.deliveries);
-    if (!ready.length) { deliveries = latest.deliveries; return lastDoOf(latest.deliveries); }
+    const readyAll = readyOf(pl, latest.deliveries);
+    if (!readyAll.length) { deliveries = latest.deliveries; return lastDoOf(latest.deliveries); }
+    // 按顾客需求选择要包含的部门（已备好的行跨 2 个以上分区时才问）
+    let ready = readyAll;
+    const groups = [...new Set(readyAll.map(i => deptOf(i)))];
+    let asked = false;
+    if (groups.length > 1) {
+      const chosen = await pickDoDepts(readyAll, groups);
+      if (!chosen) return null;
+      ready = readyAll.filter(i => chosen.includes(deptOf(i)));
+      asked = true;
+      if (!ready.length) return null;
+    }
     const date = new Date().toISOString().slice(0, 10);
     // 号码：这些行共同保留的号码（删除旧 DO 时留下的）可用就沿用，否则取下一个
     const resSet = new Set(ready.map(i => i.doNoRes || ''));
     let cand = (resSet.size === 1 && [...resSet][0]) ? [...resSet][0] : '';
     if (!cand && pl.doNo && !ready.some(i => i.doNoRes)) cand = pl.doNo;   // 旧版保留的号码
     const no = (cand && !latest.deliveries.some(x => x.no === cand)) ? cand : nextDoNo(latest.deliveries, latest.packingLists, date.slice(0, 4));
-    if (latest.deliveries.some(x => x.plId === plId && x.itemIds) || latest.deliveries.some(x => x.plId === plId)) {
+    if (!asked && latest.deliveries.some(x => x.plId === plId)) {
       if (!confirm(t('doFromPlMore', { n: ready.length, no }))) return null;
     }
     const prevDo = lastDoOf(latest.deliveries);
@@ -6962,7 +7074,7 @@
     });
     const d = { id: 'do_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), no, date, soId: '', soNo: '',
       customer: custName, customerAddr: customerAddrOf(custName), platform: pl.platform || '', ref: '', note: '', status: 'shipped', pod: null, lines,
-      plId: pl.id, plTitle: pl.title, itemIds: ready.map(i => i.id), by: actorName(), at: new Date().toISOString() };
+      plId: pl.id, plTitle: pl.title, itemIds: ready.map(i => i.id), depts: [...new Set(ready.map(i => deptOf(i)))].filter(Boolean), by: actorName(), at: new Date().toISOString() };
     const readyIds = new Set(ready.map(i => i.id));
     const pls = latest.packingLists.map(p => p.id !== plId ? p : Object.assign({}, p, {
       doNo: '',
@@ -8457,6 +8569,7 @@
           <input data-f="minStock" type="number" min="0" step="any" placeholder="${t('minStockShort')}" value="${masterVal(r, 'minStock') || ''}">
           <input data-f="barcode" placeholder="${t('barcodeLabel')}" value="${escapeHtml(String(masterVal(r, 'barcode')))}">
           <input data-f="loc" list="locList" placeholder="${t('defaultLocLabel')}" value="${escapeHtml(String(masterVal(r, 'loc')))}">
+          <select data-f="dept" class="dept-sel" title="${escapeHtml(t('deptLabel'))}">${deptOptionsHtml(String(masterVal(r, 'dept')), t('deptNoneOpt'))}</select>
         </div>
       </div>`).join('');
     list.querySelectorAll('.mrow').forEach(div => {
@@ -8469,7 +8582,7 @@
         masterDraft.delete(row.key);
         renderMasterList();
       });
-      div.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
+      div.querySelectorAll('input, select').forEach(inp => inp.addEventListener('input', () => {
         const key = div.dataset.key;
         const d = masterDraft.get(key) || {};
         d[inp.dataset.f] = (inp.dataset.f === 'minStock' || inp.dataset.f === 'factor' || inp.dataset.f === 'price') ? (parseFloat(inp.value) || 0) : inp.value.trim();
@@ -8517,8 +8630,8 @@
       const rows = masterRows();
       const out = [];
       rows.forEach(r => {
-        const v = { category: masterVal(r, 'category'), uom: masterVal(r, 'uom'), minStock: Number(masterVal(r, 'minStock')) || 0, barcode: masterVal(r, 'barcode'), loc: masterVal(r, 'loc'), altUom: masterVal(r, 'altUom'), factor: Number(masterVal(r, 'factor')) || 0, price: Number(masterVal(r, 'price')) || 0 };
-        const hasAny = v.category || v.minStock > 0 || v.barcode || v.loc || v.altUom || v.factor > 0 || v.price > 0 || (r.m && r.m.uom) || (masterDraft.get(r.key) || {}).uom;
+        const v = { category: masterVal(r, 'category'), uom: masterVal(r, 'uom'), minStock: Number(masterVal(r, 'minStock')) || 0, barcode: masterVal(r, 'barcode'), loc: masterVal(r, 'loc'), dept: PL_DEPTS.includes(masterVal(r, 'dept')) ? masterVal(r, 'dept') : '', altUom: masterVal(r, 'altUom'), factor: Number(masterVal(r, 'factor')) || 0, price: Number(masterVal(r, 'price')) || 0 };
+        const hasAny = v.category || v.dept || v.minStock > 0 || v.barcode || v.loc || v.altUom || v.factor > 0 || v.price > 0 || (r.m && r.m.uom) || (masterDraft.get(r.key) || {}).uom;
         if (!hasAny && !r.isNew) return;
         out.push(Object.assign({ id: (r.m && r.m.id) || r.id || ('im_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), item: r.item, itemCode: r.itemCode }, v));
       });
@@ -8602,16 +8715,19 @@
     if (u.role === 'admin') return `<span class="perm-tag">${t('permTagAdmin')}</span>`;
     const ps = (u.perms || []).filter(k => PERM_KEYS.includes(k));
     if (!ps.length) return `<span class="perm-tag">${t('permTagReadonly')}</span>`;
-    return ps.map(k => `<span class="perm-tag">${t(permLabelKey[k])}</span>`).join('');
+    return ps.map(k => `<span class="perm-tag">${t(permLabelKey[k])}${k === 'packing' && Array.isArray(u.pdepts) ? ' (' + (u.pdepts.map(d => DEPT_NAME[d].replace(/^\S+\s/, '')).join('/') || '—') + ')' : ''}</span>`).join('');
   }
   function syncRoleUi() {
     const role = document.getElementById('userRole').value;
     document.getElementById('userPermGrid').style.display = role === 'custom' ? 'grid' : 'none';
+    const pk = document.querySelector('.perm-cb[data-p="packing"]');
+    document.getElementById('userDeptBox').style.display = (role === 'custom' && pk && pk.checked) ? 'block' : 'none';
   }
   function fillAccessForm(u) {
     const role = u && u.role === 'admin' ? 'admin' : (u && (u.perms || []).length ? 'custom' : 'readonly');
     document.getElementById('userRole').value = role;
     document.querySelectorAll('.perm-cb').forEach(cb => { cb.checked = !!(u && (u.perms || []).includes(cb.dataset.p)); });
+    document.querySelectorAll('.dept-cb').forEach(cb => { cb.checked = !(u && Array.isArray(u.pdepts)) || u.pdepts.includes(cb.dataset.d); });
     syncRoleUi();
   }
   function readAccessForm() {
@@ -8619,9 +8735,13 @@
     if (role === 'admin') return { role: 'admin', perms: [] };
     if (role === 'readonly') return { role: 'user', perms: [] };
     const perms = [...document.querySelectorAll('.perm-cb')].filter(cb => cb.checked).map(cb => cb.dataset.p);
-    return { role: 'user', perms };
+    const ds = [...document.querySelectorAll('.dept-cb')].filter(cb => cb.checked).map(cb => cb.dataset.d);
+    const meta = { role: 'user', perms };
+    meta.pdepts = (perms.includes('packing') && ds.length < PL_DEPTS.length) ? ds : null;   // null = 全部部门
+    return meta;
   }
   document.getElementById('userRole').addEventListener('change', syncRoleUi);
+  document.querySelectorAll('.perm-cb').forEach(cb => cb.addEventListener('change', syncRoleUi));
 
   function renderUsersModal() {
     const v2 = authState.mode === 'v2';
