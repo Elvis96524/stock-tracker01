@@ -1823,7 +1823,7 @@
 
   <div class="admin-notice" id="adminNotice" data-i18n="adminRequiredNotice">仅管理员可新增或删除记录。点击右上角"管理员"登录以进行操作。</div>
 
-  <div class="panel" data-perm="stock">
+  <div class="panel" data-perm="stock" style="display:none !important;">  <!-- 已隐藏：不再在库存页显示 Excel 导入 -->
 
     <h2 data-i18n="importPanelTitle">从 Excel 导入</h2>
     <div class="import-row">
@@ -1847,7 +1847,7 @@
     </div>
   </div>
 
-  <div class="panel" data-perm="stock">
+  <div class="panel" data-perm="stock" style="display:none !important;">  <!-- 已隐藏：不再在库存页显示手动新增 -->
     <h2 data-i18n="manualPanelTitle">手动新增进出记录</h2>
     <form id="manualForm">
       <div class="field">
