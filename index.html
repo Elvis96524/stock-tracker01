@@ -1666,6 +1666,7 @@
       </div>
       <button class="export-btn" id="masterAddBtn" style="margin-bottom:10px;" data-i18n="masterAddBtn">＋ 新增货物</button>
       <button class="export-btn" id="masterImportBtn" style="margin-bottom:10px;" data-i18n="masterImportBtn">📥 从 Excel 导入</button>
+      <button class="export-btn" id="masterExportBtn" style="margin-bottom:10px;" data-i18n="masterExportBtn">📤 导出 Excel</button>
       <input type="file" id="masterExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">
       <div class="sub" data-i18n="masterImportHint"></div>
       <datalist id="masterCatList"></datalist>
@@ -2213,6 +2214,7 @@
       deptMoveLabel: '部门：',
       actPlAddItems: '添加物品到 {pl}：{dept} × {n}',
       actPlSetDept: '改部门：{item} → {dept}（{pl}）',
+      masterExportBtn: '📤 导出 Excel',
       masterImportBtn: '📥 从 Excel 导入',
       masterImportHint: 'Excel 第一行写列名：Item Code、Item Name、Category、UOM、Pack UOM、Factor、Price、Min Stock、Barcode、Location、Department（部门：Freezer / Chiller / Dry / Cleaning）。同名或同编号的货物会更新有填写的栏位，没有的会新增。',
       masterImportDone: '已读取：更新 {upd} 个、新增 {add} 个、跳过 {skip} 行；部门看不懂 {bad} 行。请检查后按「保存」才会生效。',
@@ -2434,6 +2436,8 @@
       convHint: '将按主档换算入账：{qty} {uom}',
       convFrom: '原录入 {qty} {uom}',
       masterNeedFactor: '{item}：填了包装单位就必须填大于 0 的“每包装数量”，且包装单位不能和基本单位相同。',
+      masterNameEmpty: '货物名称不能为空。',
+      masterDupItem: '货物编号/名称重复：{item}。改名后不能和其他货物相同。',
       masterDupBarcode: '条码重复：{code}，每个条码只能对应一个货物。',
       suppliersBtn: '🏭 供应商',
       suppliersTitle: '供应商',
@@ -2836,6 +2840,7 @@
       deptMoveLabel: 'Dept:',
       actPlAddItems: 'Added items to {pl}: {dept} × {n}',
       actPlSetDept: 'Changed dept: {item} → {dept} ({pl})',
+      masterExportBtn: '📤 Export to Excel',
       masterImportBtn: '📥 Import from Excel',
       masterImportHint: 'Put column names in row 1: Item Code, Item Name, Category, UOM, Pack UOM, Factor, Price, Min Stock, Barcode, Location, Department (Freezer / Chiller / Dry / Cleaning). Items with the same name or code are updated (only filled cells); new ones are added.',
       masterImportDone: 'Read: {upd} updated, {add} new, {skip} skipped; {bad} row(s) with an unrecognised department. Press Save to apply.',
@@ -3057,6 +3062,8 @@
       convHint: 'Will be recorded as {qty} {uom} (converted via item master)',
       convFrom: 'entered {qty} {uom}',
       masterNeedFactor: '{item}: a pack UOM needs "units per pack" greater than 0, and it must differ from the base UOM.',
+      masterNameEmpty: 'Item name cannot be empty.',
+      masterDupItem: 'Duplicate item code/name: {item}. A renamed item cannot match another item.',
       masterDupBarcode: 'Duplicate barcode: {code}. A barcode can belong to one item only.',
       suppliersBtn: '🏭 Suppliers',
       suppliersTitle: 'Suppliers',
@@ -3459,6 +3466,7 @@
       deptMoveLabel: 'Jabatan:',
       actPlAddItems: 'Tambah barang ke {pl}: {dept} × {n}',
       actPlSetDept: 'Tukar jabatan: {item} → {dept} ({pl})',
+      masterExportBtn: '📤 Eksport ke Excel',
       masterImportBtn: '📥 Import dari Excel',
       masterImportHint: 'Letakkan nama lajur pada baris 1: Item Code, Item Name, Category, UOM, Pack UOM, Factor, Price, Min Stock, Barcode, Location, Department (Freezer / Chiller / Dry / Cleaning). Barang dengan nama atau kod sama dikemas kini (sel yang diisi sahaja); yang baharu ditambah.',
       masterImportDone: 'Dibaca: {upd} dikemas kini, {add} baharu, {skip} dilangkau; {bad} baris jabatan tidak dikenali. Tekan Simpan untuk melaksanakan.',
@@ -3680,6 +3688,8 @@
       convHint: 'Akan direkodkan sebagai {qty} {uom} (ditukar melalui induk barang)',
       convFrom: 'dimasukkan {qty} {uom}',
       masterNeedFactor: '{item}: UOM pek memerlukan "unit setiap pek" lebih daripada 0 dan mesti berbeza daripada UOM asas.',
+      masterNameEmpty: 'Nama barang tidak boleh kosong.',
+      masterDupItem: 'Kod/nama barang berganda: {item}. Barang yang dinamakan semula tidak boleh sama dengan barang lain.',
       masterDupBarcode: 'Kod bar berganda: {code}. Satu kod bar hanya untuk satu barang.',
       suppliersBtn: '🏭 Pembekal',
       suppliersTitle: 'Pembekal',
@@ -8769,6 +8779,8 @@
     masterNew.forEach(n => rows.push({ key: 'n:' + n.id, item: n.item, itemCode: n.itemCode, m: null, defUom: '', isNew: true, id: n.id }));
     return rows.sort((a, b) => a.item.localeCompare(b.item));
   }
+  function rowName(r) { const d = masterDraft.get(r.key); return d && d.item !== undefined ? d.item : r.item; }
+  function rowCode(r) { const d = masterDraft.get(r.key); return d && d.itemCode !== undefined ? d.itemCode : r.itemCode; }
   function masterVal(row, f) {
     const d = masterDraft.get(row.key);
     if (d && d[f] !== undefined) return d[f];
@@ -8778,13 +8790,13 @@
 
   function renderMasterList() {
     const q = masterFilter.value.trim().toLowerCase();
-    const rows = masterRows().filter(r => !q || r.item.toLowerCase().includes(q) || r.itemCode.toLowerCase().includes(q));
-    const shown = rows;   // 显示全部（可用搜索框缩小范围）
+    const rows = masterRows().filter(r => !q || r.item.toLowerCase().includes(q) || r.itemCode.toLowerCase().includes(q) || rowName(r).toLowerCase().includes(q) || rowCode(r).toLowerCase().includes(q));
+    const shown = rows.slice(0, 100);   // 只显示前 100 项（用搜索框缩小范围；导出 Excel 会导出全部）
     const cats = new Set(itemMaster.map(m => m.category).filter(Boolean));
     document.getElementById('masterCatList').innerHTML = Array.from(cats).sort().map(c => `<option value="${escapeHtml(c)}">`).join('');
     const list = document.getElementById('masterList');
     list.innerHTML = shown.map(r => `<div class="mrow" data-key="${escapeHtml(r.key)}">
-        <div class="mname" style="display:flex; justify-content:space-between; gap:8px; align-items:center;"><span>${r.itemCode ? '<b>' + escapeHtml(r.itemCode) + '</b> · ' : ''}${escapeHtml(r.item)}</span>${(r.m || r.isNew) ? `<button type="button" class="del-btn m-del" title="${t('deleteBtn')}">✕</button>` : ''}</div>
+        <div class="mname" style="display:flex; justify-content:space-between; gap:8px; align-items:center;"><div style="display:flex; gap:6px; flex:1; min-width:0;"><input data-f="itemCode" placeholder="${escapeHtml(t('itemCodeLabel'))}" value="${escapeHtml(rowCode(r))}" style="flex:0 0 34%; min-width:0; font-weight:700;"><input data-f="item" placeholder="${escapeHtml(t('itemNameLabel'))}" value="${escapeHtml(rowName(r))}" style="flex:1; min-width:0;"></div>${(r.m || r.isNew) ? `<button type="button" class="del-btn m-del" title="${t('deleteBtn')}">✕</button>` : ''}</div>
         <div class="mfields">
           <input data-f="category" list="masterCatList" placeholder="${t('categoryLabel')}" value="${escapeHtml(String(masterVal(r, 'category')))}">
           <input data-f="uom" placeholder="${t('uomLabel')}" value="${escapeHtml(String(masterVal(r, 'uom')))}">
@@ -8803,10 +8815,10 @@
         const input = div.querySelector('input[data-f="barcode"]');
         scanInto(input, (code) => {
           // 同一个条码不能对应两个货物：检查已保存的主档，以及这页里其他行刚填的条码
-          const me = normU(div.querySelector('.mname').textContent);
+          const myRow = shown.find(x => x.key === div.dataset.key);
           const saved = masterByBarcode(code);
           const other = Array.from(list.querySelectorAll('.mrow')).find(o => o !== div && normU(o.querySelector('input[data-f="barcode"]').value) === normU(code));
-          const clash = other ? other.querySelector('.mname').textContent.trim() : (saved && !me.includes(normU(saved.item)) ? saved.item : '');
+          const clash = other ? other.querySelector('input[data-f="item"]').value.trim() : (saved && !(myRow && myRow.m && myRow.m.id === saved.id) ? saved.item : '');
           if (clash) alert(t('scanBarcodeDup', { code, item: clash }));
         });
       });
@@ -8866,6 +8878,17 @@
     if (/^(clean|chem|清洁|洗|化学)/.test(x)) return 'cleaning';
     return null;   // 看不懂
   }
+  document.getElementById('masterExportBtn').addEventListener('click', () => {
+    if (typeof XLSX === 'undefined') { alert(t('xlsxLibFailed')); return; }
+    const num = (v) => (Number(v) > 0 ? Number(v) : '');
+    const aoa = [['Item Code', 'Item Name', 'Category', 'UOM', 'Pack UOM', 'Factor', 'Price', 'Min Stock', 'Barcode', 'Location', 'Department']]
+      .concat(masterRows().map(r => [rowCode(r), rowName(r), masterVal(r, 'category'), masterVal(r, 'uom'), masterVal(r, 'altUom'),
+        num(masterVal(r, 'factor')), num(masterVal(r, 'price')), num(masterVal(r, 'minStock')), masterVal(r, 'barcode'), masterVal(r, 'loc'),
+        PL_DEPTS.includes(masterVal(r, 'dept')) ? DEPT_NAME[masterVal(r, 'dept')].replace(/^\S+\s/, '') : '']));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Item master');
+    XLSX.writeFile(wb, 'item-master-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  });
   document.getElementById('masterImportBtn').addEventListener('click', () => document.getElementById('masterExcelFile').click());
   document.getElementById('masterExcelFile').addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -8927,6 +8950,26 @@
     reader.readAsArrayBuffer(file);
   });
 
+  function renameInDocs(roots, renames) {
+    const seen = new Set();
+    const low = (x) => String(x || '').trim().toLowerCase();
+    (function walk(o) {
+      if (!o || typeof o !== 'object' || seen.has(o)) return;
+      seen.add(o);
+      if (Array.isArray(o)) { o.forEach(walk); return; }
+      if (typeof o.item === 'string') {
+        for (const rn of renames) {
+          const c = low(o.itemCode);
+          if (rn.oldCode ? c === low(rn.oldCode) : (!c && low(o.item) === low(rn.oldName))) {
+            o.item = rn.nm;
+            if (rn.cd || 'itemCode' in o) o.itemCode = rn.cd;
+            break;
+          }
+        }
+      }
+      Object.values(o).forEach(walk);
+    })(roots);
+  }
   document.getElementById('masterSave').addEventListener('click', async () => {
     if (!can('master')) return;
     const err = document.getElementById('masterError');
@@ -8939,11 +8982,21 @@
       const latest = await fetchSharedData();
       const rows = masterRows();
       const out = [];
+      const renames = [];
+      const idSeen = new Set();
+      for (const r of rows) {
+        const nm = rowName(r), cd = rowCode(r);
+        if (!nm) { err.textContent = t('masterNameEmpty'); btn.disabled = false; return; }
+        const idk = cd ? 'code:' + cd.toLowerCase() : 'name:' + nm.toLowerCase();
+        if (idSeen.has(idk)) { err.textContent = t('masterDupItem', { item: (cd ? cd + ' · ' : '') + nm }); btn.disabled = false; return; }
+        idSeen.add(idk);
+        if (!r.isNew && (nm !== r.item || cd !== r.itemCode)) renames.push({ oldName: r.item, oldCode: r.itemCode, nm, cd });
+      }
       rows.forEach(r => {
         const v = { category: masterVal(r, 'category'), uom: masterVal(r, 'uom'), minStock: Number(masterVal(r, 'minStock')) || 0, barcode: masterVal(r, 'barcode'), loc: masterVal(r, 'loc'), dept: PL_DEPTS.includes(masterVal(r, 'dept')) ? masterVal(r, 'dept') : '', altUom: masterVal(r, 'altUom'), factor: Number(masterVal(r, 'factor')) || 0, price: Number(masterVal(r, 'price')) || 0 };
         const hasAny = v.category || v.dept || v.minStock > 0 || v.barcode || v.loc || v.altUom || v.factor > 0 || v.price > 0 || (r.m && r.m.uom) || (masterDraft.get(r.key) || {}).uom;
         if (!hasAny && !r.isNew) return;
-        out.push(Object.assign({ id: (r.m && r.m.id) || r.id || ('im_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), item: r.item, itemCode: r.itemCode }, v));
+        out.push(Object.assign({ id: (r.m && r.m.id) || r.id || ('im_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), item: rowName(r), itemCode: rowCode(r) }, v));
       });
       const seenBc = new Map();
       for (const v of out) {
@@ -8954,8 +9007,13 @@
           seenBc.set(k, v.id);
         }
       }
-      await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
-        { itemMaster: out, audit: [mkAudit('master', { n: out.length })] });
+      const popts = { itemMaster: out, audit: [mkAudit('master', { n: out.length })] };
+      if (renames.length) {   // 改了名称/编号：同步改所有单据里的同一货物
+        renameInDocs([latest.records, latest.packingLists, latestExtra.receipts, latestExtra.purchaseOrders, latestExtra.returns, latestExtra.salesOrders, latestExtra.deliveries], renames);
+        popts.receipts = latestExtra.receipts; popts.purchaseOrders = latestExtra.purchaseOrders; popts.returns = latestExtra.returns;
+        popts.salesOrders = latestExtra.salesOrders; popts.deliveries = latestExtra.deliveries;
+      }
+      await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined, popts);
       records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
       saveLocalCache();
       setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
