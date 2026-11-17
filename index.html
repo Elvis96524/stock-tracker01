@@ -1050,9 +1050,21 @@
     cursor: pointer;
   }
   .danger-btn:hover { background: var(--out-bg); }
+  #demoBanner { position: sticky; top: 0; z-index: 3000; background: #b45309; color: #fff; padding: 7px 12px; font-size: 14px; display: none; align-items: center; gap: 10px; flex-wrap: wrap; }
+  html.demo-mode #demoBanner { display: flex; }
+  #demoBanner .db-txt { flex: 1; min-width: 180px; font-weight: 600; }
+  #demoBanner button { background: #fff; color: #92400e; border: 0; border-radius: 6px; padding: 4px 10px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  html.demo-mode #demoEntryRow { display: none; }
+  #demoEntryRow { margin: 0 0 12px; }
+  #demoModal { z-index: 1300; }
+  .demo-opt { display: block; width: 100%; text-align: left; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--border, #d1d5db); border-radius: 10px; background: transparent; color: inherit; cursor: pointer; font-size: 15px; }
+  .demo-opt small { display: block; opacity: .7; margin-top: 2px; font-size: 12.5px; }
+  .demo-opt:disabled { opacity: .45; cursor: not-allowed; }
 </style>
 </head>
 <body>
+<div id="demoBanner"><span class="db-txt" id="demoBannerTxt"></span><button type="button" id="demoResetBtn"></button><button type="button" id="demoExitBtn"></button></div>
+
 
 <!-- 用户登录（管理员发放的 ID + 密码） -->
 <div id="loginScreen">
@@ -1184,6 +1196,7 @@
 
   <!-- 选择页：Packing List / Stock Balance -->
   <div id="choiceView">
+    <div id="demoEntryRow"><button type="button" class="lock-alt-link" id="demoEntryBtn"></button></div>
     <div id="backupReminder" class="qc-tag" style="display:none; margin:0 0 12px; cursor:pointer; padding:6px 10px; font-size:13px;"></div>
     <div class="choice-grid">
       <button class="choice-card" id="gotoPackingBtn">
@@ -2229,6 +2242,89 @@
 
 </div>
 
+
+  <div class="modal-overlay" id="demoModal">
+    <div class="modal-card" style="max-width:520px;">
+      <h2 id="demoMTitle"></h2>
+      <div class="sub" id="demoMSub"></div>
+      <button type="button" class="demo-opt" id="demoOptSample"></button>
+      <button type="button" class="demo-opt" id="demoOptBlank"></button>
+      <button type="button" class="demo-opt" id="demoOptCopy"></button>
+      <button type="button" class="demo-opt" id="demoOptResume"></button>
+      <div class="modal-error" id="demoMError"></div>
+      <div class="modal-btn-row"><button class="btn-secondary" id="demoMCancel"></button></div>
+    </div>
+  </div>
+<script>
+// ================= 演示模式：隔离层（必须最先执行）=================
+// 演示模式下：localStorage/sessionStorage 全部改写到 "srsDemo:" 前缀，GitHub API 请求全部由本机虚拟仓库应答，绝不触网、绝不碰正式数据。
+(function () {
+  var LS = window.localStorage, SS = window.sessionStorage;
+  var nGet = Storage.prototype.getItem, nSet = Storage.prototype.setItem, nRem = Storage.prototype.removeItem;
+  var P = 'srsDemo:';
+  var PASS = ['srsDeviceLock_v1', 'stockAppLang', 'srsCurrency', 'srsDemoMode', 'srsSite_v1', 'srsSiteNames_v1'];
+  var on = false;
+  try { on = nGet.call(LS, 'srsDemoMode') === '1'; } catch (e) {}
+  window.__DEMO = on;
+  window.__demoRaw = {
+    get: function (k) { try { return nGet.call(LS, k); } catch (e) { return null; } },
+    set: function (k, v) { nSet.call(LS, k, v); },
+    del: function (k) { try { nRem.call(LS, k); } catch (e) {} },
+    keys: function () { var o = []; try { for (var i = 0; i < LS.length; i++) o.push(LS.key(i)); } catch (e) {} return o; }
+  };
+  if (!on) return;
+  function map(st, k) { return (st === LS && PASS.indexOf(k) >= 0) ? k : P + (st === SS ? 's:' : '') + k; }
+  Storage.prototype.getItem = function (k) { return nGet.call(this, map(this, String(k))); };
+  Storage.prototype.setItem = function (k, v) { return nSet.call(this, map(this, String(k)), v); };
+  Storage.prototype.removeItem = function (k) { return nRem.call(this, map(this, String(k))); };
+  // 演示用的固定配置：token/数据密码都是假的，只在虚拟仓库内有效
+  try { if (nGet.call(LS, P + 'srsGhConfig_v1') === null) nSet.call(LS, P + 'srsGhConfig_v1', JSON.stringify({ token: 'demo', dataKey: 'demo-key' })); } catch (e) {}
+  // 虚拟 GitHub 仓库：{ path: { text, sha } } 存在 srsDemo:vrepo
+  function vload() { try { return JSON.parse(nGet.call(LS, P + 'vrepo') || '{}') || {}; } catch (e) { return {}; } }
+  function vsave(o) { nSet.call(LS, P + 'vrepo', JSON.stringify(o)); }
+  function b64(str) { return btoa(unescape(encodeURIComponent(str))); }
+  function unb64(x) { return decodeURIComponent(escape(atob(x.replace(/\n/g, '')))); }
+  function resp(status, body, ct) { return new Response(typeof body === 'string' ? body : JSON.stringify(body), { status: status, headers: { 'Content-Type': ct || 'application/json' } }); }
+  var nFetch = window.fetch.bind(window);
+  var seq = Date.now();
+  window.fetch = function (input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (/^https?:\/\/(api\.github\.com|raw\.githubusercontent\.com|github\.com)\//i.test(url)) {
+      init = init || {};
+      var m = /\/contents\/([^?]+)/.exec(url);
+      if (!m) return Promise.resolve(resp(404, { message: 'Not Found (demo)' }));
+      var path = decodeURIComponent(m[1]), repo = vload(), method = (init.method || 'GET').toUpperCase();
+      var hdr = init.headers || {}, accept = (hdr.Accept || hdr.accept || '');
+      if (method === 'GET') {
+        var f = repo[path];
+        if (!f) return Promise.resolve(resp(404, { message: 'Not Found' }));
+        if (/raw/.test(accept)) return Promise.resolve(resp(200, f.text, 'text/plain'));
+        return Promise.resolve(resp(200, { sha: f.sha, encoding: 'base64', content: b64(f.text), path: path }));
+      }
+      var body = {}; try { body = JSON.parse(init.body || '{}'); } catch (e) {}
+      var cur = repo[path];
+      if (method === 'PUT') {
+        if (cur && !body.sha) return Promise.resolve(resp(422, { message: "Invalid request. \"sha\" wasn't supplied." }));
+        if (cur && body.sha !== cur.sha) return Promise.resolve(resp(409, { message: path + ' does not match ' + body.sha }));
+        if (!cur && body.sha) return Promise.resolve(resp(422, { message: 'sha does not match' }));
+        var ns = 'demo' + (++seq).toString(36);
+        try { repo[path] = { text: unb64(body.content || ''), sha: ns }; vsave(repo); }
+        catch (e) { return Promise.resolve(resp(500, { message: 'Demo storage full: ' + e.message })); }
+        return Promise.resolve(resp(200, { content: { sha: ns, path: path } }));
+      }
+      if (method === 'DELETE') {
+        if (!cur) return Promise.resolve(resp(404, { message: 'Not Found' }));
+        if (body.sha !== cur.sha) return Promise.resolve(resp(409, { message: 'sha does not match' }));
+        delete repo[path]; vsave(repo);
+        return Promise.resolve(resp(200, { commit: {} }));
+      }
+      return Promise.resolve(resp(200, {}));
+    }
+    return nFetch(input, init);
+  };
+  document.documentElement.classList.add('demo-mode');
+})();
+</script>
 <script>
   // ================= 多语言 / Language / Bahasa =================
   const translations = {
@@ -3081,6 +3177,7 @@
       viewBtn: '查看',
       syncing: '同步中...',
       syncedAt: '已同步 · {time}',
+      saveConflict: '刚刚有别人保存了数据，你这次的修改没有保存（没有覆盖别人的内容）。已刷新到最新数据，请检查后再操作一次。',
       syncFailed: '同步失败',
       offlineUsingCache: '网络异常，正在显示本机缓存数据',
       fetchFailed: '无法连接，请检查网络',
@@ -3998,6 +4095,7 @@
       viewBtn: 'View',
       syncing: 'Syncing...',
       syncedAt: 'Synced · {time}',
+      saveConflict: 'Someone else just saved. Your change was NOT saved (nothing of theirs was overwritten). The latest data has been loaded; please check it and try again.',
       syncFailed: 'Sync failed',
       offlineUsingCache: 'Network issue — showing cached data from this device',
       fetchFailed: 'Could not connect. Please check your network.',
@@ -4915,6 +5013,7 @@
       viewBtn: 'Lihat',
       syncing: 'Menyegerak...',
       syncedAt: 'Disegerak · {time}',
+      saveConflict: 'Orang lain baru sahaja menyimpan. Perubahan anda TIDAK disimpan (tiada data mereka ditimpa). Data terkini telah dimuatkan; sila semak dan cuba lagi.',
       syncFailed: 'Segerak gagal',
       offlineUsingCache: 'Isu rangkaian — memaparkan data cache peranti ini',
       fetchFailed: 'Tidak dapat menyambung. Sila semak rangkaian anda.',
@@ -5318,6 +5417,21 @@
 
   // 读取仓库文件原文：使用 raw 媒体类型，文件可达 100MB（默认 JSON 格式超过 1MB 就拿不到内容）。
   // 走 GitHub Contents API，绕开 Pages/CDN 缓存。文件不存在时返回 null。
+  // 读取文件并同时拿到版本号（sha）。先取版本号再取内容：中途若有人保存，写回时会被拒绝，而不是覆盖
+  let writeSha = null;   // 最近一次“写入前读取”得到的 data 文件版本号
+  async function fetchRepoTextSha(path) {
+    const cfg = getGhConfig();
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}&t=${Date.now()}`;
+    const headers = { 'Accept': 'application/vnd.github+json' };
+    if (cfg && cfg.token) headers['Authorization'] = `token ${cfg.token}`;
+    const res = await fetch(url, { headers, cache: 'no-store' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('fetch failed: ' + res.status);
+    const j = await res.json();
+    if (j && j.encoding === 'base64' && typeof j.content === 'string' && j.content.length) return { text: base64ToUtf8(j.content), sha: j.sha || null };
+    return { text: await fetchRepoText(path), sha: (j && j.sha) || null };
+  }
+
   async function fetchRepoText(path) {
     const cfg = getGhConfig();
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}&t=${Date.now()}`;
@@ -5344,10 +5458,13 @@
   }
 
   // 拉取共享数据
-  async function fetchSharedData() {
+  async function fetchSharedData(fopts) {
     const siteAtStart = curSiteId;
-    const text = await fetchRepoText(repoPath());
-    if (text === null) throw new Error('fetch failed: 404');
+    const viewOnly = !!(fopts && fopts.view);   // 仅为显示刷新：不更新写入用的版本号
+    if (!viewOnly) writeSha = null;
+    const got = await fetchRepoTextSha(repoPath());
+    if (got === null || got.text === null) throw new Error('fetch failed: 404');
+    const text = got.text;
     const raw = JSON.parse(text);
     let parsed;
     if (siteAtStart !== curSiteId) { const e = new Error('stale'); e.code = 'STALE'; throw e; }
@@ -5388,22 +5505,26 @@
       complaints: Array.isArray(parsed.complaints) ? parsed.complaints : []
     };
     if (siteAtStart !== curSiteId) { const e = new Error('stale'); e.code = 'STALE'; throw e; }
+    if (!viewOnly) writeSha = got.sha || null;
     latestExtra = { itemMaster: out.itemMaster, auditLog: out.auditLog, locations: out.locations, receipts: out.receipts, purchaseOrders: out.purchaseOrders, suppliers: out.suppliers, customers: out.customers, returns: out.returns, salesOrders: out.salesOrders, deliveries: out.deliveries, tempUnits: out.tempUnits, tempLogs: out.tempLogs, loadings: out.loadings, complaints: out.complaints };
     return out;
   }
 
   // 通用：写入仓库文件（需要本机 Token）。先取得现有文件的 sha 再 PUT。
-  async function putRepoFile(path, fileContent, message) {
+  async function putRepoFile(path, fileContent, message, expectSha) {
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) {
       throw new Error(t('ghConfigMissing'));
     }
     const apiBase = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`;
-    const getRes = await fetch(`${apiBase}?ref=${REPO_BRANCH}&t=${Date.now()}`, {
+    const getRes = expectSha ? null : await fetch(`${apiBase}?ref=${REPO_BRANCH}&t=${Date.now()}`, {
       headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' }
     });
     let sha;
-    if (getRes.ok) {
+    if (expectSha) {
+      // 乐观锁：用“读数据时”的版本号写入；期间如果别人保存过，GitHub 会拒绝（409），不会覆盖别人的修改
+      sha = expectSha;
+    } else if (getRes.ok) {
       sha = (await getRes.json()).sha;
     } else if (getRes.status !== 404) {
       const err = await getRes.json().catch(() => ({}));
@@ -5425,8 +5546,15 @@
     });
     if (!putRes.ok) {
       const err = await putRes.json().catch(() => ({}));
+      if (expectSha && (putRes.status === 409 || (putRes.status === 422 && /sha/i.test(err.message || '')))) {
+        const ce = new Error(t('saveConflict')); ce.code = 'CONFLICT';
+        writeSha = null;
+        setTimeout(() => { try { loadDataAndRender(true); } catch (e) {} }, 0);
+        throw ce;
+      }
       throw new Error(err.message || ('PUT failed: ' + putRes.status));
     }
+    try { const pj = await putRes.json(); if (expectSha && pj && pj.content && pj.content.sha) writeSha = pj.content.sha; } catch (e) { if (expectSha) writeSha = null; }
   }
 
   // 把最新数据写回 GitHub（加密后写入）
@@ -5482,7 +5610,7 @@
         archiveKeyPrev: a.archiveKeyPrev || ''
       }, a.master));
       env.users = a.envUsers;
-      await putRepoFile(repoPath(), JSON.stringify(env), 'SRS: update stock records');
+      await putRepoFile(repoPath(), JSON.stringify(env), 'SRS: update stock records', writeSha);
       authState = { mode: 'v2', envUsers: a.envUsers, usersPayload: a.usersPayload, archiveKey: a.archiveKey || '', archiveKeyPrev: a.archiveKeyPrev || '' };
       if (authOverride) { session.master = a.master; persistSession(); }
       done();
@@ -5498,7 +5626,7 @@
       { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [], itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, customers: newCusts, appVer: APP_VER, returns: newRets, salesOrders: newSOs, deliveries: newDOs, tempUnits: newTU, tempLogs: newTL, loadings: newLD, complaints: newCP },
       dataKey
     );
-    await putRepoFile(repoPath(), fileContent, 'SRS: update stock records');
+    await putRepoFile(repoPath(), fileContent, 'SRS: update stock records', writeSha);
     done();
   }
 
@@ -5625,7 +5753,7 @@
     refreshBtn.classList.add('spinning');
     if (!silent) setSyncStatus(t('syncing'));
     try {
-      const data = await fetchSharedData();
+      const data = await fetchSharedData({ view: true });
       records = data.records;
       adminKeyHash = data.adminKeyHash;
       packingLists = data.packingLists;
@@ -12047,6 +12175,136 @@
     updateAdminUI();
     await loadDataAndRender(false);
   }
+
+
+  // ================= 演示模式：入口 / 样例数据 / 退出 =================
+  const DEMO_PASS = 'demo-key';
+  const dmT = (zh, en, ms) => ({ zh, en, ms }[currentLang] || en);
+  function dmApplyText() {
+    const $ = id => document.getElementById(id);
+    $('demoBannerTxt').textContent = dmT('🧪 演示模式 — 这里的一切操作都不会影响正式数据（管理员密钥：demo，仅样例/空白）', '🧪 Demo mode — nothing here affects your real data (admin key: demo, sample/blank only)', '🧪 Mod demo — tiada yang menjejaskan data sebenar (kunci admin: demo, sampel/kosong sahaja)');
+    $('demoResetBtn').textContent = dmT('重置演示', 'Reset demo', 'Set semula');
+    $('demoExitBtn').textContent = dmT('退出演示', 'Exit demo', 'Keluar demo');
+    $('demoEntryBtn').textContent = dmT('🧪 演示模式（先体验，不影响正式数据）', '🧪 Demo mode (try it out, real data untouched)', '🧪 Mod demo (cuba dahulu, data sebenar tidak terjejas)');
+    $('demoMTitle').textContent = dmT('演示模式', 'Demo mode', 'Mod demo');
+    $('demoMSub').textContent = dmT('演示数据只保存在这台设备的浏览器里，不会上传 GitHub，也不会同步到其他设备。随时可退出，退出后回到正式数据。', 'Demo data stays in this browser only — never uploaded to GitHub or synced to other devices. Exit anytime to return to real data.', 'Data demo hanya disimpan dalam pelayar ini — tidak dimuat naik ke GitHub. Keluar bila-bila masa untuk kembali ke data sebenar.');
+    $('demoOptSample').innerHTML = dmT('📦 样例数据<small>带货物、供应商、客户、库存、PO/收货/出库、温度记录和投诉，适合学习全流程</small>', '📦 Sample data<small>Items, suppliers, customers, stock, PO/GRN/DO, temperature logs and a complaint — to learn the whole flow</small>', '📦 Data sampel<small>Barang, pembekal, pelanggan, stok, PO/GRN/DO, log suhu dan aduan — untuk belajar keseluruhan proses</small>');
+    $('demoOptBlank').innerHTML = dmT('🆕 空白<small>什么都没有，从零开始练习建档与收货</small>', '🆕 Blank<small>Empty — practise setup and receiving from scratch</small>', '🆕 Kosong<small>Tiada apa-apa — berlatih dari awal</small>');
+    $('demoOptCopy').innerHTML = dmT('📋 复制正式数据<small>用现有真实数据的一份拷贝来练习（需要已登录；管理员密钥与正式相同；只读取，不会改动正式数据）</small>', '📋 Copy of real data<small>Practise on a copy of your real data (must be logged in; same admin key as real; read-only on the real data)</small>', '📋 Salinan data sebenar<small>Berlatih dengan salinan data sebenar (perlu log masuk; kunci admin sama; hanya baca)</small>');
+    $('demoOptResume').innerHTML = dmT('▶️ 继续上次的演示<small>保留上次演示的所有操作</small>', '▶️ Resume last demo<small>Keep everything from the last demo session</small>', '▶️ Sambung demo terakhir<small>Kekalkan semua operasi demo terdahulu</small>');
+    $('demoMCancel').textContent = t('cancelBtn');
+  }
+  const dmRel = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  function dmSample() {
+    const at = n => dmRel(n) + 'T09:00:00.000Z';
+    let c = 0; const id = p => p + (++c).toString(36);
+    const master = [
+      { id: 'im1', item: 'Chicken Breast', itemCode: 'CHK001', dept: 'freezer', uom: 'kg', minStock: 50, minShelf: 30, category: 'Meat', barcode: '', loc: 'F-A1' },
+      { id: 'im2', item: 'Frozen Prawns', itemCode: 'PRN001', dept: 'freezer', uom: 'kg', minStock: 30, minShelf: 30, category: 'Seafood', barcode: '', loc: 'F-A2' },
+      { id: 'im3', item: 'Fresh Milk', itemCode: 'MLK001', dept: 'chiller', uom: 'ltr', minStock: 30, minShelf: 3, category: 'Dairy', barcode: '', loc: 'C-B1' },
+      { id: 'im4', item: 'Rice 25kg', itemCode: 'RIC001', dept: 'dry', uom: 'bag', minStock: 20, minShelf: 0, category: 'Dry goods', barcode: '', loc: 'D-C1' },
+      { id: 'im5', item: 'Cooking Oil 5L', itemCode: 'OIL001', dept: 'dry', uom: 'tin', minStock: 40, minShelf: 0, category: 'Dry goods', barcode: '', loc: 'D-C2' },
+      { id: 'im6', item: 'Dish Detergent', itemCode: 'CLN001', dept: 'cleaning', uom: 'btl', minStock: 10, minShelf: 0, category: 'Chemical', barcode: '', loc: 'D-C3' }
+    ];
+    const locs = ['F-A1', 'F-A2', 'C-B1', 'D-C1', 'D-C2', 'D-C3'].map((code, i) => ({ id: 'loc' + i, code, note: '' }));
+    const sups = [
+      { id: 'sup1', name: 'Ocean Fresh Sdn Bhd', contact: 'Ahmad', phone: '087-000111', email: '', note: '', certs: [{ name: 'HACCP', no: 'H-2201', expiry: dmRel(25) }, { name: 'Halal', no: 'HL-889', expiry: dmRel(300) }], eval: { delivery: 90, quality: 85, cert: 80, score: 85, status: 'approved', suggested: 'approved', note: '', by: 'admin', at: at(-20) }, evals: [] },
+      { id: 'sup2', name: 'Borneo Dairy Co', contact: 'Lim', phone: '082-000222', email: '', note: '', certs: [{ name: 'HACCP', no: 'H-3320', expiry: dmRel(200) }] },
+      { id: 'sup3', name: 'Island Dry Goods', contact: 'Siti', phone: '087-000333', email: '', note: '', certs: [] }
+    ];
+    const custs = [{ id: 'cu1', name: 'MV OCEAN STAR', address: 'Labuan Anchorage' }, { id: 'cu2', name: 'MV BORNEO SPIRIT', address: 'Labuan Anchorage' }];
+    const IN = (item, code, qty, uom, batch, exp, loc, sup, grn, daysAgo) => ({ id: id('in'), item, itemCode: code, qty, uom, type: 'IN', date: dmRel(-daysAgo), platform: '', expiryDate: exp, batch, loc, supplier: sup, grnId: grn.id, grnNo: grn.no, by: 'admin', at: at(-daysAgo) });
+    const g1 = { id: 'g1', no: 'GRN-' + new Date().getFullYear() + '-0001' }, g2 = { id: 'g2', no: 'GRN-' + new Date().getFullYear() + '-0002' }, g3 = { id: 'g3', no: 'GRN-' + new Date().getFullYear() + '-0003' };
+    const recs = [
+      IN('Chicken Breast', 'CHK001', 200, 'kg', 'CH-2401', dmRel(120), 'F-A1', 'Ocean Fresh Sdn Bhd', g1, 14),
+      IN('Chicken Breast', 'CHK001', 40, 'kg', 'CH-2398', dmRel(6), 'F-A1', 'Ocean Fresh Sdn Bhd', g1, 30),
+      IN('Frozen Prawns', 'PRN001', 90, 'kg', 'PR-0911', dmRel(200), 'F-A2', 'Ocean Fresh Sdn Bhd', g1, 14),
+      IN('Fresh Milk', 'MLK001', 60, 'ltr', 'ML-1105', dmRel(5), 'C-B1', 'Borneo Dairy Co', g2, 3),
+      IN('Rice 25kg', 'RIC001', 80, 'bag', 'RC-7781', dmRel(400), 'D-C1', 'Island Dry Goods', g3, 20),
+      IN('Cooking Oil 5L', 'OIL001', 60, 'tin', 'OL-3320', dmRel(300), 'D-C2', 'Island Dry Goods', g3, 20),
+      IN('Dish Detergent', 'CLN001', 30, 'btl', 'DD-0042', '', 'D-C3', 'Island Dry Goods', g3, 20)
+    ];
+    const OUT = (item, code, qty, uom, batch, exp, loc, vessel, doo, daysAgo) => ({ id: id('out'), item, itemCode: code, qty, uom, type: 'OUT', date: dmRel(-daysAgo), platform: vessel, expiryDate: exp, batch, loc, doId: doo.id, doNo: doo.no, customer: vessel, by: 'admin', at: at(-daysAgo) });
+    const yr = new Date().getFullYear();
+    const do1 = { id: 'do1', no: 'DO-' + yr + '-0001', date: dmRel(-5), customer: 'MV OCEAN STAR', platform: 'MV OCEAN STAR', status: 'shipped',
+      lines: [{ item: 'Chicken Breast', itemCode: 'CHK001', qty: 60, uom: 'kg', pieces: [{ batch: 'CH-2401', expiryDate: dmRel(120), loc: 'F-A1', qty: 60 }] }, { item: 'Cooking Oil 5L', itemCode: 'OIL001', qty: 35, uom: 'tin', pieces: [{ batch: 'OL-3320', expiryDate: dmRel(300), loc: 'D-C2', qty: 35 }] }],
+      by: 'admin', at: at(-5) };
+    recs.push(OUT('Chicken Breast', 'CHK001', 60, 'kg', 'CH-2401', dmRel(120), 'F-A1', 'MV OCEAN STAR', do1, 5));
+    recs.push(OUT('Cooking Oil 5L', 'OIL001', 35, 'tin', 'OL-3320', dmRel(300), 'D-C2', 'MV OCEAN STAR', do1, 5));
+    const po = { id: 'po1', no: 'PO-' + yr + '-0001', date: dmRel(-35), supplier: 'Ocean Fresh Sdn Bhd', expected: dmRel(-30), status: 'closed', lines: [{ item: 'Chicken Breast', qty: 240, uom: 'kg' }], by: 'admin', at: at(-35) };
+    const po2 = { id: 'po2', no: 'PO-' + yr + '-0002', date: dmRel(-1), supplier: 'Borneo Dairy Co', expected: dmRel(2), status: 'open', lines: [{ item: 'Fresh Milk', qty: 100, uom: 'ltr' }], by: 'admin', at: at(-1) };
+    const grns = [
+      { id: 'g1', no: g1.no, date: dmRel(-14), supplier: 'Ocean Fresh Sdn Bhd', poId: 'po1', poNo: po.no, lines: [{ item: 'Chicken Breast', batch: 'CH-2401', qty: 200, qc: 'pass' }, { item: 'Frozen Prawns', batch: 'PR-0911', qty: 90, qc: 'pass' }], by: 'admin', at: at(-14) },
+      { id: 'g2', no: g2.no, date: dmRel(-3), supplier: 'Borneo Dairy Co', lines: [{ item: 'Fresh Milk', batch: 'ML-1105', qty: 60, qc: 'pass' }], by: 'admin', at: at(-3) },
+      { id: 'g3', no: g3.no, date: dmRel(-20), supplier: 'Island Dry Goods', lines: [{ item: 'Rice 25kg', batch: 'RC-7781', qty: 80, qc: 'pass' }, { item: 'Cooking Oil 5L', batch: 'OL-3320', qty: 60, qc: 'pass' }, { item: 'Dish Detergent', batch: 'DD-0042', qty: 30, qc: 'pass' }], by: 'admin', at: at(-20) }
+    ];
+    const tu = [{ id: 'tu1', name: 'Freezer 1', kind: 'freezer', min: null, max: -15, active: true }, { id: 'tu2', name: 'Chiller 1', kind: 'chiller', min: 0, max: 5, active: true }];
+    const logs = [];
+    for (let d = 3; d >= 0; d--) {
+      const mk = (u, temp, action) => ({ id: id('tl'), unitId: u.id, unitName: u.name, kind: u.kind, at: dmRel(-d) + 'T08:30', temp, min: u.min, max: u.max, out: (u.max != null && temp > u.max) || (u.min != null && temp < u.min), action: action || '', by: 'admin', ts: at(-d) });
+      logs.push(mk(tu[0], d === 2 ? -12.5 : -18.2, d === 2 ? 'Door left open, closed and rechecked' : ''));
+      logs.push(mk(tu[1], 3.4 - d * 0.2));
+    }
+    const cp = [{ id: 'cp1', no: 'CP-' + yr + '-0001', date: dmRel(-4), customer: 'MV OCEAN STAR', vessel: 'MV OCEAN STAR', doIds: ['do1'], doNos: [do1.no], batches: ['CH-2401'], desc: 'Chicken packs partly thawed on arrival', res: 'Replaced 10 kg', needCA: true, ca: 'Check reefer pre-cool before loading', caDone: false, status: 'open', by: 'admin', at: at(-4) }];
+    const so = [{ id: 'so1', no: 'SO-' + yr + '-0001', date: dmRel(-1), customer: 'MV BORNEO SPIRIT', platform: 'MV BORNEO SPIRIT', requested: dmRel(3), note: '', status: 'open', lines: [{ item: 'Rice 25kg', itemCode: 'RIC001', qty: 15, uom: 'bag' }, { item: 'Fresh Milk', itemCode: 'MLK001', qty: 30, uom: 'ltr' }], by: 'admin', at: at(-1) }];
+    return { records: recs, packingLists: [], itemMaster: master, auditLog: [], locations: locs, receipts: grns, purchaseOrders: [po, po2], suppliers: sups, customers: custs, returns: [], salesOrders: so, deliveries: [do1], tempUnits: tu, tempLogs: logs, loadings: [], complaints: cp };
+  }
+  async function dmBuild(kind) {
+    let base;
+    if (kind === 'sample') base = Object.assign({ adminKeyHash: await sha256('demo') }, dmSample());
+    else if (kind === 'blank') base = { adminKeyHash: await sha256('demo'), records: [], packingLists: [], itemMaster: [], auditLog: [], locations: [], receipts: [], purchaseOrders: [], suppliers: [], customers: [], returns: [], salesOrders: [], deliveries: [], tempUnits: [], tempLogs: [], loadings: [], complaints: [] };
+    else {
+      const cur = await fetchSharedData();   // 只读：从正式仓库读一份
+      base = Object.assign({}, cur);
+    }
+    base.appVer = APP_VER;
+    return encryptPayload(base, DEMO_PASS);
+  }
+  async function dmEnter(kind) {
+    const err = document.getElementById('demoMError'); err.textContent = '';
+    const R = window.__demoRaw;
+    try {
+      if (kind !== 'resume') {
+        const text = await dmBuild(kind);
+        R.keys().filter(k => k.indexOf('srsDemo:') === 0).forEach(k => R.del(k));
+        R.set('srsDemo:vrepo', JSON.stringify({ 'data.json': { text, sha: 'demoseed' } }));
+        R.set('srsDemo:kind', kind);
+      }
+      R.set('srsDemoMode', '1');
+      location.reload();
+    } catch (e) {
+      err.textContent = (e && e.message) || String(e);
+    }
+  }
+  function dmExit() { window.__demoRaw.del('srsDemoMode'); location.reload(); }
+  function dmOpenModal() {
+    dmApplyText();
+    const R = window.__demoRaw;
+    const hasLast = !!R.get('srsDemo:vrepo');
+    const rb = document.getElementById('demoOptResume'); rb.disabled = !hasLast;
+    document.getElementById('demoOptCopy').style.display = window.__DEMO ? 'none' : '';
+    document.getElementById('demoMError').textContent = '';
+    document.getElementById('demoModal').classList.add('open');
+  }
+  (function () {
+    const $ = id => document.getElementById(id);
+    dmApplyText();
+    $('demoEntryBtn').addEventListener('click', dmOpenModal);
+    $('demoResetBtn').addEventListener('click', dmOpenModal);
+    $('demoExitBtn').addEventListener('click', dmExit);
+    $('demoMCancel').addEventListener('click', () => $('demoModal').classList.remove('open'));
+    const go = kind => async () => {
+      if (kind !== 'resume' && window.__DEMO && !confirm(dmT('这会清除当前演示里的所有操作，确定？', 'This wipes everything in the current demo. Continue?', 'Ini akan memadam semua operasi demo semasa. Teruskan?'))) return;
+      [ 'demoOptSample', 'demoOptBlank', 'demoOptCopy', 'demoOptResume' ].forEach(i => $(i).disabled = true);
+      await dmEnter(kind);
+      [ 'demoOptSample', 'demoOptBlank', 'demoOptCopy' ].forEach(i => $(i).disabled = false);
+    };
+    $('demoOptSample').addEventListener('click', go('sample'));
+    $('demoOptBlank').addEventListener('click', go('blank'));
+    $('demoOptCopy').addEventListener('click', go('copy'));
+    $('demoOptResume').addEventListener('click', go('resume'));
+    document.getElementById('langSelect') && document.getElementById('langSelect').addEventListener('change', () => setTimeout(dmApplyText, 0));
+  })();
 
   (async function start() {
     applyStaticTranslations();
