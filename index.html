@@ -1302,6 +1302,14 @@
         <div class="field"><label for="doRef" data-i18n="refLabel2">客户单号 / 备注单号</label><input type="text" id="doRef" autocomplete="off"></div>
         <div class="field"><label for="doNote" data-i18n="noteLabel">备注</label><input type="text" id="doNote" autocomplete="off"></div>
       </div>
+      <div id="doEquipWrap" style="margin:4px 0 12px;">
+        <div class="pl-item-meta" style="font-weight:600; margin-bottom:4px;" data-i18n="doEquipLabel"></div>
+        <div id="doEquipList" class="perm-grid" style="max-height:110px; overflow:auto; margin-bottom:6px;"></div>
+        <div class="edit-grid">
+          <div class="field"><label for="doTempFrom" data-i18n="doEquipFrom"></label><input type="datetime-local" id="doTempFrom"></div>
+          <div class="field"><label for="doTempTo" data-i18n="doEquipTo"></label><input type="datetime-local" id="doTempTo"></div>
+        </div>
+      </div>
       <div id="doLines"></div>
       <button type="button" class="lock-alt-link" id="doAddLineBtn" style="margin-bottom:12px;" data-i18n="addItemBtn">+ Add item</button>
       <button type="button" class="scan-btn" id="doScanBtn" style="margin:0 0 12px 8px;" data-i18n="doScanBtn">📷 扫码拣货</button>
@@ -1597,6 +1605,8 @@
         <div class="field"><label for="tempVal" data-i18n="tempValLabel">读数 °C</label><input type="number" id="tempVal" step="0.1"></div>
         <div class="field full"><label for="tempAction" data-i18n="tempActionLabel">纠正措施</label><input type="text" id="tempAction" data-i18n-ph="tempActionPh" autocomplete="off"></div>
       </div>
+      <div id="tempExtra"></div>
+      <button type="button" class="lock-alt-link" id="tempAddPointBtn" style="margin:6px 0;" data-i18n="tempAddPoint"></button>
       <div id="tempRange" class="pl-item-meta" style="margin:4px 0 8px;"></div>
       <div class="modal-error" id="tempError"></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
@@ -2435,6 +2445,16 @@
       tempActionLabel: '纠正措施（超出范围必填）',
       tempActionPh: '例如：已调低设定温度并复查 / 货物转移到 2 号冷库',
       tempSaveBtn: '记录',
+      tempAddPoint: '+ 再加一个时间点',
+      tempPointN: '第 {n} 个时间点：请填写记录时间和读数。',
+      doEquipLabel: '温度设备（选中后，打印 DO 时附上该设备的温度记录）',
+      doEquipFrom: '温度记录从',
+      doEquipTo: '到',
+      doEquipNone: '还没有设备。请先在「温度记录 → 设备管理」添加。',
+      doTempTitle: 'Temperature Record',
+      doTempNone: 'No readings in this period',
+      doTempEquip: 'Equipment', doTempTime: 'Date / Time', doTempVal: 'Temp °C', doTempLimit: 'Limit', doTempStatus: 'Status', doTempAct: 'Corrective action', doTempOk: 'OK', doTempOut: 'OUT',
+      doEquipTag: '🌡 {names}',
       tempUnitsBtn: '⚙ 设备管理',
       tempExportBtn: '📤 导出 Excel',
       tempNoUnits: '还没有设备。请先到「设备管理」添加冷藏库、冷冻库或 reefer 货柜。',
@@ -3353,6 +3373,16 @@
       tempActionLabel: 'Corrective action (required when out of range)',
       tempActionPh: 'e.g. lowered set point and re-checked / moved goods to cold room 2',
       tempSaveBtn: 'Record',
+      tempAddPoint: '+ Add another time point',
+      tempPointN: 'Time point {n}: enter the time and the reading.',
+      doEquipLabel: 'Temperature equipment (selected equipment\'s readings are printed with the DO)',
+      doEquipFrom: 'Readings from',
+      doEquipTo: 'to',
+      doEquipNone: 'No equipment yet. Add it under Temperature Log → Manage equipment.',
+      doTempTitle: 'Temperature Record',
+      doTempNone: 'No readings in this period',
+      doTempEquip: 'Equipment', doTempTime: 'Date / Time', doTempVal: 'Temp °C', doTempLimit: 'Limit', doTempStatus: 'Status', doTempAct: 'Corrective action', doTempOk: 'OK', doTempOut: 'OUT',
+      doEquipTag: '🌡 {names}',
       tempUnitsBtn: '⚙ Equipment',
       tempExportBtn: '📤 Export Excel',
       tempNoUnits: 'No equipment yet. Add chillers, freezers or reefer containers under "Equipment" first.',
@@ -4271,6 +4301,16 @@
       tempActionLabel: 'Tindakan pembetulan (wajib jika di luar julat)',
       tempActionPh: 'cth: suhu ditetapkan semula dan disemak / barang dipindah ke bilik sejuk 2',
       tempSaveBtn: 'Rekod',
+      tempAddPoint: '+ Tambah satu masa lagi',
+      tempPointN: 'Masa {n}: isi masa rekod dan bacaan.',
+      doEquipLabel: 'Peralatan suhu (bacaan peralatan yang dipilih dicetak bersama DO)',
+      doEquipFrom: 'Bacaan dari',
+      doEquipTo: 'hingga',
+      doEquipNone: 'Belum ada peralatan. Tambah di Log Suhu → Urus peralatan.',
+      doTempTitle: 'Temperature Record',
+      doTempNone: 'No readings in this period',
+      doTempEquip: 'Equipment', doTempTime: 'Date / Time', doTempVal: 'Temp °C', doTempLimit: 'Limit', doTempStatus: 'Status', doTempAct: 'Corrective action', doTempOk: 'OK', doTempOut: 'OUT',
+      doEquipTag: '🌡 {names}',
       tempUnitsBtn: '⚙ Peralatan',
       tempExportBtn: '📤 Eksport Excel',
       tempNoUnits: 'Belum ada peralatan. Tambah peti sejuk, peti beku atau kontena reefer di "Peralatan" dahulu.',
@@ -8344,6 +8384,25 @@
     if (!n) addDoLine();
   });
   let doEditing = null;   // 正在修改的 DO（手动建立、未签收的才能修改）
+  function fillDoEquip(selIds, from, to) {
+    const sel = new Set(selIds || []);
+    const list = tempUnits.filter(u => u.active !== false || sel.has(u.id));
+    document.getElementById('doEquipList').innerHTML = list.length
+      ? list.map(u => `<label><input type="checkbox" class="do-eq" value="${escapeHtml(u.id)}"${sel.has(u.id) ? ' checked' : ''}> ${escapeHtml(u.name)} · ${escapeHtml(tempKindName(u.kind))}</label>`).join('')
+      : `<div class="pl-item-meta">${escapeHtml(t('doEquipNone'))}</div>`;
+    const d = document.getElementById('doDate').value || new Date().toISOString().slice(0, 10);
+    document.getElementById('doTempFrom').value = from || d + 'T00:00';
+    document.getElementById('doTempTo').value = to || d + 'T23:59';
+    document.getElementById('doTempFrom').dataset.touched = from ? '1' : '';
+  }
+  document.getElementById('doDate').addEventListener('change', () => {
+    const f = document.getElementById('doTempFrom');
+    if (f.dataset.touched) return;
+    const d = document.getElementById('doDate').value; if (!d) return;
+    f.value = d + 'T00:00'; document.getElementById('doTempTo').value = d + 'T23:59';
+  });
+  document.getElementById('doTempFrom').addEventListener('input', e => { e.target.dataset.touched = '1'; });
+  document.getElementById('doTempTo').addEventListener('input', () => { document.getElementById('doTempFrom').dataset.touched = '1'; });
   function openDoModal(soId, editDo) {
     if (!can('delivery')) return;
     doEditing = editDo || null;
@@ -8355,6 +8414,7 @@
     document.getElementById('doDate').value = (editDo && editDo.date) || new Date().toISOString().slice(0, 10);
     ['doCustomer', 'doPlatform', 'doRef', 'doNote'].forEach(id => { document.getElementById(id).value = ''; });
     refreshCustomerList();
+    fillDoEquip(editDo && editDo.tempUnitIds, editDo && editDo.tempFrom, editDo && editDo.tempTo);
     document.getElementById('doError').textContent = '';
     doLines.innerHTML = '';
     fillDoSoSelect(soId || '');
@@ -8394,6 +8454,7 @@
       lines.push(l);
     });
     if (!date || !lines.length) { err.textContent = t('doNeedLine'); return; }
+    const eqIds = Array.from(document.querySelectorAll('#doEquipList .do-eq:checked')).map(x => x.value);
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
     const btn = document.getElementById('doSave');
@@ -8440,7 +8501,8 @@
       });
       const d0 = { id: doId, no, date, soId: so ? so.id : '', soNo: so ? so.no : '', customer, customerAddr: customerAddrOf(customer), platform,
         ref: document.getElementById('doRef').value.trim(), note: document.getElementById('doNote').value.trim(),
-        status: 'shipped', pod: null, lines: dlines, by: actorName(), at: new Date().toISOString() };
+        status: 'shipped', pod: null, lines: dlines, by: actorName(), at: new Date().toISOString(),
+        tempUnitIds: eqIds, tempFrom: eqIds.length ? document.getElementById('doTempFrom').value : '', tempTo: eqIds.length ? document.getElementById('doTempTo').value : '' };
       const d = oldDo ? Object.assign({}, oldDo, d0, { by: oldDo.by, at: oldDo.at, editedBy: actorName(), editedAt: new Date().toISOString() }) : d0;
       const merged = baseRecs.concat(newRecs);
       await pushSharedData(merged, latest.adminKeyHash, latest.packingLists, undefined,
@@ -8625,9 +8687,35 @@
       (l.pieces && l.pieces.length ? l.pieces : [{ expiryDate: '', qty: l.qty }]).forEach(p => by.set(p.expiryDate || '', r4((by.get(p.expiryDate || '') || 0) + p.qty)));
       Array.from(by.entries()).sort().forEach(([ex, q]) => aoa.push([l.itemCode || '', l.item, q, l.uom || '', ex]));
     });
+    const tg = doTempLogs(d);
+    if (tg.length) {
+      aoa.push([], ['Temperature Record'], ['Equipment', 'Date/Time', 'Temp C', 'Limit', 'Status', 'Corrective action']);
+      tg.forEach(g => g.logs.length ? g.logs.forEach(l => aoa.push([g.name, (l.at || '').replace('T', ' '), l.temp, doRangeEn(l), l.out ? 'OUT' : 'OK', l.out ? (l.action || '') : ''])) : aoa.push([g.name, 'No readings in this period']));
+    }
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'DO');
     XLSX.writeFile(wb, d.no + '.xlsx');
+  }
+  // DO 附带的温度记录：按 DO 保存的设备 + 时间段，取当前温度记录（之后补录的读数也会带上）
+  function doTempLogs(d) {
+    const ids = d.tempUnitIds || [];
+    const from = d.tempFrom || '', to = d.tempTo || '';
+    return ids.map(id => {
+      const u = tempUnits.find(x => x.id === id);
+      const logs = tempLogs.filter(l => l.unitId === id && (!from || (l.at || '') >= from) && (!to || (l.at || '') <= to))
+        .sort((a, b) => (a.at || '').localeCompare(b.at || '') || (a.ts || '').localeCompare(b.ts || ''));
+      return { id, name: u ? u.name : ((tempLogs.find(l => l.unitId === id) || {}).unitName || id), logs };
+    });
+  }
+  const doRangeEn = (u) => { const T = k => translations.en[k] || k; return (u.min == null && u.max == null) ? T('tempNoLimit') : T('tempRangeHint').replace('{min}', u.min == null ? '—' : u.min).replace('{max}', u.max == null ? '—' : u.max); };
+  function doTempPrintHtml(d) {
+    const groups = doTempLogs(d);
+    if (!groups.length) return '';
+    const e = escapeHtml, T = k => translations.en[k] || k;
+    const rows = groups.map(g => g.logs.length ? g.logs.map(l => `<tr><td>${e(g.name)}</td><td>${e((l.at || '').replace('T', ' '))}</td><td class="r">${e(String(l.temp))}</td><td>${e(doRangeEn(l))}</td><td>${l.out ? '<b>' + e(T('doTempOut')) + '</b>' : e(T('doTempOk'))}</td><td>${e(l.out ? (l.action || '') : '')}</td></tr>`).join('')
+      : `<tr><td>${e(g.name)}</td><td colspan="5"><i>${e(T('doTempNone'))}</i></td></tr>`).join('');
+    return `<div style="margin-top:18px;break-inside:avoid;"><div style="font-weight:bold;margin-bottom:4px;">${e(T('doTempTitle'))}${d.tempFrom ? ` <span style="font-weight:normal;font-size:11px;">(${e(d.tempFrom.replace('T', ' '))} – ${e((d.tempTo || '').replace('T', ' '))})</span>` : ''}</div>
+      <table class="items" style="margin-top:0;font-size:11px;"><thead><tr><th>${e(T('doTempEquip'))}</th><th>${e(T('doTempTime'))}</th><th class="r">${e(T('doTempVal'))}</th><th>${e(T('doTempLimit'))}</th><th>${e(T('doTempStatus'))}</th><th>${e(T('doTempAct'))}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   function printDelivery(d, w0) {
     const e = escapeHtml;
@@ -8660,6 +8748,7 @@
       </div>
       <table class="items"><thead><tr><th>#</th><th>${e(t('itemCodeLabel'))}</th><th>${e(t('itemNameLabel'))}</th><th class="r">${e(t('qtyLabel'))}</th><th>${e(t('uomLabel'))}</th><th>${e(t('expiryDateLabel'))}</th></tr></thead><tbody>${rows}</tbody></table>
       ${d.note ? `<p>${e(d.note)}</p>` : ''}
+      ${doTempPrintHtml(d)}
       </td></tr><tr><td class="ffoot">
       <div class="sig"><div>${e(t('printDeliveredBy'))}</div><div>${e(t('printReceivedBy'))}${d.pod ? '<br>' + e(d.pod.name + ' · ' + d.pod.date) : ''}${d.pod && (d.pod.temp != null || d.pod.cond) ? '<br><small>' + e([d.pod.temp != null ? 'Temp ' + d.pod.temp + '°C' : '', d.pod.cond ? 'Condition: ' + (d.pod.cond === 'bad' ? 'Problem' : 'Good') : '', d.pod.issue && d.pod.issue !== 'none' ? d.pod.issue.charAt(0).toUpperCase() + d.pod.issue.slice(1) : ''].filter(Boolean).join(' · ')) + '</small>' : ''}</div></div>
       </td></tr></tbody></table>
@@ -10135,6 +10224,7 @@
     fillTempUnitSelects(); renderTempToday(); renderTempList();
     document.getElementById('tempAt').value = localNow();
     document.getElementById('tempVal').value = ''; document.getElementById('tempAction').value = ''; document.getElementById('tempError').textContent = '';
+    document.getElementById('tempExtra').innerHTML = '';
     tempLiveHint();
     document.getElementById('tempModal').classList.add('open');
   }
@@ -10142,30 +10232,53 @@
   document.getElementById('tempClose').addEventListener('click', () => { document.getElementById('tempModal').classList.remove('open'); if (currentView === 'choice') renderTempBadge(); });
   ['tempUnit', 'tempVal'].forEach(id => { document.getElementById(id).addEventListener('input', tempLiveHint); document.getElementById(id).addEventListener('change', tempLiveHint); });
   ['tempFilterUnit', 'tempOnlyOut'].forEach(id => document.getElementById(id).addEventListener('change', renderTempList));
+  function addTempPoint() {
+    const row = document.createElement('div'); row.className = 'temp-pt edit-grid'; row.style.cssText = 'margin-top:6px; border-top:1px dashed #bbb; padding-top:6px;';
+    row.innerHTML = `<div class="field"><label>${escapeHtml(t('tempAtLabel'))}</label><input type="datetime-local" class="tp-at"></div>
+      <div class="field"><label>${escapeHtml(t('tempValLabel'))}</label><input type="number" step="0.1" class="tp-val"></div>
+      <div class="field full"><label>${escapeHtml(t('tempActionLabel'))}</label><div style="display:flex; gap:6px;"><input type="text" class="tp-act" autocomplete="off" style="flex:1;"><button type="button" class="btn-secondary tp-del">✕</button></div></div>`;
+    row.querySelector('.tp-at').value = localNow();
+    row.querySelector('.tp-del').addEventListener('click', () => row.remove());
+    document.getElementById('tempExtra').appendChild(row);
+    row.querySelector('.tp-val').focus();
+  }
+  document.getElementById('tempAddPointBtn').addEventListener('click', addTempPoint);
   document.getElementById('tempSaveBtn').addEventListener('click', async () => {
     if (!canTemp()) return;
     const err = document.getElementById('tempError');
-    const uid = document.getElementById('tempUnit').value, at = document.getElementById('tempAt').value;
-    const tv = document.getElementById('tempVal').value, action = document.getElementById('tempAction').value.trim();
+    const uid = document.getElementById('tempUnit').value;
     const u = tempUnitById(uid);
     if (!u) { err.textContent = t('tempNeedUnit'); return; }
-    if (!at) { err.textContent = t('tempNeedAt'); return; }
-    if (tv === '' || isNaN(parseFloat(tv))) { err.textContent = t('tempNeedVal'); return; }
-    const temp = parseFloat(tv), out = isOutOfRange(temp, u);
-    if (out && !action) { err.textContent = t('tempNeedAction'); document.getElementById('tempAction').focus(); return; }
+    // 收集所有时间点：第一行 + 追加的行（读数留空的追加行直接忽略）
+    const pts = [{ at: document.getElementById('tempAt').value, tv: document.getElementById('tempVal').value, action: document.getElementById('tempAction').value.trim(), n: 1 }];
+    document.querySelectorAll('#tempExtra .temp-pt').forEach((r, i) => {
+      const tv = r.querySelector('.tp-val').value;
+      if (tv === '') return;
+      pts.push({ at: r.querySelector('.tp-at').value, tv, action: r.querySelector('.tp-act').value.trim(), n: i + 2 });
+    });
+    for (const pt of pts) {
+      if (!pt.at) { err.textContent = pts.length > 1 ? t('tempPointN', { n: pt.n }) : t('tempNeedAt'); return; }
+      if (pt.tv === '' || isNaN(parseFloat(pt.tv))) { err.textContent = pts.length > 1 ? t('tempPointN', { n: pt.n }) : t('tempNeedVal'); return; }
+      pt.temp = parseFloat(pt.tv);
+      if (isOutOfRange(pt.temp, u) && !pt.action) { err.textContent = (pts.length > 1 ? t('tempPointN', { n: pt.n }) + ' ' : '') + t('tempNeedAction'); return; }
+    }
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
     const btn = document.getElementById('tempSaveBtn'); btn.disabled = true; err.textContent = '';
     try {
       const latest = await fetchSharedData();
       const lu = latest.tempUnits.find(x => x.id === uid) || u;
-      const log = { id: 'tl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), unitId: lu.id, unitName: lu.name, kind: lu.kind,
-        at, temp, min: lu.min == null ? null : lu.min, max: lu.max == null ? null : lu.max, out: isOutOfRange(temp, lu), action: out ? action : '', by: actorName(), ts: new Date().toISOString() };
+      const logs = pts.map((pt, i) => {
+        const out = isOutOfRange(pt.temp, lu);
+        return { id: 'tl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) + i, unitId: lu.id, unitName: lu.name, kind: lu.kind,
+          at: pt.at, temp: pt.temp, min: lu.min == null ? null : lu.min, max: lu.max == null ? null : lu.max, out, action: out ? pt.action : '', by: actorName(), ts: new Date().toISOString() };
+      });
       await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
-        { tempLogs: latest.tempLogs.concat([log]), audit: [mkAudit('tempLog', { unit: lu.name, temp, reason: log.out ? action : '' })] });
+        { tempLogs: latest.tempLogs.concat(logs), audit: logs.map(l => mkAudit('tempLog', { unit: lu.name, temp: l.temp, reason: l.out ? l.action : '' })) });
       records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
       saveLocalCache();
       document.getElementById('tempVal').value = ''; document.getElementById('tempAction').value = '';
+      document.getElementById('tempExtra').innerHTML = '';
       document.getElementById('tempAt').value = localNow();
       renderTempToday(); renderTempList(); tempLiveHint();
     } catch (e) { console.error(e); err.textContent = t('syncFailed') + ': ' + e.message; }
@@ -12228,7 +12341,7 @@
     const yr = new Date().getFullYear();
     const do1 = { id: 'do1', no: 'DO-' + yr + '-0001', date: dmRel(-5), customer: 'MV OCEAN STAR', platform: 'MV OCEAN STAR', status: 'shipped',
       lines: [{ item: 'Chicken Breast', itemCode: 'CHK001', qty: 60, uom: 'kg', pieces: [{ batch: 'CH-2401', expiryDate: dmRel(120), loc: 'F-A1', qty: 60 }] }, { item: 'Cooking Oil 5L', itemCode: 'OIL001', qty: 35, uom: 'tin', pieces: [{ batch: 'OL-3320', expiryDate: dmRel(300), loc: 'D-C2', qty: 35 }] }],
-      by: 'admin', at: at(-5) };
+      tempUnitIds: ['tu1'], tempFrom: dmRel(-3) + 'T00:00', tempTo: dmRel(0) + 'T23:59', by: 'admin', at: at(-5) };
     recs.push(OUT('Chicken Breast', 'CHK001', 60, 'kg', 'CH-2401', dmRel(120), 'F-A1', 'MV OCEAN STAR', do1, 5));
     recs.push(OUT('Cooking Oil 5L', 'OIL001', 35, 'tin', 'OL-3320', dmRel(300), 'D-C2', 'MV OCEAN STAR', do1, 5));
     const po = { id: 'po1', no: 'PO-' + yr + '-0001', date: dmRel(-35), supplier: 'Ocean Fresh Sdn Bhd', expected: dmRel(-30), status: 'closed', lines: [{ item: 'Chicken Breast', qty: 240, uom: 'kg' }], by: 'admin', at: at(-35) };
