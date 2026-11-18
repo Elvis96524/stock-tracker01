@@ -2798,6 +2798,10 @@
       noBatchStock: '该货物目前没有库存批次。',
       noteLabel: '备注',
       doPoLabel: 'PO 号码',
+      doPoBtn: 'PO 号码',
+      doAskPo: '请输入这张 DO 的 PO 号码（会印在 DO 上；可留空，以后在 DO 列表按「PO 号码」补填）：',
+      doPoBtn: 'PO 号码',
+      doAskPo: '请输入这张 DO 的 PO 号码（会印在 DO 上；可留空，以后在 DO 列表按「PO 号码」补填）：',
       doRemarks: 'Remarks',
       doPoCol: 'PO No.',
       overdrawnWarn: '出库数量超过库存 {qty}，请核对或做盘点调整。',
@@ -3729,6 +3733,8 @@
       noBatchStock: 'This item has no stock batches right now.',
       noteLabel: 'Note',
       doPoLabel: 'PO No.',
+      doPoBtn: 'PO No.',
+      doAskPo: 'Enter the PO number for this DO (printed on the DO; leave blank and add it later with the PO No. button on the DO list):',
       doRemarks: 'Remarks',
       doPoCol: 'PO No.',
       overdrawnWarn: 'Stock out exceeds stock by {qty}. Please check or adjust with a stock take.',
@@ -4660,6 +4666,8 @@
       noBatchStock: 'Barang ini tiada kelompok stok sekarang.',
       noteLabel: 'Catatan',
       doPoLabel: 'No. PO',
+      doPoBtn: 'No. PO',
+      doAskPo: 'Masukkan nombor PO untuk DO ini (dicetak pada DO; boleh dikosongkan dan diisi kemudian dengan butang No. PO):',
       doRemarks: 'Remarks',
       doPoCol: 'PO No.',
       overdrawnWarn: 'Keluar stok melebihi stok sebanyak {qty}. Sila semak atau laras melalui kiraan stok.',
@@ -8557,7 +8565,7 @@
       card.innerHTML = `
         <div class="grn-top"><span class="grn-no">🚚 ${escapeHtml(d.no)}</span><span class="expiry-tag ok">📅 ${escapeHtml(doExpiryText(d))}</span></div>
         ${loadings.filter(x => (x.doIds || []).includes(d.id)).map(x => `<div class="pl-item-meta" style="margin:3px 0 0;">${escapeHtml(t('ldDoBadge', { cont: x.containerNo, seal: x.sealNo }))}</div>`).join('')}
-        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(d.customer || '—')}${d.platform ? ' · 🚢 ' + escapeHtml(d.platform) : ''} · ${escapeHtml(d.date || '')}${d.soNo ? ' · ' + escapeHtml(d.soNo) : ''}${d.plTitle ? ' · 📋 ' + escapeHtml(d.plTitle) : ''} · ${t('grnLinesCount', { n: d.lines.length })}${d.by ? ' · ' + escapeHtml(d.by) : ''}</div>
+        <div class="pl-card-meta" style="margin:4px 0 0;">${escapeHtml(d.customer || '—')}${d.platform ? ' · 🚢 ' + escapeHtml(d.platform) : ''} · ${escapeHtml(d.date || '')}${d.soNo ? ' · ' + escapeHtml(d.soNo) : ''}${d.plTitle ? ' · 📋 ' + escapeHtml(d.plTitle) : ''}${d.ref ? ' · PO ' + escapeHtml(d.ref) : ''} · ${t('grnLinesCount', { n: d.lines.length })}${d.by ? ' · ' + escapeHtml(d.by) : ''}</div>
         ${open ? `<div class="grn-lines">
           ${d.lines.map(l => `<div class="grn-l">${escapeHtml(doLineText(l))}</div>`).join('')}
           ${d.note ? `<div class="pl-item-meta" style="margin-top:6px;">${escapeHtml(d.note)}</div>` : ''}
@@ -8565,6 +8573,7 @@
           <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
             ${d.pod || !can('delivery') ? '' : `<button class="export-btn do-pod">✍ ${t('doPodBtn')}</button>`}
             ${can('delivery') && !d.plId && !d.pod ? `<button class="export-btn do-edit">✎ ${t('doEditBtn')}</button>` : ''}
+            ${can('delivery') ? `<button class="export-btn do-po">✎ ${t('doPoBtn')}</button>` : ''}
             <button class="export-btn do-print">🖨 ${t('doPrintBtn')}</button>
             <button class="export-btn do-export">📄 ${t('grnExportBtn')}</button>
             ${can('delivery') ? `<button class="danger-btn do-del">🗑 ${t('doDeleteBtn')}</button>` : ''}
@@ -8577,6 +8586,25 @@
       const on = (sel, fn) => card.querySelectorAll(sel).forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); fn(b); }));
       on('.do-pod', () => openPod(d));
       on('.do-edit', () => openDoModal('', d));
+      on('.do-po', async (b) => {
+        if (!can('delivery')) return;
+        const ans = prompt(t('doAskPo'), d.ref || '');
+        if (ans === null) return;
+        const po = ans.trim();
+        if (po === (d.ref || '')) return;
+        b.disabled = true;
+        try {
+          const latest = await fetchSharedData();
+          const cur = latest.deliveries.find(x => x.id === d.id);
+          if (!cur) throw new Error(t('doEditGone'));
+          await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
+            { deliveries: latest.deliveries.map(x => x.id === d.id ? Object.assign({}, x, { ref: po }) : x), audit: [mkAudit('doEdit', { no: d.no, n: cur.lines.length, customer: cur.customer || '—' })] });
+          records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+          saveLocalCache();
+          setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+        } catch (e) { console.error(e); alert(t('syncFailed') + ': ' + e.message); }
+        renderCurrentView();
+      });
       on('.do-print', () => printDelivery(d));
       on('.do-export', () => exportDeliveryExcel(d));
       on('.do-del', async (b) => {
@@ -8733,7 +8761,6 @@
     const rows = d.lines.map((l, i) => {
       return `<tr><td>${i + 1}</td><td>${e(l.itemCode || '')}</td><td>${e(l.item)}</td><td class="r">${l.qty}</td><td>${e(l.uom || '')}</td><td>${expOf(l)}</td></tr>`;
     }).join('');
-    const refs = [d.soNo, d.plTitle].filter(Boolean).join(' / ');
     const addr = d.customerAddr || customerAddrOf(d.customer);
     const toBlock = [d.customer ? `<div><b>${e(d.customer)}</b></div>` : '', addr ? `<div>${e(addr).replace(/\n/g, '<br>')}</div>` : '', d.platform ? `<div>${e(d.platform)}</div>` : ''].join('') || '-';
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${e(d.no)}</title><style>
@@ -8753,12 +8780,12 @@
       <h2>${e(t('doPrintTitle'))}</h2>
       <div class="info">
         <div class="to"><div><b>${e(t('customerLabel'))}</b></div>${toBlock}</div>
-        <table><tr><td>No.</td><td><b>${e(d.no)}</b></td></tr><tr><td>${e(t('dateLabel'))}</td><td>${e(d.date || '')}</td></tr>${d.ref ? `<tr><td>PO</td><td><b>${e(d.ref)}</b></td></tr>` : ''}${refs ? `<tr><td>Ref</td><td>${e(refs)}</td></tr>` : ''}</table>
+        <table><tr><td>No.</td><td><b>${e(d.no)}</b></td></tr><tr><td>${e(t('dateLabel'))}</td><td>${e(d.date || '')}</td></tr>${d.ref ? `<tr><td>PO</td><td><b>${e(d.ref)}</b></td></tr>` : ''}</table>
       </div>
       <table class="items"><thead><tr><th>#</th><th>${e(t('itemCodeLabel'))}</th><th>${e(t('itemNameLabel'))}</th><th class="r">${e(t('qtyLabel'))}</th><th>${e(t('uomLabel'))}</th><th>${e(t('expiryDateLabel'))}</th></tr></thead><tbody>${rows}</tbody></table>
-      <div style="margin-top:14px;border:1px solid #000;min-height:64px;padding:6px 8px;break-inside:avoid;"><div style="font-weight:bold;font-size:11px;margin-bottom:3px;">${e(t('doRemarks'))}:</div><div style="white-space:pre-wrap;">${e(d.note || '')}</div></div>
       ${doTempPrintHtml(d)}
       </td></tr><tr><td class="ffoot">
+      <div style="margin-top:14px;margin-bottom:0;border:1px solid #000;min-height:64px;padding:6px 8px;break-inside:avoid;"><div style="font-weight:bold;font-size:11px;margin-bottom:3px;">${e(t('doRemarks'))}:</div><div style="white-space:pre-wrap;">${e(d.note || '')}</div></div>
       <div class="sig"><div>${e(t('printDeliveredBy'))}</div><div>${e(t('printReceivedBy'))}${d.pod ? '<br>' + e(d.pod.name + ' · ' + d.pod.date) : ''}${d.pod && (d.pod.temp != null || d.pod.cond) ? '<br><small>' + e([d.pod.temp != null ? 'Temp ' + d.pod.temp + '°C' : '', d.pod.cond ? 'Condition: ' + (d.pod.cond === 'bad' ? 'Problem' : 'Good') : '', d.pod.issue && d.pod.issue !== 'none' ? d.pod.issue.charAt(0).toUpperCase() + d.pod.issue.slice(1) : ''].filter(Boolean).join(' · ')) + '</small>' : ''}</div></div>
       </td></tr></tbody></table>
       <script>(function(){function fit(){var f=document.querySelector('table.frame');if(!f)return;f.style.height='auto';var pg=268*3.7795275591;var h=f.getBoundingClientRect().height;var n=Math.max(1,Math.ceil(h/pg));f.style.height=(n*268)+'mm';}window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);})();<\/script>
@@ -8843,8 +8870,12 @@
         lines.push({ item: i.item, itemCode: i.itemCode || '', qty: i.qtyTaken, uom: i.uom || '', pieces: [] });
       }
     });
+    // PO 号：可留空（取消 = 留空）；同一个 PL 已有 DO 时，默认沿用上一张的 PO
+    const prevPl = latest.deliveries.filter(x => x.plId === plId).slice(-1)[0];
+    const poAns = prompt(t('doAskPo'), (prevPl && prevPl.ref) || '');
+    const poNo = poAns === null ? '' : poAns.trim();
     const d = { id: 'do_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), no, date, soId: '', soNo: '',
-      customer: custName, customerAddr: customerAddrOf(custName), platform: pl.platform || '', ref: '', note: '', status: 'shipped', pod: null, lines,
+      customer: custName, customerAddr: customerAddrOf(custName), platform: pl.platform || '', ref: poNo, note: '', status: 'shipped', pod: null, lines,
       plId: pl.id, plTitle: pl.title, itemIds: ready.map(i => i.id), depts: [...new Set(ready.map(i => deptOf(i)))].filter(Boolean), by: actorName(), at: new Date().toISOString() };
     const readyIds = new Set(ready.map(i => i.id));
     const pls = latest.packingLists.map(p => p.id !== plId ? p : Object.assign({}, p, {
