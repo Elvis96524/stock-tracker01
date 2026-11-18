@@ -3124,7 +3124,7 @@
       podNeedName: '请填写签收人姓名。',
       podInfo: '已签收：{name} · {date}',
       doPrintTitle: '送货单 Delivery Order',
-      printDeliveredBy: '发货人',
+      printDeliveredBy: '授权签名',
       printReceivedBy: '收货人签名 / 盖章',
       popupBlocked: '浏览器拦截了打印窗口，请允许弹出窗口后再试。',
       actSoCreate: '销售订单 {no}：{n} 行，客户 {customer}',
@@ -4072,7 +4072,7 @@
       podNeedName: 'Enter the receiver name.',
       podInfo: 'Received by {name} · {date}',
       doPrintTitle: 'Delivery Order',
-      printDeliveredBy: 'Delivered by',
+      printDeliveredBy: 'Authorised Signature',
       printReceivedBy: 'Received by (name / sign / stamp)',
       popupBlocked: 'The browser blocked the print window. Allow pop-ups and try again.',
       actSoCreate: 'SO {no}: {n} lines, customer {customer}',
@@ -5020,7 +5020,7 @@
       podNeedName: 'Isi nama penerima.',
       podInfo: 'Diterima oleh {name} · {date}',
       doPrintTitle: 'Delivery Order',
-      printDeliveredBy: 'Dihantar oleh',
+      printDeliveredBy: 'Tandatangan Diberi Kuasa',
       printReceivedBy: 'Diterima oleh (nama / tandatangan / cop)',
       popupBlocked: 'Pelayar menyekat tetingkap cetak. Benarkan pop timbul dan cuba lagi.',
       actSoCreate: 'SO {no}: {n} baris, pelanggan {customer}',
@@ -8944,7 +8944,7 @@
     const e = escapeHtml, T = k => translations.en[k] || k;
     const rows = groups.map(g => g.logs.length ? g.logs.map(l => `<tr><td>${e(g.name)}</td><td>${e((l.at || '').replace('T', ' '))}</td><td class="r">${e(String(l.temp))}</td><td>${e(doRangeEn(l))}</td><td>${l.out ? '<b>' + e(T('doTempOut')) + '</b>' : e(T('doTempOk'))}</td><td>${e(l.out ? (l.action || '') : '')}</td></tr>`).join('')
       : `<tr><td>${e(g.name)}</td><td colspan="5"><i>${e(T('doTempNone'))}</i></td></tr>`).join('');
-    return `<div style="margin-top:18px;break-inside:avoid;"><div style="font-weight:bold;margin-bottom:4px;">${e(T('doTempTitle'))}${d.tempFrom ? ` <span style="font-weight:normal;font-size:11px;">(${e(d.tempFrom.replace('T', ' '))} – ${e((d.tempTo || '').replace('T', ' '))})</span>` : ''}</div>
+    return `<div style="break-before:page;page-break-before:always;font-size:12px;"><div style="text-align:center;font-size:16px;font-weight:bold;margin:0 0 4px;">FU SHENG ENTERPRISE</div><div style="text-align:center;font-size:11px;margin-bottom:14px;">DO No.: <b>${e(d.no || '')}</b>${d.customer ? ' &nbsp;|&nbsp; ' + e(d.customer) : ''}${d.platform ? ' &nbsp;|&nbsp; ' + e(d.platform) : ''}${d.date ? ' &nbsp;|&nbsp; ' + e(d.date) : ''}</div><div style="font-weight:bold;margin-bottom:4px;">${e(T('doTempTitle'))}${d.tempFrom ? ` <span style="font-weight:normal;font-size:11px;">(${e(d.tempFrom.replace('T', ' '))} – ${e((d.tempTo || '').replace('T', ' '))})</span>` : ''}</div>
       <table class="items" style="margin-top:0;font-size:11px;"><thead><tr><th>${e(T('doTempEquip'))}</th><th>${e(T('doTempTime'))}</th><th class="r">${e(T('doTempVal'))}</th><th>${e(T('doTempLimit'))}</th><th>${e(T('doTempStatus'))}</th><th>${e(T('doTempAct'))}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   function printDelivery(d, w0) {
@@ -8976,11 +8976,11 @@
         <table><tr><td>No.</td><td><b>${e(d.no)}</b></td></tr><tr><td>${e(t('dateLabel'))}</td><td>${e(d.date || '')}</td></tr>${d.ref ? `<tr><td>PO</td><td><b>${e(d.ref)}</b></td></tr>` : ''}</table>
       </div>
       <table class="items"><thead><tr><th>#</th><th>${e(t('itemCodeLabel'))}</th><th>${e(t('itemNameLabel'))}</th><th class="r">${e(t('qtyLabel'))}</th><th>${e(t('uomLabel'))}</th><th>${e(t('expiryDateLabel'))}</th></tr></thead><tbody>${rows}</tbody></table>
-      ${doTempPrintHtml(d)}
       </td></tr><tr><td class="ffoot">
-      <div style="margin-top:14px;margin-bottom:0;min-height:64px;padding:0;break-inside:avoid;"><div style="font-weight:bold;font-size:11px;margin-bottom:3px;">${e(t('doRemarks'))}:</div><div style="white-space:pre-wrap;">${e(d.note || '')}</div></div>
+      <div style="margin-top:14px;margin-bottom:0;min-height:48px;font-size:12px;break-inside:avoid;display:flex;gap:8px;align-items:flex-start;"><b style="white-space:nowrap;">${e(t('doRemarks'))}:</b><span style="white-space:pre-wrap;flex:1;">${e(d.note || '')}</span></div>
       <div class="sig"><div>${e(t('printDeliveredBy'))}</div><div>${e(t('printReceivedBy'))}${d.pod ? '<br>' + e(d.pod.name + ' · ' + d.pod.date) : ''}${d.pod && (d.pod.temp != null || d.pod.cond) ? '<br><small>' + e([d.pod.temp != null ? 'Temp ' + d.pod.temp + '°C' : '', d.pod.cond ? 'Condition: ' + (d.pod.cond === 'bad' ? 'Problem' : 'Good') : '', d.pod.issue && d.pod.issue !== 'none' ? d.pod.issue.charAt(0).toUpperCase() + d.pod.issue.slice(1) : ''].filter(Boolean).join(' · ')) + '</small>' : ''}</div></div>
       </td></tr></tbody></table>
+      ${doTempPrintHtml(d)}
       <script>(function(){function fit(){var f=document.querySelector('table.frame');if(!f)return;f.style.height='auto';var pg=268*3.7795275591;var h=f.getBoundingClientRect().height;var n=Math.max(1,Math.ceil(h/pg));f.style.height=(n*268)+'mm';}window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);})();<\/script>
       <script>window.onload=function(){window.print()}<\/script></body></html>`;
     const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
