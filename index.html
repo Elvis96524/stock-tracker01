@@ -2797,6 +2797,9 @@
       minStockShort: '最低库存',
       noBatchStock: '该货物目前没有库存批次。',
       noteLabel: '备注',
+      doPoLabel: 'PO 号码',
+      doRemarks: 'Remarks',
+      doPoCol: 'PO No.',
       overdrawnWarn: '出库数量超过库存 {qty}，请核对或做盘点调整。',
       reasonLabel: '原因',
       reasonCount: '盘点差异',
@@ -3058,7 +3061,7 @@
       doSub: '保存后按先到期先出自动选批次扣减库存，并生成出库单号。可只发订单的一部分，剩下的以后补发。',
       doSoLabel: '对应销售订单',
       doNoSo: '— 无订单（直接出库）—',
-      refLabel2: '客户单号 / 备注单号',
+      refLabel2: 'PO 号码',
       doNeedLine: '请填写日期，并至少一行货物和数量。',
       doShort: '{item} 库存不足：需要 {need}，现有 {have}。',
       doAvail: '库存 {n} {uom}',
@@ -3725,6 +3728,9 @@
       minStockShort: 'Min stock',
       noBatchStock: 'This item has no stock batches right now.',
       noteLabel: 'Note',
+      doPoLabel: 'PO No.',
+      doRemarks: 'Remarks',
+      doPoCol: 'PO No.',
       overdrawnWarn: 'Stock out exceeds stock by {qty}. Please check or adjust with a stock take.',
       reasonLabel: 'Reason',
       reasonCount: 'Stock take variance',
@@ -3986,7 +3992,7 @@
       doSub: 'On save, batches are picked first-expiry-first-out, stock is deducted and a DO number is issued. You can ship only part of an order and ship the rest later.',
       doSoLabel: 'Against SO',
       doNoSo: '— No SO (direct delivery) —',
-      refLabel2: 'Customer ref / PO no.',
+      refLabel2: 'PO No.',
       doNeedLine: 'Enter a date and at least one item with a quantity.',
       doShort: 'Not enough stock for {item}: need {need}, have {have}.',
       doAvail: 'In stock {n} {uom}',
@@ -4653,6 +4659,9 @@
       minStockShort: 'Stok min',
       noBatchStock: 'Barang ini tiada kelompok stok sekarang.',
       noteLabel: 'Catatan',
+      doPoLabel: 'No. PO',
+      doRemarks: 'Remarks',
+      doPoCol: 'PO No.',
       overdrawnWarn: 'Keluar stok melebihi stok sebanyak {qty}. Sila semak atau laras melalui kiraan stok.',
       reasonLabel: 'Sebab',
       reasonCount: 'Perbezaan kiraan stok',
@@ -4914,7 +4923,7 @@
       doSub: 'Apabila disimpan, kelompok dipilih mengikut tarikh tamat paling awal dahulu, stok ditolak dan nombor DO dikeluarkan. Boleh hantar sebahagian sahaja dan baki kemudian.',
       doSoLabel: 'Terhadap SO',
       doNoSo: '— Tiada SO (hantar terus) —',
-      refLabel2: 'Rujukan pelanggan / no. PO',
+      refLabel2: 'No. PO',
       doNeedLine: 'Isi tarikh dan sekurang-kurangnya satu barang dengan kuantiti.',
       doShort: 'Stok {item} tidak mencukupi: perlu {need}, ada {have}.',
       doAvail: 'Dalam stok {n} {uom}',
@@ -8679,7 +8688,7 @@
   function exportDeliveryExcel(d) {
     if (typeof XLSX === 'undefined') { alert(t('xlsxLibFailed')); return; }
     const addr = d.customerAddr || customerAddrOf(d.customer);
-    const aoa = [['DO', d.no], ['Date', d.date || ''], ['Customer', d.customer || ''], ['Address', addr.replace(/\n/g, ', ')], ['Vessel/Platform', d.platform || ''], ['SO', d.soNo || ''], ['Ref', [d.plTitle, d.ref].filter(Boolean).join(' / ')],
+    const aoa = [['DO', d.no], ['Date', d.date || ''], ['Customer', d.customer || ''], ['Address', addr.replace(/\n/g, ', ')], ['Vessel/Platform', d.platform || ''], ['SO', d.soNo || ''], ['PO', d.ref || ''], ['Ref', d.plTitle || ''],
       ['POD', d.pod ? d.pod.name + ' · ' + d.pod.date : ''], ['POD temp °C', d.pod && d.pod.temp != null ? d.pod.temp : ''], ['POD condition', d.pod && d.pod.cond ? (d.pod.cond === 'bad' ? 'Problem' : 'Good') : ''],
       ['Shortage/damage', d.pod && d.pod.issue ? d.pod.issue + (d.pod.issueNote ? ' — ' + d.pod.issueNote : '') : ''], [], ['Code', 'Item', 'Qty', 'UOM', 'Expiry']];
     d.lines.forEach(l => {
@@ -8724,7 +8733,7 @@
     const rows = d.lines.map((l, i) => {
       return `<tr><td>${i + 1}</td><td>${e(l.itemCode || '')}</td><td>${e(l.item)}</td><td class="r">${l.qty}</td><td>${e(l.uom || '')}</td><td>${expOf(l)}</td></tr>`;
     }).join('');
-    const refs = [d.soNo, d.plTitle, d.ref].filter(Boolean).join(' / ');
+    const refs = [d.soNo, d.plTitle].filter(Boolean).join(' / ');
     const addr = d.customerAddr || customerAddrOf(d.customer);
     const toBlock = [d.customer ? `<div><b>${e(d.customer)}</b></div>` : '', addr ? `<div>${e(addr).replace(/\n/g, '<br>')}</div>` : '', d.platform ? `<div>${e(d.platform)}</div>` : ''].join('') || '-';
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${e(d.no)}</title><style>
@@ -8744,10 +8753,10 @@
       <h2>${e(t('doPrintTitle'))}</h2>
       <div class="info">
         <div class="to"><div><b>${e(t('customerLabel'))}</b></div>${toBlock}</div>
-        <table><tr><td>No.</td><td><b>${e(d.no)}</b></td></tr><tr><td>${e(t('dateLabel'))}</td><td>${e(d.date || '')}</td></tr>${refs ? `<tr><td>Ref</td><td>${e(refs)}</td></tr>` : ''}</table>
+        <table><tr><td>No.</td><td><b>${e(d.no)}</b></td></tr><tr><td>${e(t('dateLabel'))}</td><td>${e(d.date || '')}</td></tr>${d.ref ? `<tr><td>PO</td><td><b>${e(d.ref)}</b></td></tr>` : ''}${refs ? `<tr><td>Ref</td><td>${e(refs)}</td></tr>` : ''}</table>
       </div>
       <table class="items"><thead><tr><th>#</th><th>${e(t('itemCodeLabel'))}</th><th>${e(t('itemNameLabel'))}</th><th class="r">${e(t('qtyLabel'))}</th><th>${e(t('uomLabel'))}</th><th>${e(t('expiryDateLabel'))}</th></tr></thead><tbody>${rows}</tbody></table>
-      ${d.note ? `<p>${e(d.note)}</p>` : ''}
+      <div style="margin-top:14px;border:1px solid #000;min-height:64px;padding:6px 8px;break-inside:avoid;"><div style="font-weight:bold;font-size:11px;margin-bottom:3px;">${e(t('doRemarks'))}:</div><div style="white-space:pre-wrap;">${e(d.note || '')}</div></div>
       ${doTempPrintHtml(d)}
       </td></tr><tr><td class="ffoot">
       <div class="sig"><div>${e(t('printDeliveredBy'))}</div><div>${e(t('printReceivedBy'))}${d.pod ? '<br>' + e(d.pod.name + ' · ' + d.pod.date) : ''}${d.pod && (d.pod.temp != null || d.pod.cond) ? '<br><small>' + e([d.pod.temp != null ? 'Temp ' + d.pod.temp + '°C' : '', d.pod.cond ? 'Condition: ' + (d.pod.cond === 'bad' ? 'Problem' : 'Good') : '', d.pod.issue && d.pod.issue !== 'none' ? d.pod.issue.charAt(0).toUpperCase() + d.pod.issue.slice(1) : ''].filter(Boolean).join(' · ')) + '</small>' : ''}</div></div>
