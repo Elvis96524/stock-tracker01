@@ -2067,6 +2067,13 @@
         <div class="modal-error" id="plAddError"></div>
         <button type="button" class="pl-done-btn" id="plAddSaveBtn" style="width:100%;"></button>
       </div>
+      <div id="plScanRow" style="display:none; margin-bottom:10px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <button type="button" class="export-btn" id="plScanBtn" data-i18n="plScanBtn"></button>
+          <input type="text" id="plScanInput" autocomplete="off" style="flex:1; min-width:180px;">
+        </div>
+        <div id="plScanLog" class="pl-item-meta" style="margin-top:6px;"></div>
+      </div>
       <div id="plDeptFilterBar" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;"></div>
       <div id="plStatFilterBar" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
       <div id="packingDetailItems"></div>
@@ -2253,6 +2260,29 @@
 </div>
 
 
+
+  <div class="modal-overlay" id="doInfoModal">
+    <div class="modal-card" style="max-width:520px;">
+      <h2 id="diTitle"></h2>
+      <div class="sub" id="diSub"></div>
+      <div class="edit-grid">
+        <div class="field full"><label for="diPo" data-i18n="doPoLabel"></label><input type="text" id="diPo" autocomplete="off"></div>
+        <div class="field full"><label for="diNote" id="diNoteLbl"></label><textarea id="diNote" rows="3" style="width:100%;"></textarea></div>
+      </div>
+      <div class="pl-item-meta" style="font-weight:600; margin:8px 0 4px;" data-i18n="doEquipLabel"></div>
+      <div id="diEquipList" class="perm-grid" style="max-height:110px; overflow:auto; margin-bottom:6px;"></div>
+      <div class="edit-grid">
+        <div class="field"><label for="diFrom" data-i18n="doEquipFrom"></label><input type="datetime-local" id="diFrom"></div>
+        <div class="field"><label for="diTo" data-i18n="doEquipTo"></label><input type="datetime-local" id="diTo"></div>
+      </div>
+      <div class="modal-error" id="diError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="diCancel" data-i18n="cancelBtn"></button>
+        <button class="btn-secondary" id="diSave" style="display:none;"></button>
+        <button class="btn-primary" id="diGo"></button>
+      </div>
+    </div>
+  </div>
   <div class="modal-overlay" id="demoModal">
     <div class="modal-card" style="max-width:520px;">
       <h2 id="demoMTitle"></h2>
@@ -2798,9 +2828,13 @@
       noBatchStock: '该货物目前没有库存批次。',
       noteLabel: '备注',
       doPoLabel: 'PO 号码',
-      doPoBtn: 'PO 号码',
-      doAskPo: '请输入这张 DO 的 PO 号码（会印在 DO 上；可留空，以后在 DO 列表按「PO 号码」补填）：',
-      doPoBtn: 'PO 号码',
+      doPoBtn: 'PO / 备注 / 温度设备',
+      doInfoTitle: 'DO 信息：PO、备注、温度设备',
+      doInfoSub: '填好后会印在 DO 上。只影响 DO 单据，不会改动货物和库存。',
+      doInfoRemarks: '备注（印在 DO 的签名栏上方）',
+      doInfoSave: '保存',
+      doInfoSavePrint: '保存并打印',
+      doInfoSaveExcel: '保存并导出 Excel',
       doAskPo: '请输入这张 DO 的 PO 号码（会印在 DO 上；可留空，以后在 DO 列表按「PO 号码」补填）：',
       doRemarks: 'Remarks',
       doPoCol: 'PO No.',
@@ -2997,6 +3031,15 @@
       scanNoLib: '这个浏览器没有内建条码识别，而且无法下载扫码组件（可能没有网络）。',
       scanNoMatch: '找不到条码 {code} 对应的货物，请先在货物主档登记条码。',
       scanGot: '✓ {item} × {qty}',
+      plScanBtn: '📷 扫码拿货',
+      plScanHint: '连续扫码拿货：每扫一次，这张 Packing List 里对应货物的拿货数量 +1（第一次从 1 开始），并自动勾选。扫完后检查数量，再点“完成并保存”。',
+      plScanGot: '✓ {item}：{qty} / {req} {uom}',
+      plScanOver: '⚠ {item} 已扫 {qty}，超过要求的 {req} {uom}',
+      plScanDone: '{item} 这一项已经备好了',
+      plScanNotInPl: '{item} 不在这张 Packing List 里',
+      plScanFiltered: '{item} 在这张 PL 里，但被当前的筛选藏起来了，请先切换到“全部”',
+      plScanNoStock: '{item} 目前没有库存可拿',
+      plScanInputPh: '扫码枪：点这里再扫（或输入条码后按 Enter）',
       grnScanBtn: '📷 扫码收货',
       doScanBtn: '📷 扫码拣货',
       stScanBtn: '📷 扫码盘点',
@@ -3733,7 +3776,13 @@
       noBatchStock: 'This item has no stock batches right now.',
       noteLabel: 'Note',
       doPoLabel: 'PO No.',
-      doPoBtn: 'PO No.',
+      doPoBtn: 'PO / Remarks / Temp equipment',
+      doInfoTitle: 'DO details: PO, remarks, temperature equipment',
+      doInfoSub: 'Printed on the DO. Only affects the DO document — items and stock are not changed.',
+      doInfoRemarks: 'Remarks (printed above the signature area)',
+      doInfoSave: 'Save',
+      doInfoSavePrint: 'Save & print',
+      doInfoSaveExcel: 'Save & export Excel',
       doAskPo: 'Enter the PO number for this DO (printed on the DO; leave blank and add it later with the PO No. button on the DO list):',
       doRemarks: 'Remarks',
       doPoCol: 'PO No.',
@@ -3930,6 +3979,15 @@
       scanNoLib: 'This browser has no built-in barcode detection and the scanning component could not be downloaded (you may be offline).',
       scanNoMatch: 'No item found for barcode {code}. Register the barcode in the item master first.',
       scanGot: '✓ {item} × {qty}',
+      plScanBtn: '📷 Scan to pick',
+      plScanHint: 'Continuous pick scan: each scan adds 1 to the picked quantity of that item on this packing list (the first scan starts at 1) and ticks it. When done, check the quantities and press “Complete & save”.',
+      plScanGot: '✓ {item}: {qty} / {req} {uom}',
+      plScanOver: '⚠ {item} scanned {qty}, more than the {req} {uom} required',
+      plScanDone: '{item} is already picked',
+      plScanNotInPl: '{item} is not on this packing list',
+      plScanFiltered: '{item} is on this list but hidden by the current filter — switch to “All” first',
+      plScanNoStock: 'No stock available to pick for {item}',
+      plScanInputPh: 'Scanner gun: click here, then scan (or type a barcode and press Enter)',
       grnScanBtn: '📷 Scan to receive',
       doScanBtn: '📷 Scan to pick',
       stScanBtn: '📷 Scan to count',
@@ -4666,7 +4724,13 @@
       noBatchStock: 'Barang ini tiada kelompok stok sekarang.',
       noteLabel: 'Catatan',
       doPoLabel: 'No. PO',
-      doPoBtn: 'No. PO',
+      doPoBtn: 'PO / Catatan / Peralatan suhu',
+      doInfoTitle: 'Maklumat DO: PO, catatan, peralatan suhu',
+      doInfoSub: 'Dicetak pada DO. Hanya menjejaskan dokumen DO — barang dan stok tidak berubah.',
+      doInfoRemarks: 'Catatan (dicetak di atas ruang tandatangan)',
+      doInfoSave: 'Simpan',
+      doInfoSavePrint: 'Simpan & cetak',
+      doInfoSaveExcel: 'Simpan & eksport Excel',
       doAskPo: 'Masukkan nombor PO untuk DO ini (dicetak pada DO; boleh dikosongkan dan diisi kemudian dengan butang No. PO):',
       doRemarks: 'Remarks',
       doPoCol: 'PO No.',
@@ -4863,6 +4927,15 @@
       scanNoLib: 'Pelayar ini tiada pengesanan kod bar terbina dalam dan komponen imbasan tidak dapat dimuat turun (mungkin tiada internet).',
       scanNoMatch: 'Tiada barang untuk kod bar {code}. Daftarkan kod bar dalam induk barang dahulu.',
       scanGot: '✓ {item} × {qty}',
+      plScanBtn: '📷 Imbas untuk ambil',
+      plScanHint: 'Imbasan berterusan: setiap imbasan menambah 1 pada kuantiti diambil bagi barang itu dalam senarai ini (imbasan pertama bermula dari 1) dan menandakannya. Selesai, semak kuantiti dan tekan “Selesai & simpan”.',
+      plScanGot: '✓ {item}: {qty} / {req} {uom}',
+      plScanOver: '⚠ {item} diimbas {qty}, melebihi {req} {uom} yang diperlukan',
+      plScanDone: '{item} sudah diambil',
+      plScanNotInPl: '{item} tiada dalam senarai pembungkusan ini',
+      plScanFiltered: '{item} ada dalam senarai ini tetapi disembunyikan oleh penapis — tukar ke “Semua” dahulu',
+      plScanNoStock: 'Tiada stok untuk diambil bagi {item}',
+      plScanInputPh: 'Pengimbas: klik di sini, kemudian imbas (atau taip kod bar dan tekan Enter)',
       grnScanBtn: '📷 Imbas untuk terima',
       doScanBtn: '📷 Imbas untuk ambil',
       stScanBtn: '📷 Imbas untuk kira',
@@ -7592,6 +7665,7 @@
   }
 
   // 劳工：按清单货物直接扣库存。勾选“已备好”并填好数量即可，不会马上保存。
+  const plScanSeen = new Set();   // 已经扫过的 行/货物：界面刷新（自动同步）后继续累加，不会又从 1 开始
   function renderLabourTakeRow(row, pl, item) {
     const d0 = plDraftOf(pl.id, item.id) || { checked: false, qty: item.qtyRequested };
     row.innerHTML = `
@@ -7627,7 +7701,18 @@
     showPick();
     row.classList.toggle('staged', chk.checked);
     plRowCollectors.push({
-      item, row, chk,
+      item, row, chk, scanned: 0,
+      scanOne: () => {
+        if (!pickGroup) return null;
+        const key = pl.id + ':' + item.id;
+        const n = plScanSeen.has(key) ? r4((parseFloat(qtyInput.value) || 0) + 1) : 1;
+        plScanSeen.add(key);
+        qtyInput.value = n; qtyInput.dispatchEvent(new Event('input'));
+        chk.checked = true; chk.dispatchEvent(new Event('change'));
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.style.outline = '2px solid var(--in, #16a34a)'; setTimeout(() => { row.style.outline = ''; }, 900);
+        return n;
+      },
       get: () => {
         const qty = parseFloat(qtyInput.value);
         return { item, checked: chk.checked, invalid: !(qty > 0), lines: [{ stock: { item: item.item, itemCode: item.itemCode, uom: item.uom }, qty }] };
@@ -7721,7 +7806,26 @@
     row.classList.toggle('staged', chk.checked);
 
     plRowCollectors.push({
-      item, row, chk,
+      item, row, chk, scanned: 0,
+      // 扫码拿货：指定货物（货物主档 m）+1；返回累计数量，找不到库存返回 null
+      scanOne: (m) => {
+        const opt = options.find(o => normU(o.group.item) === normU(m.item) && (!m.itemCode || !o.group.itemCode || normU(o.group.itemCode) === normU(m.itemCode)));
+        if (!opt) return null;
+        const lns = Array.from(linesEl.querySelectorAll('.pl-alloc-line'));
+        let line = lns.find(l => { const pk = pickOf(l.querySelector('.pl-stock-pick')); return pk && pk.group === opt.group; })
+          || lns.find(l => !l.querySelector('.pl-stock-pick').value.trim());
+        if (!line) { addLine(opt, null); line = linesEl.lastElementChild; }
+        const pi = line.querySelector('.pl-stock-pick'), qi = line.querySelector('.pl-qty-taken-input');
+        if (!pickOf(pi)) { pi.value = opt.label; pi.dispatchEvent(new Event('input')); }
+        const key = pl.id + ':' + item.id + ':' + opt.label;
+        const n = plScanSeen.has(key) ? r4((parseFloat(qi.value) || 0) + 1) : 1;
+        plScanSeen.add(key);
+        qi.value = n; qi.dispatchEvent(new Event('input'));
+        chk.checked = true; chk.dispatchEvent(new Event('change'));
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.style.outline = '2px solid var(--in, #16a34a)'; setTimeout(() => { row.style.outline = ''; }, 900);
+        return r4(Array.from(linesEl.querySelectorAll('.pl-qty-taken-input')).reduce((a, x) => a + (parseFloat(x.value) || 0), 0));
+      },
       get: () => {
         const lines = [];
         let invalid = false;
@@ -7737,6 +7841,44 @@
       }
     });
   }
+
+  // ---- Packing List：扫码拿货（摄像头 / 扫码枪）----
+  function plScanCode(code, log) {
+    const m = masterByBarcode(code);
+    if (!m) { log(t('scanNoMatch', { code }), true); return; }
+    const same = (it) => normU(it.item) === normU(m.item) || (m.itemCode && it.itemCode && normU(it.itemCode) === normU(m.itemCode));
+    const cs = plRowCollectors.filter(c => !c.item.done && same(c.item));
+    if (!cs.length) {
+      const pl = packingLists.find(x => x.id === currentPackingListId);
+      const inPl = pl ? pl.items.filter(same) : [];
+      if (!inPl.length) log(t('plScanNotInPl', { item: m.item }), true);
+      else if (inPl.every(i => i.done)) log(t('plScanDone', { item: m.item }), true);
+      else log(t('plScanFiltered', { item: m.item }), true);
+      return;
+    }
+    // 同一货物有多行时，先填还没扫满的那一行
+    const c = cs.find(x => x.scanned < x.item.qtyRequested) || cs[cs.length - 1];
+    const n = c.scanOne(m);
+    if (n == null) { log(t('plScanNoStock', { item: m.item }), true); return; }
+    c.scanned = n;
+    const info = { item: m.item, qty: n, req: c.item.qtyRequested, uom: c.item.uom || '' };
+    if (n > c.item.qtyRequested) log(t('plScanOver', info), true); else log(t('plScanGot', info));
+  }
+  document.getElementById('plScanBtn').addEventListener('click', () => {
+    openScanner({ continuous: true, hint: t('plScanHint'), onCode: plScanCode });
+  });
+  (function () {
+    const inp = document.getElementById('plScanInput'), logEl = document.getElementById('plScanLog');
+    inp.placeholder = t('plScanInputPh');
+    inp.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      const code = inp.value.trim(); inp.value = '';
+      if (!code) return;
+      plScanCode(code, (msg, bad) => { logEl.textContent = msg; logEl.style.color = bad ? 'var(--out)' : ''; });
+      inp.focus();
+    });
+  })();
 
   // 底部“完成并保存”：把所有已勾选的项目一次过写入并扣库存
   document.getElementById('plCheckAllBtn').addEventListener('click', () => {
@@ -7768,7 +7910,7 @@
     const btn = document.getElementById('plSaveAllBtn');
     btn.disabled = true;
     const ok = await commitPackingBatch(pl, entries);
-    if (ok) { clearPlDraft(pl.id, entries.map(e => e.item.id)); renderCurrentView(); }
+    if (ok) { plScanSeen.clear(); clearPlDraft(pl.id, entries.map(e => e.item.id)); renderCurrentView(); }
     else btn.disabled = false;
   });
 
@@ -7944,6 +8086,7 @@
       itemsEl.appendChild(row);
     });
     plPickCache = null;
+    document.getElementById('plScanRow').style.display = plRowCollectors.length ? '' : 'none';
     refreshPlSaveBar();
   }
 
@@ -8104,6 +8247,72 @@
     XLSX.writeFile(wb, `DO_${pl.title.replace(/[^\w-]+/g, '_')}.xlsx`);
   }
 
+  // ---- DO 信息窗口：PO / 备注 / 温度设备（任何 DO 都能用，包括 Packing List 生成的、已签收的；只改单据，不动货物和库存）----
+  let diState = null;
+  function openDoInfo(d, opts) {
+    opts = opts || {};   // { goLabel, onGo(d) }  onGo = 保存后继续做的事（打印 / 导出）
+    diState = { id: d.id, onGo: opts.onGo || null };
+    const $ = id => document.getElementById(id);
+    $('diTitle').textContent = t('doInfoTitle') + ' · ' + d.no;
+    $('diSub').textContent = t('doInfoSub');
+    $('diNoteLbl').textContent = t('doInfoRemarks');
+    $('diPo').value = d.ref || ''; $('diNote').value = d.note || '';
+    const sel = new Set(d.tempUnitIds || []);
+    const list = tempUnits.filter(u => u.active !== false || sel.has(u.id));
+    $('diEquipList').innerHTML = list.length
+      ? list.map(u => `<label><input type="checkbox" class="di-eq" value="${escapeHtml(u.id)}"${sel.has(u.id) ? ' checked' : ''}> ${escapeHtml(u.name)} · ${escapeHtml(tempKindName(u.kind))}</label>`).join('')
+      : `<div class="pl-item-meta">${escapeHtml(t('doEquipNone'))}</div>`;
+    const day = d.date || new Date().toISOString().slice(0, 10);
+    $('diFrom').value = d.tempFrom || day + 'T00:00';
+    $('diTo').value = d.tempTo || day + 'T23:59';
+    $('diError').textContent = '';
+    if (opts.onGo) { $('diGo').textContent = opts.goLabel; $('diSave').style.display = 'none'; }
+    else { $('diGo').textContent = t('doInfoSave'); $('diSave').style.display = 'none'; }
+    $('doInfoModal').classList.add('open');
+  }
+  async function diSaveNow() {
+    const $ = id => document.getElementById(id);
+    const eq = Array.from(document.querySelectorAll('#diEquipList .di-eq:checked')).map(x => x.value);
+    const patch = { ref: $('diPo').value.trim(), note: $('diNote').value.trim(), tempUnitIds: eq, tempFrom: eq.length ? $('diFrom').value : '', tempTo: eq.length ? $('diTo').value : '' };
+    const latest = await fetchSharedData();
+    const cur = latest.deliveries.find(x => x.id === diState.id);
+    if (!cur) throw new Error(t('doEditGone'));
+    await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
+      { deliveries: latest.deliveries.map(x => x.id === diState.id ? Object.assign({}, x, patch) : x), audit: [mkAudit('doEdit', { no: cur.no, n: cur.lines.length, customer: cur.customer || '—' })] });
+    records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+    saveLocalCache();
+    setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
+    return deliveries.find(x => x.id === diState.id) || Object.assign({}, cur, patch);
+  }
+  document.getElementById('diCancel').addEventListener('click', () => { document.getElementById('doInfoModal').classList.remove('open'); diState = null; renderCurrentView(); });
+  document.getElementById('diGo').addEventListener('click', async () => {
+    if (!diState) return;
+    const btn = document.getElementById('diGo'); btn.disabled = true;
+    try {
+      const nd = await diSaveNow();
+      const go = diState.onGo;
+      document.getElementById('doInfoModal').classList.remove('open'); diState = null;
+      renderCurrentView();
+      if (go) go(nd);
+    } catch (e) { console.error(e); document.getElementById('diError').textContent = t('syncFailed') + ': ' + e.message; }
+    btn.disabled = false;
+  });
+  // 从 Packing List 导出 DO：先生成 DO，再让用户确认 PO / 备注 / 温度设备，最后打印或导出
+  async function plExportFlow(kind) {
+    const pl = packingLists.find(p => p.id === currentPackingListId);
+    if (!pl) return;
+    try {
+      const d = await ensureDoFromPl(pl.id);
+      if (!d) return;
+      renderCurrentView();
+      const act = kind === 'pdf' ? (x => printDelivery(x)) : (x => exportDeliveryExcel(x));
+      if (!canLoad()) { act(d); return; }
+      openDoInfo(d, { goLabel: t(kind === 'pdf' ? 'doInfoSavePrint' : 'doInfoSaveExcel'), onGo: act });
+    } catch (e) { console.error(e); alert(t('syncFailed') + ': ' + e.message); }
+  }
+  document.getElementById('exportDoPdfBtn').addEventListener('click', () => plExportFlow('pdf'));
+  document.getElementById('exportDoExcelBtn').addEventListener('click', () => plExportFlow('excel'));
+  /* old handlers replaced:
   document.getElementById('exportDoPdfBtn').addEventListener('click', async () => {
     const pl = packingLists.find(p => p.id === currentPackingListId);
     if (!pl) return;
@@ -8126,6 +8335,7 @@
     } catch (e) { console.error(e); alert(t('syncFailed') + ': ' + e.message); }
   });
 
+  */
   document.getElementById('deletePackingListBtn').addEventListener('click', async () => {
     if (!can('packing') || !currentPackingListId) return;
     if (!confirm(t('deletePackingListConfirm'))) return;
@@ -8586,25 +8796,7 @@
       const on = (sel, fn) => card.querySelectorAll(sel).forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); fn(b); }));
       on('.do-pod', () => openPod(d));
       on('.do-edit', () => openDoModal('', d));
-      on('.do-po', async (b) => {
-        if (!can('delivery')) return;
-        const ans = prompt(t('doAskPo'), d.ref || '');
-        if (ans === null) return;
-        const po = ans.trim();
-        if (po === (d.ref || '')) return;
-        b.disabled = true;
-        try {
-          const latest = await fetchSharedData();
-          const cur = latest.deliveries.find(x => x.id === d.id);
-          if (!cur) throw new Error(t('doEditGone'));
-          await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined,
-            { deliveries: latest.deliveries.map(x => x.id === d.id ? Object.assign({}, x, { ref: po }) : x), audit: [mkAudit('doEdit', { no: d.no, n: cur.lines.length, customer: cur.customer || '—' })] });
-          records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
-          saveLocalCache();
-          setSyncStatus(t('syncedAt', { time: new Date().toLocaleTimeString() }));
-        } catch (e) { console.error(e); alert(t('syncFailed') + ': ' + e.message); }
-        renderCurrentView();
-      });
+      on('.do-po', () => openDoInfo(d));
       on('.do-print', () => printDelivery(d));
       on('.do-export', () => exportDeliveryExcel(d));
       on('.do-del', async (b) => {
@@ -8736,7 +8928,8 @@
   // DO 附带的温度记录：按 DO 保存的设备 + 时间段，取当前温度记录（之后补录的读数也会带上）
   function doTempLogs(d) {
     const ids = d.tempUnitIds || [];
-    const from = d.tempFrom || '', to = d.tempTo || '';
+    const day = d.date || '';
+    const from = d.tempFrom || (day ? day + 'T00:00' : ''), to = d.tempTo || (day ? day + 'T23:59' : '');   // 没填时间段就用 DO 当天
     return ids.map(id => {
       const u = tempUnits.find(x => x.id === id);
       const logs = tempLogs.filter(l => l.unitId === id && (!from || (l.at || '') >= from) && (!to || (l.at || '') <= to))
@@ -8785,7 +8978,7 @@
       <table class="items"><thead><tr><th>#</th><th>${e(t('itemCodeLabel'))}</th><th>${e(t('itemNameLabel'))}</th><th class="r">${e(t('qtyLabel'))}</th><th>${e(t('uomLabel'))}</th><th>${e(t('expiryDateLabel'))}</th></tr></thead><tbody>${rows}</tbody></table>
       ${doTempPrintHtml(d)}
       </td></tr><tr><td class="ffoot">
-      <div style="margin-top:14px;margin-bottom:0;border:1px solid #000;min-height:64px;padding:6px 8px;break-inside:avoid;"><div style="font-weight:bold;font-size:11px;margin-bottom:3px;">${e(t('doRemarks'))}:</div><div style="white-space:pre-wrap;">${e(d.note || '')}</div></div>
+      <div style="margin-top:14px;margin-bottom:0;min-height:64px;padding:0;break-inside:avoid;"><div style="font-weight:bold;font-size:11px;margin-bottom:3px;">${e(t('doRemarks'))}:</div><div style="white-space:pre-wrap;">${e(d.note || '')}</div></div>
       <div class="sig"><div>${e(t('printDeliveredBy'))}</div><div>${e(t('printReceivedBy'))}${d.pod ? '<br>' + e(d.pod.name + ' · ' + d.pod.date) : ''}${d.pod && (d.pod.temp != null || d.pod.cond) ? '<br><small>' + e([d.pod.temp != null ? 'Temp ' + d.pod.temp + '°C' : '', d.pod.cond ? 'Condition: ' + (d.pod.cond === 'bad' ? 'Problem' : 'Good') : '', d.pod.issue && d.pod.issue !== 'none' ? d.pod.issue.charAt(0).toUpperCase() + d.pod.issue.slice(1) : ''].filter(Boolean).join(' · ')) + '</small>' : ''}</div></div>
       </td></tr></tbody></table>
       <script>(function(){function fit(){var f=document.querySelector('table.frame');if(!f)return;f.style.height='auto';var pg=268*3.7795275591;var h=f.getBoundingClientRect().height;var n=Math.max(1,Math.ceil(h/pg));f.style.height=(n*268)+'mm';}window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);})();<\/script>
@@ -8872,8 +9065,7 @@
     });
     // PO 号：可留空（取消 = 留空）；同一个 PL 已有 DO 时，默认沿用上一张的 PO
     const prevPl = latest.deliveries.filter(x => x.plId === plId).slice(-1)[0];
-    const poAns = prompt(t('doAskPo'), (prevPl && prevPl.ref) || '');
-    const poNo = poAns === null ? '' : poAns.trim();
+    const poNo = (prevPl && prevPl.ref) || '';   // 同一个 PL 之前的 DO 已有 PO 就沿用；之后可在“DO 信息”里修改
     const d = { id: 'do_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), no, date, soId: '', soNo: '',
       customer: custName, customerAddr: customerAddrOf(custName), platform: pl.platform || '', ref: poNo, note: '', status: 'shipped', pod: null, lines,
       plId: pl.id, plTitle: pl.title, itemIds: ready.map(i => i.id), depts: [...new Set(ready.map(i => deptOf(i)))].filter(Boolean), by: actorName(), at: new Date().toISOString() };
