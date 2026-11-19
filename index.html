@@ -368,6 +368,8 @@
   .rv-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .rv-toolbar > * { flex: 0 0 auto; }
   #scanModal { z-index: 400; }
+  .sub-bar { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; flex-wrap: wrap; }
+  .sub-bar b { font-size: 17px; }
   .scan-btn { border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 6px 10px; font-size: 14px; cursor: pointer; margin-top: 6px; }
   .sr-tab.active { border-color: var(--accent); font-weight: 700; }
   .sr-sub { font-size: 12px; color: var(--muted, #64748b); }
@@ -1238,7 +1240,9 @@
   <!-- 出库页：销售订单 SO + 出库单 DO -->
   <div id="deliveryView" style="display:none;">
     <datalist id="customerList"></datalist>
-    <div class="panel">
+    <div id="deliveryHub" class="choice-grid"></div>
+    <div id="deliverySubBar" class="sub-bar" style="display:none;"><button class="export-btn" id="deliverySubBack"></button><b id="deliverySubTitle"></b></div>
+    <div class="panel" data-sub="so">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="soPanelTitle">销售订单 (SO)</h2>
         <button class="admin-btn" id="newSoBtn" data-perm="delivery" data-i18n="newSoBtn">+ 新销售订单</button>
@@ -1246,7 +1250,7 @@
       <div id="soContainer" style="margin-top:10px;"></div>
       <div class="empty" id="soEmpty" style="display:none;" data-i18n="soEmpty">还没有销售订单。</div>
     </div>
-    <div class="panel">
+    <div class="panel" data-sub="do">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="doPanelTitle">出库单 (DO)</h2>
         <button class="admin-btn js-customers-btn" data-perm="delivery packing" data-i18n="customersBtn">🏢 客户</button>
@@ -1256,7 +1260,7 @@
       <div id="doContainer"></div>
       <div class="empty" id="doEmpty" style="display:none;" data-i18n="doEmpty">还没有出库单。</div>
     </div>
-    <div class="panel">
+    <div class="panel" data-sub="loading">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="ldPanelTitle">货柜装柜记录</h2>
         <button class="admin-btn" id="newLoadBtn" data-perm="delivery packing" data-i18n="ldNewBtn">+ 新装柜记录</button>
@@ -1346,11 +1350,13 @@
 
   <!-- 收货单 GRN 列表页 -->
   <div id="receivingView" style="display:none;">
-    <div class="rv-toolbar">
+    <div id="receivingHub" class="choice-grid"></div>
+    <div id="receivingSubBar" class="sub-bar" style="display:none;"><button class="export-btn" id="receivingSubBack"></button><b id="receivingSubTitle"></b></div>
+    <div class="rv-toolbar" style="display:none;">
       <button class="export-btn" id="reportBtn" data-i18n="reportBtn">📊 报表</button>
       <button class="export-btn" id="suppliersBtn" data-perm="receiving" data-i18n="suppliersBtn">🏭 供应商</button>
     </div>
-    <div class="panel" id="poPanel">
+    <div class="panel" data-sub="po" id="poPanel">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="poPanelTitle">采购单 (PO)</h2>
         <button class="admin-btn" id="newPoBtn" data-perm="receiving" data-i18n="newPoBtn">+ 新采购单</button>
@@ -1358,7 +1364,7 @@
       <div id="poContainer" style="margin-top:10px;"></div>
       <div class="empty" id="poEmpty" style="display:none;" data-i18n="poEmpty">还没有采购单。</div>
     </div>
-    <div class="panel">
+    <div class="panel" data-sub="grn">
       <div class="settings-toggle-row" style="cursor:default; border-top:none; padding-top:0; margin-top:0; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0;" data-i18n="receivingPanelTitle">收货单 (GRN)</h2>
         <button class="admin-btn" id="newReceiptBtn" data-perm="receiving" data-i18n="newReceiptBtn">+ 新收货单</button>
@@ -1368,7 +1374,7 @@
       <div id="receiptsContainer"></div>
       <div class="empty" id="receiptsEmpty" style="display:none;" data-i18n="receiptsEmpty">还没有收货单。</div>
     </div>
-    <div class="panel">
+    <div class="panel" data-sub="rtn">
       <h2 style="margin:0 0 10px;" data-i18n="returnsPanelTitle">退货单 (RTN)</h2>
       <div id="returnsContainer"></div>
       <div class="empty" id="returnsEmpty" style="display:none;" data-i18n="returnsEmpty">还没有退货单。</div>
@@ -1888,6 +1894,7 @@
         <div class="field">
           <label for="stReason" data-i18n="reasonLabel">原因</label>
           <select id="stReason">
+            <option value="opening" data-i18n="reasonOpening">期初库存（首次设置）</option>
             <option value="count" data-i18n="reasonCount">盘点差异</option>
             <option value="damaged" data-i18n="reasonDamaged">损坏</option>
             <option value="expired" data-i18n="reasonExpired">过期报废</option>
@@ -1905,6 +1912,7 @@
         <input type="text" id="stFilter" data-i18n-ph="masterFilterPh" autocomplete="off" style="flex:1 1 180px;">
         <button type="button" class="scan-btn" id="stScanBtn" style="margin:0;" data-i18n="stScanBtn">📷 扫码盘点</button>
       </div>
+      <div class="modal-status" id="stModeHint" style="display:none; margin:8px 0;"></div>
       <div class="modal-status" id="stStatus"></div>
       <div id="stList" style="margin-bottom:14px;"></div>
       <div class="modal-error" id="stError"></div>
@@ -2066,13 +2074,6 @@
         <div class="modal-status" id="plAddStatus" style="text-align:left;"></div>
         <div class="modal-error" id="plAddError"></div>
         <button type="button" class="pl-done-btn" id="plAddSaveBtn" style="width:100%;"></button>
-      </div>
-      <div id="plScanRow" style="display:none; margin-bottom:10px;">
-        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-          <button type="button" class="export-btn" id="plScanBtn" data-i18n="plScanBtn"></button>
-          <input type="text" id="plScanInput" autocomplete="off" style="flex:1; min-width:180px;">
-        </div>
-        <div id="plScanLog" class="pl-item-meta" style="margin-top:6px;"></div>
       </div>
       <div id="plDeptFilterBar" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;"></div>
       <div id="plStatFilterBar" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
@@ -3029,17 +3030,26 @@
       scanUnsupported: '这个浏览器不能使用摄像头，请改用扫码枪或手动输入。',
       scanNoCamera: '无法打开摄像头。请在浏览器里允许摄像头权限（需要 https 网址）。',
       scanNoLib: '这个浏览器没有内建条码识别，而且无法下载扫码组件（可能没有网络）。',
+      plPickNoStock: '{item} 目前没有库存可拿。',
+      subBack: '← 返回',
+      subSoTitle: '销售订单 (SO)', subSoDesc: '客户或船只要的货，可分几次发',
+      subDoTitle: '出库单 (DO)', subDoDesc: '出库单、打印、客户签收 (POD)',
+      subLdTitle: '货柜装柜记录', subLdDesc: '装柜、封条、货柜温度',
+      subPoTitle: '采购单 (PO)', subPoDesc: '向供应商下单，跟进收货',
+      subGrnTitle: '收货单 (GRN)', subGrnDesc: '收货入库、质检',
+      subRtnTitle: '退货单 (RTN)', subRtnDesc: '退给供应商的货',
+      subSupTitle: '供应商', subSupDesc: '资料、证书、评估',
+      subRepTitle: '报表', subRepDesc: '收货、库存相关报表',
+      subBadgeOpen: '{n} 张未完成', subBadgeTotal: '共 {n} 张', subBadgeNone: '还没有记录',
+      reasonOpening: '期初库存（首次设置）',
+      stOpeningHint: '首次设置：直接填入每个货物现有的数量、到期日和批次（批次可选）。这些会作为期初库存加入，不和系统库存比较。同一货物有不同到期日时，点「+ 再加一行」分开填。',
+      stAddLine: '+ 再加一行',
+      stExpPh: '到期日（增加时）',
+      stBatchPh: '批次（可选）',
+      stQtyPh: '数量',
+      stOpenNothing: '请至少填写一个数量。',
       scanNoMatch: '找不到条码 {code} 对应的货物，请先在货物主档登记条码。',
       scanGot: '✓ {item} × {qty}',
-      plScanBtn: '📷 扫码拿货',
-      plScanHint: '连续扫码拿货：每扫一次，这张 Packing List 里对应货物的拿货数量 +1（第一次从 1 开始），并自动勾选。扫完后检查数量，再点“完成并保存”。',
-      plScanGot: '✓ {item}：{qty} / {req} {uom}',
-      plScanOver: '⚠ {item} 已扫 {qty}，超过要求的 {req} {uom}',
-      plScanDone: '{item} 这一项已经备好了',
-      plScanNotInPl: '{item} 不在这张 Packing List 里',
-      plScanFiltered: '{item} 在这张 PL 里，但被当前的筛选藏起来了，请先切换到“全部”',
-      plScanNoStock: '{item} 目前没有库存可拿',
-      plScanInputPh: '扫码枪：点这里再扫（或输入条码后按 Enter）',
       grnScanBtn: '📷 扫码收货',
       doScanBtn: '📷 扫码拣货',
       stScanBtn: '📷 扫码盘点',
@@ -3977,17 +3987,26 @@
       scanUnsupported: 'This browser cannot use the camera. Use a barcode scanner or type the code.',
       scanNoCamera: 'Cannot open the camera. Allow camera permission in the browser (an https address is required).',
       scanNoLib: 'This browser has no built-in barcode detection and the scanning component could not be downloaded (you may be offline).',
+      plPickNoStock: 'No stock available to pick for {item}.',
+      subBack: '← Back',
+      subSoTitle: 'Sales Orders (SO)', subSoDesc: 'What customers or vessels ordered; ship in parts',
+      subDoTitle: 'Delivery Orders (DO)', subDoDesc: 'Delivery orders, printing, customer sign-off (POD)',
+      subLdTitle: 'Container loading records', subLdDesc: 'Loading, seals, container temperature',
+      subPoTitle: 'Purchase Orders (PO)', subPoDesc: 'Order from suppliers and follow up receiving',
+      subGrnTitle: 'Goods Receipts (GRN)', subGrnDesc: 'Receive goods into stock, quality check',
+      subRtnTitle: 'Returns (RTN)', subRtnDesc: 'Goods returned to suppliers',
+      subSupTitle: 'Suppliers', subSupDesc: 'Details, certificates, evaluation',
+      subRepTitle: 'Reports', subRepDesc: 'Receiving and stock reports',
+      subBadgeOpen: '{n} open', subBadgeTotal: '{n} in total', subBadgeNone: 'No records yet',
+      reasonOpening: 'Opening stock (first-time setup)',
+      stOpeningHint: 'First-time setup: key in the quantity you have, with expiry date and batch (batch optional). It is added as opening stock and is not compared with the system quantity. If an item has several expiry dates, use “+ Add another line” for each.',
+      stAddLine: '+ Add another line',
+      stExpPh: 'Expiry (when increasing)',
+      stBatchPh: 'Batch (optional)',
+      stQtyPh: 'Qty',
+      stOpenNothing: 'Enter at least one quantity.',
       scanNoMatch: 'No item found for barcode {code}. Register the barcode in the item master first.',
       scanGot: '✓ {item} × {qty}',
-      plScanBtn: '📷 Scan to pick',
-      plScanHint: 'Continuous pick scan: each scan adds 1 to the picked quantity of that item on this packing list (the first scan starts at 1) and ticks it. When done, check the quantities and press “Complete & save”.',
-      plScanGot: '✓ {item}: {qty} / {req} {uom}',
-      plScanOver: '⚠ {item} scanned {qty}, more than the {req} {uom} required',
-      plScanDone: '{item} is already picked',
-      plScanNotInPl: '{item} is not on this packing list',
-      plScanFiltered: '{item} is on this list but hidden by the current filter — switch to “All” first',
-      plScanNoStock: 'No stock available to pick for {item}',
-      plScanInputPh: 'Scanner gun: click here, then scan (or type a barcode and press Enter)',
       grnScanBtn: '📷 Scan to receive',
       doScanBtn: '📷 Scan to pick',
       stScanBtn: '📷 Scan to count',
@@ -4925,17 +4944,26 @@
       scanUnsupported: 'Pelayar ini tidak boleh menggunakan kamera. Gunakan pengimbas kod bar atau taip kod.',
       scanNoCamera: 'Tidak dapat membuka kamera. Benarkan kebenaran kamera dalam pelayar (alamat https diperlukan).',
       scanNoLib: 'Pelayar ini tiada pengesanan kod bar terbina dalam dan komponen imbasan tidak dapat dimuat turun (mungkin tiada internet).',
+      plPickNoStock: 'Tiada stok untuk diambil bagi {item}.',
+      subBack: '← Kembali',
+      subSoTitle: 'Pesanan Jualan (SO)', subSoDesc: 'Barang yang dipesan pelanggan atau kapal; boleh hantar berperingkat',
+      subDoTitle: 'Pesanan Penghantaran (DO)', subDoDesc: 'DO, cetakan, pengesahan pelanggan (POD)',
+      subLdTitle: 'Rekod muatan kontena', subLdDesc: 'Muatan, meterai, suhu kontena',
+      subPoTitle: 'Pesanan Belian (PO)', subPoDesc: 'Pesan daripada pembekal dan jejak penerimaan',
+      subGrnTitle: 'Resit Barang (GRN)', subGrnDesc: 'Terima barang ke stok, semakan kualiti',
+      subRtnTitle: 'Pemulangan (RTN)', subRtnDesc: 'Barang dipulangkan kepada pembekal',
+      subSupTitle: 'Pembekal', subSupDesc: 'Butiran, sijil, penilaian',
+      subRepTitle: 'Laporan', subRepDesc: 'Laporan penerimaan dan stok',
+      subBadgeOpen: '{n} belum selesai', subBadgeTotal: 'Jumlah {n}', subBadgeNone: 'Belum ada rekod',
+      reasonOpening: 'Stok permulaan (persediaan pertama)',
+      stOpeningHint: 'Persediaan pertama: masukkan kuantiti sedia ada, tarikh luput dan kelompok (kelompok pilihan). Ia ditambah sebagai stok permulaan dan tidak dibandingkan dengan kuantiti sistem. Jika satu barang ada beberapa tarikh luput, guna “+ Tambah baris” untuk setiap satu.',
+      stAddLine: '+ Tambah baris',
+      stExpPh: 'Tarikh luput (jika menambah)',
+      stBatchPh: 'Kelompok (pilihan)',
+      stQtyPh: 'Kuantiti',
+      stOpenNothing: 'Masukkan sekurang-kurangnya satu kuantiti.',
       scanNoMatch: 'Tiada barang untuk kod bar {code}. Daftarkan kod bar dalam induk barang dahulu.',
       scanGot: '✓ {item} × {qty}',
-      plScanBtn: '📷 Imbas untuk ambil',
-      plScanHint: 'Imbasan berterusan: setiap imbasan menambah 1 pada kuantiti diambil bagi barang itu dalam senarai ini (imbasan pertama bermula dari 1) dan menandakannya. Selesai, semak kuantiti dan tekan “Selesai & simpan”.',
-      plScanGot: '✓ {item}: {qty} / {req} {uom}',
-      plScanOver: '⚠ {item} diimbas {qty}, melebihi {req} {uom} yang diperlukan',
-      plScanDone: '{item} sudah diambil',
-      plScanNotInPl: '{item} tiada dalam senarai pembungkusan ini',
-      plScanFiltered: '{item} ada dalam senarai ini tetapi disembunyikan oleh penapis — tukar ke “Semua” dahulu',
-      plScanNoStock: 'Tiada stok untuk diambil bagi {item}',
-      plScanInputPh: 'Pengimbas: klik di sini, kemudian imbas (atau taip kod bar dan tekan Enter)',
       grnScanBtn: '📷 Imbas untuk terima',
       doScanBtn: '📷 Imbas untuk ambil',
       stScanBtn: '📷 Imbas untuk kira',
@@ -7111,6 +7139,63 @@
   const deliveryView = document.getElementById('deliveryView');
   const homeBtn = document.getElementById('homeBtn');
 
+  // ---- 分层导航：主页 → 子目录（卡片）→ 单独的列表页 ----
+  let currentSub = '';
+  function subHubs() {
+    const n = (arr, f) => (arr || []).filter(f).length;
+    const badge = (open, total) => total ? (open ? t('subBadgeOpen', { n: open }) : t('subBadgeTotal', { n: total })) : t('subBadgeNone');
+    return {
+      delivery: {
+        hub: 'deliveryHub', bar: 'deliverySubBar', back: 'deliverySubBack', title: 'deliverySubTitle', view: deliveryView,
+        cards: [
+          { k: 'so', icon: '🧾', title: 'subSoTitle', desc: 'subSoDesc', badge: () => badge(n(salesOrders, x => ['open', 'partial'].includes(soStatus(x))), salesOrders.length) },
+          { k: 'do', icon: '🚚', title: 'subDoTitle', desc: 'subDoDesc', badge: () => badge(0, deliveries.length) },
+          { k: 'loading', icon: '🚢', title: 'subLdTitle', desc: 'subLdDesc', badge: () => badge(0, loadings.length) }
+        ]
+      },
+      receiving: {
+        hub: 'receivingHub', bar: 'receivingSubBar', back: 'receivingSubBack', title: 'receivingSubTitle', view: receivingView,
+        cards: [
+          { k: 'po', icon: '🛒', title: 'subPoTitle', desc: 'subPoDesc', badge: () => badge(n(purchaseOrders, x => ['open', 'partial'].includes(poStatus(x))), purchaseOrders.length) },
+          { k: 'grn', icon: '📥', title: 'subGrnTitle', desc: 'subGrnDesc', badge: () => badge(0, receipts.length) },
+          { k: 'rtn', icon: '↩️', title: 'subRtnTitle', desc: 'subRtnDesc', badge: () => badge(0, returns.length) },
+          { k: 'suppliers', icon: '🏭', title: 'subSupTitle', desc: 'subSupDesc', perm: 'receiving', action: 'suppliersBtn' },
+          { k: 'report', icon: '📊', title: 'subRepTitle', desc: 'subRepDesc', action: 'reportBtn' }
+        ]
+      }
+    };
+  }
+  function applySubView() {
+    const H = subHubs()[currentView];
+    if (!H) return;
+    const hubEl = document.getElementById(H.hub), barEl = document.getElementById(H.bar);
+    const inHub = !currentSub;
+    hubEl.style.display = inHub ? '' : 'none';
+    barEl.style.display = inHub ? 'none' : 'flex';
+    H.view.querySelectorAll(':scope > .panel[data-sub]').forEach(p => { p.style.display = (!inHub && p.dataset.sub === currentSub) ? '' : 'none'; });
+    if (inHub) {
+      hubEl.innerHTML = H.cards.filter(c => !c.perm || can(c.perm)).map(c => `
+        <button class="choice-card" data-k="${c.k}">
+          <div class="choice-icon">${c.icon}</div>
+          <div class="choice-title">${escapeHtml(t(c.title))}</div>
+          <div class="choice-desc">${escapeHtml(t(c.desc))}</div>
+          ${c.badge ? `<div class="pl-item-meta" style="margin-top:8px; font-weight:600;">${escapeHtml(c.badge())}</div>` : ''}
+        </button>`).join('');
+      hubEl.querySelectorAll('.choice-card').forEach(btn => btn.addEventListener('click', () => {
+        const c = H.cards.find(x => x.k === btn.dataset.k);
+        if (c.action) { document.getElementById(c.action).click(); return; }
+        currentSub = c.k; renderCurrentView(); window.scrollTo(0, 0);
+      }));
+    } else {
+      const c = H.cards.find(x => x.k === currentSub);
+      document.getElementById(H.back).textContent = t('subBack');
+      document.getElementById(H.title).textContent = c ? c.icon + ' ' + t(c.title) : '';
+    }
+  }
+  ['delivery', 'receiving'].forEach(v => {
+    document.getElementById(v + 'SubBack').addEventListener('click', () => { currentSub = ''; renderCurrentView(); window.scrollTo(0, 0); });
+  });
+
   function renderCurrentView() {
     updateAdminUI();
     choiceView.style.display = currentView === 'choice' ? 'block' : 'none';
@@ -7127,6 +7212,7 @@
     else if (currentView === 'packingDetail') renderPackingDetail();
     else if (currentView === 'receiving') renderReceivingView();
     else if (currentView === 'delivery') { renderDeliveryView(); renderLoadings(); }
+    applySubView();
   }
 
   document.getElementById('gotoPackingBtn').addEventListener('click', () => {
@@ -7134,11 +7220,11 @@
     renderCurrentView();
   });
   document.getElementById('gotoDeliveryBtn').addEventListener('click', () => {
-    currentView = 'delivery';
+    currentView = 'delivery'; currentSub = '';
     renderCurrentView();
   });
   document.getElementById('gotoReceivingBtn').addEventListener('click', () => {
-    currentView = 'receiving';
+    currentView = 'receiving'; currentSub = '';
     renderCurrentView();
   });
   document.getElementById('gotoStockBtn').addEventListener('click', () => {
@@ -7146,7 +7232,7 @@
     renderCurrentView();
   });
   homeBtn.addEventListener('click', () => {
-    currentView = 'choice';
+    currentView = 'choice'; currentSub = '';
     renderCurrentView();
   });
   document.getElementById('backToPackingListBtn').addEventListener('click', () => {
@@ -7665,7 +7751,6 @@
   }
 
   // 劳工：按清单货物直接扣库存。勾选“已备好”并填好数量即可，不会马上保存。
-  const plScanSeen = new Set();   // 已经扫过的 行/货物：界面刷新（自动同步）后继续累加，不会又从 1 开始
   function renderLabourTakeRow(row, pl, item) {
     const d0 = plDraftOf(pl.id, item.id) || { checked: false, qty: item.qtyRequested };
     row.innerHTML = `
@@ -7701,18 +7786,7 @@
     showPick();
     row.classList.toggle('staged', chk.checked);
     plRowCollectors.push({
-      item, row, chk, scanned: 0,
-      scanOne: () => {
-        if (!pickGroup) return null;
-        const key = pl.id + ':' + item.id;
-        const n = plScanSeen.has(key) ? r4((parseFloat(qtyInput.value) || 0) + 1) : 1;
-        plScanSeen.add(key);
-        qtyInput.value = n; qtyInput.dispatchEvent(new Event('input'));
-        chk.checked = true; chk.dispatchEvent(new Event('change'));
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        row.style.outline = '2px solid var(--in, #16a34a)'; setTimeout(() => { row.style.outline = ''; }, 900);
-        return n;
-      },
+      item, row, chk,
       get: () => {
         const qty = parseFloat(qtyInput.value);
         return { item, checked: chk.checked, invalid: !(qty > 0), lines: [{ stock: { item: item.item, itemCode: item.itemCode, uom: item.uom }, qty }] };
@@ -7761,7 +7835,10 @@
       line.innerHTML = `
         <div class="pl-alloc-pick">
           <label>${t('plStockItemLabel')}</label>
-          <input type="text" class="pl-stock-pick" list="${listId}" autocomplete="off" placeholder="${escapeHtml(t('plStockItemPlaceholder'))}" value="${escapeHtml(presetPick ? presetPick.label : '')}">
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input type="text" class="pl-stock-pick" list="${listId}" autocomplete="off" style="flex:1; min-width:0;" placeholder="${escapeHtml(t('plStockItemPlaceholder'))}" value="${escapeHtml(presetPick ? presetPick.label : '')}">
+            <button type="button" class="scan-btn pl-pick-scan" style="margin-top:0;" title="${escapeHtml(t('scanTitle'))}">📷</button>
+          </div>
           <div class="pl-stock-hint"></div>
         </div>
         <div class="pl-alloc-qty">
@@ -7791,6 +7868,28 @@
         if (pick && qty > 0 && linesEl.lastElementChild === line) addLine(null, null);
       };
       const onEdit = () => { update(); persist(); };
+      // 扫条码 → 在库存里找到这个货物并填进“从库存选择货物”（摄像头 📷，或扫码枪：在这格里扫后自动 Enter）
+      const pickByBarcode = (code, log) => {
+        const m = masterByBarcode(code);
+        const say = (msg) => { if (log) log(msg, true); else alert(msg); };
+        if (!m) { say(t('scanNoMatch', { code })); return false; }
+        const opt = options.find(o => normU(o.group.item) === normU(m.item) && (!m.itemCode || !o.group.itemCode || normU(o.group.itemCode) === normU(m.itemCode)));
+        if (!opt) { say(t('plPickNoStock', { item: m.item })); return false; }
+        pickInput.value = opt.label;
+        if (qtyInput.value === '') qtyInput.value = item.qtyRequested;
+        onEdit();
+        return true;
+      };
+      line.querySelector('.pl-pick-scan').addEventListener('click', () => {
+        openScanner({ continuous: false, hint: t('scanHintSingle'), onCode: (code, log) => { pickByBarcode(code, log); } });
+      });
+      pickInput.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'Enter') return;
+        const v = pickInput.value.trim();
+        if (!v || pickOf(pickInput) || !masterByBarcode(v)) return;   // 已是正常选项 / 不是条码 → 不处理
+        ev.preventDefault();
+        pickByBarcode(v);
+      });
       pickInput.addEventListener('input', onEdit);
       pickInput.addEventListener('change', onEdit);
       qtyInput.addEventListener('input', onEdit);
@@ -7806,26 +7905,7 @@
     row.classList.toggle('staged', chk.checked);
 
     plRowCollectors.push({
-      item, row, chk, scanned: 0,
-      // 扫码拿货：指定货物（货物主档 m）+1；返回累计数量，找不到库存返回 null
-      scanOne: (m) => {
-        const opt = options.find(o => normU(o.group.item) === normU(m.item) && (!m.itemCode || !o.group.itemCode || normU(o.group.itemCode) === normU(m.itemCode)));
-        if (!opt) return null;
-        const lns = Array.from(linesEl.querySelectorAll('.pl-alloc-line'));
-        let line = lns.find(l => { const pk = pickOf(l.querySelector('.pl-stock-pick')); return pk && pk.group === opt.group; })
-          || lns.find(l => !l.querySelector('.pl-stock-pick').value.trim());
-        if (!line) { addLine(opt, null); line = linesEl.lastElementChild; }
-        const pi = line.querySelector('.pl-stock-pick'), qi = line.querySelector('.pl-qty-taken-input');
-        if (!pickOf(pi)) { pi.value = opt.label; pi.dispatchEvent(new Event('input')); }
-        const key = pl.id + ':' + item.id + ':' + opt.label;
-        const n = plScanSeen.has(key) ? r4((parseFloat(qi.value) || 0) + 1) : 1;
-        plScanSeen.add(key);
-        qi.value = n; qi.dispatchEvent(new Event('input'));
-        chk.checked = true; chk.dispatchEvent(new Event('change'));
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        row.style.outline = '2px solid var(--in, #16a34a)'; setTimeout(() => { row.style.outline = ''; }, 900);
-        return r4(Array.from(linesEl.querySelectorAll('.pl-qty-taken-input')).reduce((a, x) => a + (parseFloat(x.value) || 0), 0));
-      },
+      item, row, chk,
       get: () => {
         const lines = [];
         let invalid = false;
@@ -7841,44 +7921,6 @@
       }
     });
   }
-
-  // ---- Packing List：扫码拿货（摄像头 / 扫码枪）----
-  function plScanCode(code, log) {
-    const m = masterByBarcode(code);
-    if (!m) { log(t('scanNoMatch', { code }), true); return; }
-    const same = (it) => normU(it.item) === normU(m.item) || (m.itemCode && it.itemCode && normU(it.itemCode) === normU(m.itemCode));
-    const cs = plRowCollectors.filter(c => !c.item.done && same(c.item));
-    if (!cs.length) {
-      const pl = packingLists.find(x => x.id === currentPackingListId);
-      const inPl = pl ? pl.items.filter(same) : [];
-      if (!inPl.length) log(t('plScanNotInPl', { item: m.item }), true);
-      else if (inPl.every(i => i.done)) log(t('plScanDone', { item: m.item }), true);
-      else log(t('plScanFiltered', { item: m.item }), true);
-      return;
-    }
-    // 同一货物有多行时，先填还没扫满的那一行
-    const c = cs.find(x => x.scanned < x.item.qtyRequested) || cs[cs.length - 1];
-    const n = c.scanOne(m);
-    if (n == null) { log(t('plScanNoStock', { item: m.item }), true); return; }
-    c.scanned = n;
-    const info = { item: m.item, qty: n, req: c.item.qtyRequested, uom: c.item.uom || '' };
-    if (n > c.item.qtyRequested) log(t('plScanOver', info), true); else log(t('plScanGot', info));
-  }
-  document.getElementById('plScanBtn').addEventListener('click', () => {
-    openScanner({ continuous: true, hint: t('plScanHint'), onCode: plScanCode });
-  });
-  (function () {
-    const inp = document.getElementById('plScanInput'), logEl = document.getElementById('plScanLog');
-    inp.placeholder = t('plScanInputPh');
-    inp.addEventListener('keydown', (ev) => {
-      if (ev.key !== 'Enter') return;
-      ev.preventDefault();
-      const code = inp.value.trim(); inp.value = '';
-      if (!code) return;
-      plScanCode(code, (msg, bad) => { logEl.textContent = msg; logEl.style.color = bad ? 'var(--out)' : ''; });
-      inp.focus();
-    });
-  })();
 
   // 底部“完成并保存”：把所有已勾选的项目一次过写入并扣库存
   document.getElementById('plCheckAllBtn').addEventListener('click', () => {
@@ -7910,7 +7952,7 @@
     const btn = document.getElementById('plSaveAllBtn');
     btn.disabled = true;
     const ok = await commitPackingBatch(pl, entries);
-    if (ok) { plScanSeen.clear(); clearPlDraft(pl.id, entries.map(e => e.item.id)); renderCurrentView(); }
+    if (ok) { clearPlDraft(pl.id, entries.map(e => e.item.id)); renderCurrentView(); }
     else btn.disabled = false;
   });
 
@@ -8086,7 +8128,6 @@
       itemsEl.appendChild(row);
     });
     plPickCache = null;
-    document.getElementById('plScanRow').style.display = plRowCollectors.length ? '' : 'none';
     refreshPlSaveBar();
   }
 
@@ -11268,60 +11309,112 @@
   // ================= 盘点 / 库存调整（管理员）=================
   const stockTakeModal = document.getElementById('stockTakeModal');
   const stFilter = document.getElementById('stFilter');
-  let stCounts = new Map();   // groupKey -> 点到的数量
+  let stCounts = new Map();   // 普通盘点：groupKey -> 点到的数量
+  let stExp = new Map();      // 普通盘点：groupKey -> 增加时的到期日
+  let stOpen = new Map();     // 期初库存：groupKey -> [{ qty, exp, batch }]
+  const stMeta = new Map();   // groupKey -> { item, itemCode, uom }
+  const stIsOpening = () => document.getElementById('stReason').value === 'opening';
 
   function adjReasonLabel(reason) {
-    const k = { count: 'reasonCount', damaged: 'reasonDamaged', expired: 'reasonExpired', lost: 'reasonLost', found: 'reasonFound', other: 'reasonOther' }[reason];
+    const k = { opening: 'reasonOpening', count: 'reasonCount', damaged: 'reasonDamaged', expired: 'reasonExpired', lost: 'reasonLost', found: 'reasonFound', other: 'reasonOther' }[reason];
     return k ? t(k) : (reason || '');
   }
 
-  function renderStockTakeList() {
+  // 有库存的货物 + 货物主档里还没有库存的货物（首次设置时才能直接填数量）
+  function stRows() {
     const q = stFilter.value.trim().toLowerCase();
-    const groups = buildGroups().sort((a, b) => a.item.localeCompare(b.item))
-      .filter(g => !q || g.item.toLowerCase().includes(q) || g.itemCode.toLowerCase().includes(q));
-    const shown = groups;   // 显示全部
-    const list = document.getElementById('stList');
-    list.innerHTML = shown.map(g => {
-      const has = stCounts.has(g.key);
-      const diff = has ? r4(stCounts.get(g.key) - g.balance) : null;
-      return `<div class="mrow" data-key="${escapeHtml(g.key)}">
-        <div class="mname">${g.itemCode ? '<b>' + escapeHtml(g.itemCode) + '</b> · ' : ''}${escapeHtml(g.item)}
-          <span class="pl-item-meta" style="display:inline;">${t('stSystemQty')}: <b>${g.balance}</b> ${escapeHtml(g.uom)}</span></div>
-        <div class="mfields" style="grid-template-columns: 1fr 1fr;">
-          <input data-f="count" type="number" min="0" step="any" placeholder="${t('stCountedPh')}" value="${has ? stCounts.get(g.key) : ''}">
-          <span class="st-diff" style="align-self:center; font-weight:700; ${diff > 0 ? 'color:var(--in)' : diff < 0 ? 'color:var(--out)' : 'color:var(--muted)'}">${diff === null ? '' : (diff > 0 ? '+' : '') + diff}</span>
-        </div>
-      </div>`;
-    }).join('');
-    list.querySelectorAll('.mrow').forEach(div => {
-      const inp = div.querySelector('input');
-      const g = shown.find(x => x.key === div.dataset.key);
-      inp.addEventListener('input', () => {
-        const v = parseFloat(inp.value);
-        if (isNaN(v) || v < 0) stCounts.delete(g.key); else stCounts.set(g.key, v);
-        const diff = stCounts.has(g.key) ? r4(stCounts.get(g.key) - g.balance) : null;
-        const span = div.querySelector('.st-diff');
-        span.textContent = diff === null ? '' : (diff > 0 ? '+' : '') + diff;
-        span.style.color = diff > 0 ? 'var(--in)' : diff < 0 ? 'var(--out)' : 'var(--muted)';
-      });
+    const groups = buildGroups().map(g => ({ key: g.key, item: g.item, itemCode: g.itemCode, uom: g.uom, balance: g.balance }));
+    const have = new Set(groups.map(g => g.key));
+    itemMaster.forEach(m => {
+      const key = groupKey({ item: m.item, itemCode: m.itemCode || '' });
+      if (!have.has(key)) { have.add(key); groups.push({ key, item: m.item, itemCode: m.itemCode || '', uom: m.uom || '', balance: 0 }); }
     });
+    groups.forEach(g => stMeta.set(g.key, { item: g.item, itemCode: g.itemCode, uom: g.uom }));
+    return groups.sort((a, b) => a.item.localeCompare(b.item))
+      .filter(g => !q || g.item.toLowerCase().includes(q) || g.itemCode.toLowerCase().includes(q));
+  }
+
+  function stReadOpenRow(div) {
+    const key = div.dataset.key;
+    const lines = Array.from(div.querySelectorAll('.st-line')).map(l => ({
+      qty: l.querySelector('[data-f="qty"]').value, exp: l.querySelector('[data-f="exp"]').value, batch: l.querySelector('[data-f="batch"]').value.trim()
+    }));
+    stOpen.set(key, lines);
+  }
+
+  function renderStockTakeList() {
+    const opening = stIsOpening();
+    const hint = document.getElementById('stModeHint');
+    hint.style.display = opening ? '' : 'none';
+    hint.textContent = opening ? t('stOpeningHint') : '';
+    const shown = stRows();
+    const list = document.getElementById('stList');
+    if (opening) {
+      list.innerHTML = shown.map(g => {
+        const lines = stOpen.get(g.key) || [{ qty: '', exp: '', batch: '' }];
+        return `<div class="mrow" data-key="${escapeHtml(g.key)}">
+          <div class="mname">${g.itemCode ? '<b>' + escapeHtml(g.itemCode) + '</b> · ' : ''}${escapeHtml(g.item)}
+            <span class="pl-item-meta" style="display:inline;">${t('stSystemQty')}: <b>${g.balance}</b> ${escapeHtml(g.uom)}</span></div>
+          ${lines.map(l => `<div class="st-line" style="display:grid; grid-template-columns: 1fr 1.3fr 1.2fr auto; gap:6px; margin-top:6px;">
+            <input data-f="qty" type="number" min="0" step="any" placeholder="${escapeHtml(t('stQtyPh'))}" value="${escapeHtml(String(l.qty))}">
+            <input data-f="exp" type="date" title="${escapeHtml(t('expiryDateLabel'))}" value="${escapeHtml(l.exp || '')}">
+            <input data-f="batch" type="text" autocomplete="off" placeholder="${escapeHtml(t('stBatchPh'))}" value="${escapeHtml(l.batch || '')}">
+            <button type="button" class="btn-secondary st-del" style="padding:4px 10px;">✕</button></div>`).join('')}
+          <button type="button" class="lock-alt-link st-addline" style="margin-top:6px;">${escapeHtml(t('stAddLine'))}</button>
+        </div>`;
+      }).join('');
+      list.querySelectorAll('.mrow').forEach(div => {
+        div.addEventListener('input', () => stReadOpenRow(div));
+        div.querySelector('.st-addline').addEventListener('click', () => { stReadOpenRow(div); stOpen.get(div.dataset.key).push({ qty: '', exp: '', batch: '' }); renderStockTakeList(); });
+        div.querySelectorAll('.st-del').forEach((btn, i) => btn.addEventListener('click', () => {
+          stReadOpenRow(div); const ls = stOpen.get(div.dataset.key); ls.splice(i, 1); if (!ls.length) ls.push({ qty: '', exp: '', batch: '' }); renderStockTakeList();
+        }));
+      });
+    } else {
+      list.innerHTML = shown.map(g => {
+        const has = stCounts.has(g.key);
+        const diff = has ? r4(stCounts.get(g.key) - g.balance) : null;
+        return `<div class="mrow" data-key="${escapeHtml(g.key)}">
+          <div class="mname">${g.itemCode ? '<b>' + escapeHtml(g.itemCode) + '</b> · ' : ''}${escapeHtml(g.item)}
+            <span class="pl-item-meta" style="display:inline;">${t('stSystemQty')}: <b>${g.balance}</b> ${escapeHtml(g.uom)}</span></div>
+          <div class="mfields" style="grid-template-columns: 1fr auto 1.2fr;">
+            <input data-f="count" type="number" min="0" step="any" placeholder="${t('stCountedPh')}" value="${has ? stCounts.get(g.key) : ''}">
+            <span class="st-diff" style="align-self:center; font-weight:700; ${diff > 0 ? 'color:var(--in)' : diff < 0 ? 'color:var(--out)' : 'color:var(--muted)'}">${diff === null ? '' : (diff > 0 ? '+' : '') + diff}</span>
+            <input data-f="exp" type="date" title="${escapeHtml(t('stExpPh'))}" value="${escapeHtml(stExp.get(g.key) || '')}">
+          </div>
+        </div>`;
+      }).join('');
+      list.querySelectorAll('.mrow').forEach(div => {
+        const inp = div.querySelector('[data-f="count"]'), exp = div.querySelector('[data-f="exp"]');
+        const g = shown.find(x => x.key === div.dataset.key);
+        inp.addEventListener('input', () => {
+          const v = parseFloat(inp.value);
+          if (isNaN(v) || v < 0) stCounts.delete(g.key); else stCounts.set(g.key, v);
+          const diff = stCounts.has(g.key) ? r4(stCounts.get(g.key) - g.balance) : null;
+          const span = div.querySelector('.st-diff');
+          span.textContent = diff === null ? '' : (diff > 0 ? '+' : '') + diff;
+          span.style.color = diff > 0 ? 'var(--in)' : diff < 0 ? 'var(--out)' : 'var(--muted)';
+        });
+        exp.addEventListener('input', () => { if (exp.value) stExp.set(g.key, exp.value); else stExp.delete(g.key); });
+      });
+    }
     const st = document.getElementById('stStatus');
-    st.textContent = groups.length > shown.length ? t('archiveCount', { shown: shown.length, total: groups.length }) : '';
-    st.className = 'modal-status';
+    st.textContent = ''; st.className = 'modal-status';
   }
 
   function openStockTake(filterText) {
     if (!can('adjust')) return;
-    stCounts = new Map();
+    stCounts = new Map(); stExp = new Map(); stOpen = new Map();
     stFilter.value = filterText || '';
     document.getElementById('stNote').value = '';
-    document.getElementById('stReason').value = 'count';
+    document.getElementById('stReason').value = records.length ? 'count' : 'opening';   // 完全没有库存 = 首次设置
     document.getElementById('stError').textContent = '';
     renderStockTakeList();
     stockTakeModal.classList.add('open');
   }
   document.getElementById('stockTakeBtn').addEventListener('click', () => openStockTake(''));
   stFilter.addEventListener('input', renderStockTakeList);
+  document.getElementById('stReason').addEventListener('change', renderStockTakeList);
   document.getElementById('stCancel').addEventListener('click', () => stockTakeModal.classList.remove('open'));
 
   document.getElementById('stApply').addEventListener('click', async () => {
@@ -11329,7 +11422,13 @@
     const err = document.getElementById('stError');
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) { err.textContent = t('ghConfigMissing'); return; }
-    if (!stCounts.size) { err.textContent = t('stNothing'); return; }
+    const opening = stIsOpening();
+    // 期初库存：收集所有填了数量的行
+    const openLines = [];
+    if (opening) {
+      stOpen.forEach((lines, key) => lines.forEach(l => { const q = parseFloat(l.qty); if (q > 0) openLines.push({ key, qty: q, exp: l.exp || '', batch: l.batch || '' }); }));
+      if (!openLines.length) { err.textContent = t('stOpenNothing'); return; }
+    } else if (!stCounts.size) { err.textContent = t('stNothing'); return; }
     const reason = document.getElementById('stReason').value;
     const note = document.getElementById('stNote').value.trim();
     const btn = document.getElementById('stApply');
@@ -11343,22 +11442,30 @@
       const today = new Date().toISOString().slice(0, 10);
       const newRecs = [];
       let items = 0;
-      stCounts.forEach((counted, key) => {
-        const g = groups.find(x => x.key === key);
-        if (!g) return;
-        const diff = r4(counted - g.balance);
-        if (diff === 0) return;
-        items++;
-        const base = { item: g.item, itemCode: g.itemCode, uom: g.uom, date: today, platform: '', adjustment: true, reason, note, takeId };
-        const mkId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + newRecs.length;
-        if (diff > 0) {
-          newRecs.push(stampNew(Object.assign({ id: mkId(), qty: diff, type: 'IN', expiryDate: '', batch: '' }, base)));
-        } else {
-          alloc(g.item, g.itemCode, -diff).forEach(piece => {
-            newRecs.push(stampNew(Object.assign({ id: mkId(), qty: piece.qty, type: 'OUT', expiryDate: piece.expiryDate, batch: piece.batch, loc: piece.loc || '' }, base)));
-          });
-        }
-      });
+      const mkId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + newRecs.length;
+      if (opening) {
+        openLines.forEach(l => {
+          const m = stMeta.get(l.key); if (!m) return;
+          items++;
+          newRecs.push(stampNew({ id: mkId(), item: m.item, itemCode: m.itemCode, uom: m.uom, qty: l.qty, type: 'IN', expiryDate: l.exp, batch: l.batch, loc: '', date: today, platform: '', adjustment: true, reason, note, takeId }));
+        });
+      } else {
+        stCounts.forEach((counted, key) => {
+          const g = groups.find(x => x.key === key) || (stMeta.get(key) ? { key, item: stMeta.get(key).item, itemCode: stMeta.get(key).itemCode, uom: stMeta.get(key).uom, balance: 0 } : null);
+          if (!g) return;
+          const diff = r4(counted - g.balance);
+          if (diff === 0) return;
+          items++;
+          const base = { item: g.item, itemCode: g.itemCode, uom: g.uom, date: today, platform: '', adjustment: true, reason, note, takeId };
+          if (diff > 0) {
+            newRecs.push(stampNew(Object.assign({ id: mkId(), qty: diff, type: 'IN', expiryDate: stExp.get(key) || '', batch: '' }, base)));
+          } else {
+            alloc(g.item, g.itemCode, -diff).forEach(piece => {
+              newRecs.push(stampNew(Object.assign({ id: mkId(), qty: piece.qty, type: 'OUT', expiryDate: piece.expiryDate, batch: piece.batch, loc: piece.loc || '' }, base)));
+            });
+          }
+        });
+      }
       if (!items) { err.textContent = t('stNothing'); btn.disabled = false; return; }
       if (!confirm(t('stConfirm', { n: items }))) { btn.disabled = false; return; }
       const merged = latest.records.concat(newRecs);
