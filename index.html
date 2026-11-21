@@ -1923,6 +1923,25 @@
     </div>
   </div>
 
+  <!-- 盘点：扫码后输入数量 -->
+  <div class="modal-overlay" id="stQtyModal" style="z-index:500;">
+    <div class="modal-card" style="max-width:380px;">
+      <h2 data-i18n="stQtyTitle">输入数量</h2>
+      <div class="sub" id="stQtyItem" style="font-weight:700;"></div>
+      <div class="pl-item-meta" id="stQtyInfo" style="margin-bottom:8px;"></div>
+      <div class="field" id="stQtyUomWrap"><label for="stQtyUom" data-i18n="stQtyUom">单位 (UOM)</label><select id="stQtyUom"></select></div>
+      <div class="field"><label for="stQtyVal" data-i18n="stQtyAdd">本次数量</label><input type="number" id="stQtyVal" min="0" step="any" inputmode="decimal" autocomplete="off"></div>
+      <div class="pl-item-meta" id="stQtyConv" style="margin:-4px 0 8px; font-weight:700;"></div>
+      <div class="field"><label for="stQtyExp" data-i18n="expiryDateLabel">过期日期</label><input type="date" id="stQtyExp"></div>
+      <div class="field" id="stQtyBatchWrap"><label for="stQtyBatch" data-i18n="batchLabel">批次 / Lot</label><input type="text" id="stQtyBatch" autocomplete="off"></div>
+      <div class="modal-error" id="stQtyErr"></div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" id="stQtyCancel" data-i18n="cancelBtn">取消</button>
+        <button class="btn-primary" id="stQtyOk" data-i18n="confirmBtn">确认</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 货物主档（管理员） -->
   <div class="modal-overlay" id="masterModal">
     <div class="modal-card" style="max-width:720px;">
@@ -3052,6 +3071,13 @@
       scanGot: '✓ {item} × {qty}',
       grnScanBtn: '📷 扫码收货',
       doScanBtn: '📷 扫码拣货',
+      stQtyTitle: '输入数量',
+      stQtyUom: '单位 (UOM)',
+      stQtyAdd: '本次数量（累加到已盘点数量）',
+      stQtyCounted: '已盘点：{n} {uom}',
+      stQtyConv: '= {qty} {uom}',
+      stQtyBad: '请输入大于 0 的数量',
+      stQtyOne: '1 {alt} = {f} {uom}',
       stScanBtn: '📷 扫码盘点',
       priceLabel: '单价',
       priceMasterLabel: '单价（每基本单位）',
@@ -4009,6 +4035,13 @@
       scanGot: '✓ {item} × {qty}',
       grnScanBtn: '📷 Scan to receive',
       doScanBtn: '📷 Scan to pick',
+      stQtyTitle: 'Enter quantity',
+      stQtyUom: 'Unit (UOM)',
+      stQtyAdd: 'Quantity now (added to the counted qty)',
+      stQtyCounted: 'Counted so far: {n} {uom}',
+      stQtyConv: '= {qty} {uom}',
+      stQtyBad: 'Enter a quantity greater than 0',
+      stQtyOne: '1 {alt} = {f} {uom}',
       stScanBtn: '📷 Scan to count',
       priceLabel: 'Unit price',
       priceMasterLabel: 'Unit price (per base UOM)',
@@ -4966,6 +4999,13 @@
       scanGot: '✓ {item} × {qty}',
       grnScanBtn: '📷 Imbas untuk terima',
       doScanBtn: '📷 Imbas untuk ambil',
+      stQtyTitle: 'Masukkan kuantiti',
+      stQtyUom: 'Unit (UOM)',
+      stQtyAdd: 'Kuantiti kini (ditambah pada kuantiti dikira)',
+      stQtyCounted: 'Dikira setakat ini: {n} {uom}',
+      stQtyConv: '= {qty} {uom}',
+      stQtyBad: 'Masukkan kuantiti lebih daripada 0',
+      stQtyOne: '1 {alt} = {f} {uom}',
       stScanBtn: '📷 Imbas untuk kira',
       priceLabel: 'Harga seunit',
       priceMasterLabel: 'Harga seunit (setiap UOM asas)',
@@ -9419,30 +9459,101 @@
   document.getElementById('doScanBtn').addEventListener('click', () => {
     openScanner({ continuous: true, hint: t('scanHintLines'), onCode: makeLineScanner(doLines, '.dl-name', '.dl-qty', addDoLine) });
   });
-  document.getElementById('stScanBtn').addEventListener('click', () => {
-    const seen = new Set();
+  // 扫码盘点：扫到货物 → 关掉摄像头 → 弹出数量窗口（可选 ctn / pkt）→ 确认后摄像头自动重开，接着扫下一个
+  let stLastCode = { code: '', at: 0 };
+  function stStartScan() {
     openScanner({ continuous: true, hint: t('scanHintLines'), onCode: (code, log) => {
-      const m = masterByBarcode(code);
-      if (!m) { log(t('scanNoMatch', { code }), true); return; }
-      // 有库存的货物 + 货物主档里还没有库存的货物（首次设置）都认
-      const key = groupKey({ item: m.item, itemCode: m.itemCode || '' });
-      stFilter.value = '';
-      const g = stRows().find(x => x.key === key);
-      if (!g) { log(t('scanNoMatch', { code }), true); return; }
-      let n;
-      if (stIsOpening()) {   // 期初库存：每扫一次，第一行数量 +1（已有数量就接着加）
-        const lines = stOpen.get(key) || [{ qty: '', exp: '', batch: '' }];
-        n = r4((parseFloat(lines[0].qty) || 0) + 1);
-        lines[0].qty = n; stOpen.set(key, lines);
-      } else {
-        n = seen.has(key) ? r4((stCounts.get(key) || 0) + 1) : 1;
-        seen.add(key); stCounts.set(key, n);
-      }
-      stFilter.value = g.item;
-      renderStockTakeList();
-      log(t('scanGot', { item: g.item, qty: n }));
+      if (code === stLastCode.code && Date.now() - stLastCode.at < 3000) return;   // 摄像头重开后还对着同一个条码，不重复弹窗
+      const key = stResolveScan(code);
+      if (!key) { log(t('scanNoMatch', { code }), true); return; }
+      stLastCode = { code, at: Date.now() };
+      closeScanner();
+      stQtyPrompt(key, stStartScan);
     } });
+  }
+  // 条码（或货物编号）→ 盘点行的 key；货物主档里还没有库存的货物也认
+  function stResolveScan(code) {
+    const m = masterByBarcode(code);
+    if (!m) return null;
+    const key = groupKey({ item: m.item, itemCode: m.itemCode || '' });
+    stFilter.value = '';
+    return stRows().find(x => x.key === key) ? key : null;
+  }
+  document.getElementById('stScanBtn').addEventListener('click', stStartScan);
+  // 扫码枪（键盘式）：在搜索框里扫完会按 Enter
+  document.getElementById('stFilter').addEventListener('keydown', ev => {
+    if (ev.key !== 'Enter') return;
+    const code = document.getElementById('stFilter').value.trim(); if (!code) return;
+    ev.preventDefault();
+    const key = stResolveScan(code);
+    if (key) { stQtyPrompt(key, null); } else if (masterByBarcode(code) === null && /^[0-9A-Za-z\-\s]{6,}$/.test(code) && !stRows().length) alert(t('scanNoMatch', { code }));
   });
+
+  const stQtyModal = document.getElementById('stQtyModal');
+  let stPending = null;
+  function stQtyPrompt(key, resume) {
+    const g = stRows().find(x => x.key === key); if (!g) return;
+    const alt = stAlt(key), opening = stIsOpening();
+    stPending = { key, resume, alt, g };
+    document.getElementById('stQtyItem').textContent = (g.itemCode ? g.itemCode + ' · ' : '') + g.item;
+    const cnt = opening ? null : stCounts.get(key);
+    document.getElementById('stQtyInfo').textContent = t('stSystemQty') + ': ' + g.balance + ' ' + g.uom + (cnt != null ? '  ·  ' + t('stQtyCounted', { n: cnt, uom: g.uom }) : '');
+    const sel = document.getElementById('stQtyUom');
+    sel.innerHTML = alt ? `<option value="">${escapeHtml(alt.base)}</option><option value="alt" selected>${escapeHtml(alt.alt)} (${escapeHtml(t('stQtyOne', { alt: alt.alt, f: alt.factor, uom: alt.base }))})</option>` : '';
+    document.getElementById('stQtyUomWrap').style.display = alt ? '' : 'none';
+    const v = document.getElementById('stQtyVal'); v.value = '';
+    document.getElementById('stQtyExp').value = '';
+    document.getElementById('stQtyBatch').value = '';
+    document.getElementById('stQtyBatchWrap').style.display = opening ? '' : 'none';
+    document.getElementById('stQtyErr').textContent = '';
+    stQtyConvShow();
+    stQtyModal.classList.add('open');
+    setTimeout(() => v.focus(), 50);
+  }
+  function stQtyBase() {
+    if (!stPending) return 0;
+    const q = parseFloat(document.getElementById('stQtyVal').value);
+    if (!(q > 0)) return 0;
+    return stPending.alt && document.getElementById('stQtyUom').value === 'alt' ? r4(q * stPending.alt.factor) : q;
+  }
+  function stQtyConvShow() {
+    const el = document.getElementById('stQtyConv');
+    const useAlt = stPending && stPending.alt && document.getElementById('stQtyUom').value === 'alt';
+    const b = stQtyBase();
+    el.textContent = useAlt && b > 0 ? t('stQtyConv', { qty: b, uom: stPending.alt.base }) : '';
+  }
+  document.getElementById('stQtyVal').addEventListener('input', stQtyConvShow);
+  document.getElementById('stQtyUom').addEventListener('change', stQtyConvShow);
+  function stQtyClose(resume) {
+    const p = stPending; stPending = null; stLastCode.at = Date.now();
+    stQtyModal.classList.remove('open');
+    if (resume && p && p.resume) p.resume();
+  }
+  function stQtyConfirm() {
+    if (!stPending) return;
+    const base = stQtyBase();
+    if (!(base > 0)) { document.getElementById('stQtyErr').textContent = t('stQtyBad'); return; }
+    const { key, g, alt } = stPending;
+    const exp = document.getElementById('stQtyExp').value;
+    const useAlt = alt && document.getElementById('stQtyUom').value === 'alt';
+    if (stIsOpening()) {
+      const lines = stOpen.get(key) || [];
+      let tgt = lines.find(l => !(parseFloat(l.qty) > 0));
+      if (!tgt) { tgt = { qty: '', exp: '', batch: '' }; lines.push(tgt); }
+      tgt.qty = parseFloat(document.getElementById('stQtyVal').value); tgt.u = useAlt ? 'alt' : '';
+      tgt.exp = exp; tgt.batch = document.getElementById('stQtyBatch').value.trim();
+      stOpen.set(key, lines);
+    } else {
+      stCounts.set(key, r4((stCounts.get(key) || 0) + base));
+      if (exp) stExp.set(key, exp);
+    }
+    stFilter.value = g.item;
+    renderStockTakeList();
+    stQtyClose(true);
+  }
+  document.getElementById('stQtyOk').addEventListener('click', stQtyConfirm);
+  document.getElementById('stQtyCancel').addEventListener('click', () => stQtyClose(true));
+  stQtyModal.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); stQtyConfirm(); } });
 
   // ================= 库存报表：估值 / 账龄 / 出入库汇总 =================
   const srModal = document.getElementById('stockReportModal');
@@ -11340,7 +11451,8 @@
   const stFilter = document.getElementById('stFilter');
   let stCounts = new Map();   // 普通盘点：groupKey -> 点到的数量
   let stExp = new Map();      // 普通盘点：groupKey -> 增加时的到期日
-  let stOpen = new Map();     // 期初库存：groupKey -> [{ qty, exp, batch }]
+  let stOpen = new Map();     // 期初库存：groupKey -> [{ qty, exp, batch, u }]（u='alt' 表示数量是按包装单位填的）
+  let stUnit = new Map();     // 普通盘点：groupKey -> 'alt'（输入框按包装单位显示/输入；stCounts 内部始终是基本单位）
   const stMeta = new Map();   // groupKey -> { item, itemCode, uom }
   const stIsOpening = () => document.getElementById('stReason').value === 'opening';
 
@@ -11363,10 +11475,20 @@
       .filter(g => !q || g.item.toLowerCase().includes(q) || g.itemCode.toLowerCase().includes(q));
   }
 
+  // 该货物的“包装单位”换算（如 1 ctn = 24 pkt）；没有设置就返回 null
+  function stAlt(key) {
+    const mt = stMeta.get(key); if (!mt) return null;
+    const m = findMaster(mt.item, mt.itemCode);
+    const base = mt.uom || (m && m.uom) || '';
+    if (m && m.altUom && Number(m.factor) > 0 && normU(m.altUom) !== normU(base)) return { alt: m.altUom, factor: Number(m.factor), base };
+    return null;
+  }
+  const stUomSel = (a, cur, f) => a ? `<select data-f="${f}" class="st-uom" style="min-width:64px;"><option value="">${escapeHtml(a.base)}</option><option value="alt"${cur === 'alt' ? ' selected' : ''}>${escapeHtml(a.alt)}</option></select>` : '';
   function stReadOpenRow(div) {
     const key = div.dataset.key;
     const lines = Array.from(div.querySelectorAll('.st-line')).map(l => ({
-      qty: l.querySelector('[data-f="qty"]').value, exp: l.querySelector('[data-f="exp"]').value, batch: l.querySelector('[data-f="batch"]').value.trim()
+      qty: l.querySelector('[data-f="qty"]').value, exp: l.querySelector('[data-f="exp"]').value, batch: l.querySelector('[data-f="batch"]').value.trim(),
+      u: l.querySelector('[data-f="u"]') ? l.querySelector('[data-f="u"]').value : ''
     }));
     stOpen.set(key, lines);
   }
@@ -11381,11 +11503,12 @@
     if (opening) {
       list.innerHTML = shown.map(g => {
         const lines = stOpen.get(g.key) || [{ qty: '', exp: '', batch: '' }];
+        const alt = stAlt(g.key);
         return `<div class="mrow" data-key="${escapeHtml(g.key)}">
           <div class="mname">${g.itemCode ? '<b>' + escapeHtml(g.itemCode) + '</b> · ' : ''}${escapeHtml(g.item)}
             <span class="pl-item-meta" style="display:inline;">${t('stSystemQty')}: <b>${g.balance}</b> ${escapeHtml(g.uom)}</span></div>
-          ${lines.map(l => `<div class="st-line" style="display:grid; grid-template-columns: 1fr 1.3fr 1.2fr auto; gap:6px; margin-top:6px;">
-            <input data-f="qty" type="number" min="0" step="any" placeholder="${escapeHtml(t('stQtyPh'))}" value="${escapeHtml(String(l.qty))}">
+          ${lines.map(l => `<div class="st-line" style="display:grid; grid-template-columns: 1fr ${alt ? 'auto ' : ''}1.3fr 1.2fr auto; gap:6px; margin-top:6px;">
+            <input data-f="qty" type="number" min="0" step="any" placeholder="${escapeHtml(t('stQtyPh'))}" value="${escapeHtml(String(l.qty))}">${stUomSel(alt, l.u, 'u')}
             <input data-f="exp" type="date" title="${escapeHtml(t('expiryDateLabel'))}" value="${escapeHtml(l.exp || '')}">
             <input data-f="batch" type="text" autocomplete="off" placeholder="${escapeHtml(t('stBatchPh'))}" value="${escapeHtml(l.batch || '')}">
             <button type="button" class="btn-secondary st-del" style="padding:4px 10px;">✕</button></div>`).join('')}
@@ -11394,7 +11517,7 @@
       }).join('');
       list.querySelectorAll('.mrow').forEach(div => {
         div.addEventListener('input', () => stReadOpenRow(div));
-        div.querySelector('.st-addline').addEventListener('click', () => { stReadOpenRow(div); stOpen.get(div.dataset.key).push({ qty: '', exp: '', batch: '' }); renderStockTakeList(); });
+        div.querySelector('.st-addline').addEventListener('click', () => { stReadOpenRow(div); stOpen.get(div.dataset.key).push({ qty: '', exp: '', batch: '', u: '' }); renderStockTakeList(); });
         div.querySelectorAll('.st-del').forEach((btn, i) => btn.addEventListener('click', () => {
           stReadOpenRow(div); const ls = stOpen.get(div.dataset.key); ls.splice(i, 1); if (!ls.length) ls.push({ qty: '', exp: '', batch: '' }); renderStockTakeList();
         }));
@@ -11403,11 +11526,13 @@
       list.innerHTML = shown.map(g => {
         const has = stCounts.has(g.key);
         const diff = has ? r4(stCounts.get(g.key) - g.balance) : null;
+        const alt = stAlt(g.key), useAlt = alt && stUnit.get(g.key) === 'alt';
+        const shownVal = has ? (useAlt ? r4(stCounts.get(g.key) / alt.factor) : stCounts.get(g.key)) : '';
         return `<div class="mrow" data-key="${escapeHtml(g.key)}">
           <div class="mname">${g.itemCode ? '<b>' + escapeHtml(g.itemCode) + '</b> · ' : ''}${escapeHtml(g.item)}
             <span class="pl-item-meta" style="display:inline;">${t('stSystemQty')}: <b>${g.balance}</b> ${escapeHtml(g.uom)}</span></div>
-          <div class="mfields" style="grid-template-columns: 1fr auto 1.2fr;">
-            <input data-f="count" type="number" min="0" step="any" placeholder="${t('stCountedPh')}" value="${has ? stCounts.get(g.key) : ''}">
+          <div class="mfields" style="grid-template-columns: 1fr ${alt ? 'auto ' : ''}auto 1.2fr;">
+            <input data-f="count" type="number" min="0" step="any" placeholder="${t('stCountedPh')}" value="${shownVal}">${stUomSel(alt, stUnit.get(g.key), 'cu')}
             <span class="st-diff" style="align-self:center; font-weight:700; ${diff > 0 ? 'color:var(--in)' : diff < 0 ? 'color:var(--out)' : 'color:var(--muted)'}">${diff === null ? '' : (diff > 0 ? '+' : '') + diff}</span>
             <input data-f="exp" type="date" title="${escapeHtml(t('stExpPh'))}" value="${escapeHtml(stExp.get(g.key) || '')}">
           </div>
@@ -11416,8 +11541,10 @@
       list.querySelectorAll('.mrow').forEach(div => {
         const inp = div.querySelector('[data-f="count"]'), exp = div.querySelector('[data-f="exp"]');
         const g = shown.find(x => x.key === div.dataset.key);
+        const alt = stAlt(g.key), cu = div.querySelector('[data-f="cu"]');
+        if (cu) cu.addEventListener('change', () => { if (cu.value === 'alt') stUnit.set(g.key, 'alt'); else stUnit.delete(g.key); renderStockTakeList(); });
         inp.addEventListener('input', () => {
-          const v = parseFloat(inp.value);
+          const v0 = parseFloat(inp.value), v = isNaN(v0) ? v0 : (alt && stUnit.get(g.key) === 'alt' ? r4(v0 * alt.factor) : v0);
           if (isNaN(v) || v < 0) stCounts.delete(g.key); else stCounts.set(g.key, v);
           const diff = stCounts.has(g.key) ? r4(stCounts.get(g.key) - g.balance) : null;
           const span = div.querySelector('.st-diff');
@@ -11433,7 +11560,7 @@
 
   function openStockTake(filterText) {
     if (!can('adjust')) return;
-    stCounts = new Map(); stExp = new Map(); stOpen = new Map();
+    stCounts = new Map(); stExp = new Map(); stOpen = new Map(); stUnit = new Map();
     stFilter.value = filterText || '';
     document.getElementById('stNote').value = '';
     document.getElementById('stReason').value = records.length ? 'count' : 'opening';   // 完全没有库存 = 首次设置
@@ -11455,7 +11582,7 @@
     // 期初库存：收集所有填了数量的行
     const openLines = [];
     if (opening) {
-      stOpen.forEach((lines, key) => lines.forEach(l => { const q = parseFloat(l.qty); if (q > 0) openLines.push({ key, qty: q, exp: l.exp || '', batch: l.batch || '' }); }));
+      stOpen.forEach((lines, key) => lines.forEach(l => { let q = parseFloat(l.qty); const a = stAlt(key); if (q > 0 && l.u === 'alt' && a) q = r4(q * a.factor); if (q > 0) openLines.push({ key, qty: q, exp: l.exp || '', batch: l.batch || '' }); }));
       if (!openLines.length) { err.textContent = t('stOpenNothing'); return; }
     } else if (!stCounts.size) { err.textContent = t('stNothing'); return; }
     const reason = document.getElementById('stReason').value;
