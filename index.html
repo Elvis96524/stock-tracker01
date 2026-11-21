@@ -6279,9 +6279,27 @@
     const c = convertQty(item, itemCode, qty, uom);
     return c.origQty != null ? t('convHint', { qty: c.qty, uom: c.uom }) : '';
   }
+  // 条码比对：扫码枪/摄像头读出来的和货物主档里登记的，常见差别都容忍——
+  // 大小写、空格/横线/不可见字符、前导 0（EAN-13 与 UPC-A 12 位）、多/少一位校验码；最后还会拿货物编号再试一次
+  const bcCanon = x => {
+    const c = String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return /^\d+$/.test(c) ? c.replace(/^0+/, '') : c;
+  };
   function masterByBarcode(v) {
-    v = normU(v);
-    return v ? (itemMaster.find(m => normU(m.barcode) === v) || null) : null;
+    const raw = normU(v);
+    if (!raw) return null;
+    let m = itemMaster.find(x => normU(x.barcode) === raw);
+    if (m) return m;
+    const c = bcCanon(v);
+    if (!c) return null;
+    m = itemMaster.find(x => x.barcode && bcCanon(x.barcode) === c);
+    if (m) return m;
+    if (/^\d{7,}$/.test(c)) {   // 纯数字：一边多一位校验码
+      const hits = itemMaster.filter(x => { const b = bcCanon(x.barcode); return /^\d{7,}$/.test(b) && Math.abs(b.length - c.length) === 1 && (b.startsWith(c) || c.startsWith(b)); });
+      if (hits.length === 1) return hits[0];
+    }
+    const byCode = itemMaster.filter(x => x.itemCode && bcCanon(x.itemCode) === c);   // 标签上印的是货物编号
+    return byCode.length === 1 ? byCode[0] : null;
   }
 
   // 单位成本：采购入库记录里带单价的行，按数量加权平均（不含待检/拒收、转移、调整）
@@ -9405,10 +9423,21 @@
     const seen = new Set();
     openScanner({ continuous: true, hint: t('scanHintLines'), onCode: (code, log) => {
       const m = masterByBarcode(code);
-      const g = m && buildGroups().find(x => x.key === groupKey({ item: m.item, itemCode: m.itemCode }));
+      if (!m) { log(t('scanNoMatch', { code }), true); return; }
+      // 有库存的货物 + 货物主档里还没有库存的货物（首次设置）都认
+      const key = groupKey({ item: m.item, itemCode: m.itemCode || '' });
+      stFilter.value = '';
+      const g = stRows().find(x => x.key === key);
       if (!g) { log(t('scanNoMatch', { code }), true); return; }
-      const n = seen.has(g.key) ? r4((stCounts.get(g.key) || 0) + 1) : 1;
-      seen.add(g.key); stCounts.set(g.key, n);
+      let n;
+      if (stIsOpening()) {   // 期初库存：每扫一次，第一行数量 +1（已有数量就接着加）
+        const lines = stOpen.get(key) || [{ qty: '', exp: '', batch: '' }];
+        n = r4((parseFloat(lines[0].qty) || 0) + 1);
+        lines[0].qty = n; stOpen.set(key, lines);
+      } else {
+        n = seen.has(key) ? r4((stCounts.get(key) || 0) + 1) : 1;
+        seen.add(key); stCounts.set(key, n);
+      }
       stFilter.value = g.item;
       renderStockTakeList();
       log(t('scanGot', { item: g.item, qty: n }));
