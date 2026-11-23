@@ -12823,28 +12823,30 @@
     const custs = [{ id: 'cu1', name: 'MV OCEAN STAR', address: 'Labuan Anchorage' }, { id: 'cu2', name: 'MV BORNEO SPIRIT', address: 'Labuan Anchorage' }];
     const IN = (item, code, qty, uom, batch, exp, loc, sup, grn, daysAgo) => ({ id: id('in'), item, itemCode: code, qty, uom, type: 'IN', date: dmRel(-daysAgo), platform: '', expiryDate: exp, batch, loc, supplier: sup, grnId: grn.id, grnNo: grn.no, by: 'admin', at: at(-daysAgo) });
     const g1 = { id: 'g1', no: 'GRN-' + new Date().getFullYear() + '-0001' }, g2 = { id: 'g2', no: 'GRN-' + new Date().getFullYear() + '-0002' }, g3 = { id: 'g3', no: 'GRN-' + new Date().getFullYear() + '-0003' };
+    // 每个货物库存都是 100（入库量 = 100 + 已出库量），过期日随机（今天起 30~400 天）
+    const rx = () => dmRel(30 + Math.floor(Math.random() * 371));
+    const xCh = rx(), xPr = rx(), xMl = rx(), xRc = rx(), xOl = rx(), xDd = rx();
     const recs = [
-      IN('Chicken Breast', 'CHK001', 200, 'kg', 'CH-2401', dmRel(120), 'F-A1', 'Ocean Fresh Sdn Bhd', g1, 14),
-      IN('Chicken Breast', 'CHK001', 40, 'kg', 'CH-2398', dmRel(6), 'F-A1', 'Ocean Fresh Sdn Bhd', g1, 30),
-      IN('Frozen Prawns', 'PRN001', 90, 'kg', 'PR-0911', dmRel(200), 'F-A2', 'Ocean Fresh Sdn Bhd', g1, 14),
-      IN('Fresh Milk', 'MLK001', 60, 'ltr', 'ML-1105', dmRel(5), 'C-B1', 'Borneo Dairy Co', g2, 3),
-      IN('Rice 25kg', 'RIC001', 80, 'bag', 'RC-7781', dmRel(400), 'D-C1', 'Island Dry Goods', g3, 20),
-      IN('Cooking Oil 5L', 'OIL001', 60, 'tin', 'OL-3320', dmRel(300), 'D-C2', 'Island Dry Goods', g3, 20),
-      IN('Dish Detergent', 'CLN001', 30, 'btl', 'DD-0042', '', 'D-C3', 'Island Dry Goods', g3, 20)
+      IN('Chicken Breast', 'CHK001', 160, 'kg', 'CH-2401', xCh, 'F-A1', 'Ocean Fresh Sdn Bhd', g1, 14),
+      IN('Frozen Prawns', 'PRN001', 100, 'kg', 'PR-0911', xPr, 'F-A2', 'Ocean Fresh Sdn Bhd', g1, 14),
+      IN('Fresh Milk', 'MLK001', 100, 'ltr', 'ML-1105', xMl, 'C-B1', 'Borneo Dairy Co', g2, 3),
+      IN('Rice 25kg', 'RIC001', 100, 'bag', 'RC-7781', xRc, 'D-C1', 'Island Dry Goods', g3, 20),
+      IN('Cooking Oil 5L', 'OIL001', 135, 'tin', 'OL-3320', xOl, 'D-C2', 'Island Dry Goods', g3, 20),
+      IN('Dish Detergent', 'CLN001', 100, 'btl', 'DD-0042', xDd, 'D-C3', 'Island Dry Goods', g3, 20)
     ];
     const OUT = (item, code, qty, uom, batch, exp, loc, vessel, doo, daysAgo) => ({ id: id('out'), item, itemCode: code, qty, uom, type: 'OUT', date: dmRel(-daysAgo), platform: vessel, expiryDate: exp, batch, loc, doId: doo.id, doNo: doo.no, customer: vessel, by: 'admin', at: at(-daysAgo) });
     const yr = new Date().getFullYear();
     const do1 = { id: 'do1', no: 'DO-' + yr + '-0001', date: dmRel(-5), customer: 'MV OCEAN STAR', platform: 'MV OCEAN STAR', status: 'shipped',
-      lines: [{ item: 'Chicken Breast', itemCode: 'CHK001', qty: 60, uom: 'kg', pieces: [{ batch: 'CH-2401', expiryDate: dmRel(120), loc: 'F-A1', qty: 60 }] }, { item: 'Cooking Oil 5L', itemCode: 'OIL001', qty: 35, uom: 'tin', pieces: [{ batch: 'OL-3320', expiryDate: dmRel(300), loc: 'D-C2', qty: 35 }] }],
+      lines: [{ item: 'Chicken Breast', itemCode: 'CHK001', qty: 60, uom: 'kg', pieces: [{ batch: 'CH-2401', expiryDate: xCh, loc: 'F-A1', qty: 60 }] }, { item: 'Cooking Oil 5L', itemCode: 'OIL001', qty: 35, uom: 'tin', pieces: [{ batch: 'OL-3320', expiryDate: xOl, loc: 'D-C2', qty: 35 }] }],
       tempUnitIds: ['tu1'], tempFrom: dmRel(-3) + 'T00:00', tempTo: dmRel(0) + 'T23:59', by: 'admin', at: at(-5) };
-    recs.push(OUT('Chicken Breast', 'CHK001', 60, 'kg', 'CH-2401', dmRel(120), 'F-A1', 'MV OCEAN STAR', do1, 5));
-    recs.push(OUT('Cooking Oil 5L', 'OIL001', 35, 'tin', 'OL-3320', dmRel(300), 'D-C2', 'MV OCEAN STAR', do1, 5));
+    recs.push(OUT('Chicken Breast', 'CHK001', 60, 'kg', 'CH-2401', xCh, 'F-A1', 'MV OCEAN STAR', do1, 5));
+    recs.push(OUT('Cooking Oil 5L', 'OIL001', 35, 'tin', 'OL-3320', xOl, 'D-C2', 'MV OCEAN STAR', do1, 5));
     const po = { id: 'po1', no: 'PO-' + yr + '-0001', date: dmRel(-35), supplier: 'Ocean Fresh Sdn Bhd', expected: dmRel(-30), status: 'closed', lines: [{ item: 'Chicken Breast', qty: 240, uom: 'kg' }], by: 'admin', at: at(-35) };
     const po2 = { id: 'po2', no: 'PO-' + yr + '-0002', date: dmRel(-1), supplier: 'Borneo Dairy Co', expected: dmRel(2), status: 'open', lines: [{ item: 'Fresh Milk', qty: 100, uom: 'ltr' }], by: 'admin', at: at(-1) };
     const grns = [
-      { id: 'g1', no: g1.no, date: dmRel(-14), supplier: 'Ocean Fresh Sdn Bhd', poId: 'po1', poNo: po.no, lines: [{ item: 'Chicken Breast', batch: 'CH-2401', qty: 200, qc: 'pass' }, { item: 'Frozen Prawns', batch: 'PR-0911', qty: 90, qc: 'pass' }], by: 'admin', at: at(-14) },
-      { id: 'g2', no: g2.no, date: dmRel(-3), supplier: 'Borneo Dairy Co', lines: [{ item: 'Fresh Milk', batch: 'ML-1105', qty: 60, qc: 'pass' }], by: 'admin', at: at(-3) },
-      { id: 'g3', no: g3.no, date: dmRel(-20), supplier: 'Island Dry Goods', lines: [{ item: 'Rice 25kg', batch: 'RC-7781', qty: 80, qc: 'pass' }, { item: 'Cooking Oil 5L', batch: 'OL-3320', qty: 60, qc: 'pass' }, { item: 'Dish Detergent', batch: 'DD-0042', qty: 30, qc: 'pass' }], by: 'admin', at: at(-20) }
+      { id: 'g1', no: g1.no, date: dmRel(-14), supplier: 'Ocean Fresh Sdn Bhd', poId: 'po1', poNo: po.no, lines: [{ item: 'Chicken Breast', batch: 'CH-2401', qty: 160, qc: 'pass' }, { item: 'Frozen Prawns', batch: 'PR-0911', qty: 100, qc: 'pass' }], by: 'admin', at: at(-14) },
+      { id: 'g2', no: g2.no, date: dmRel(-3), supplier: 'Borneo Dairy Co', lines: [{ item: 'Fresh Milk', batch: 'ML-1105', qty: 100, qc: 'pass' }], by: 'admin', at: at(-3) },
+      { id: 'g3', no: g3.no, date: dmRel(-20), supplier: 'Island Dry Goods', lines: [{ item: 'Rice 25kg', batch: 'RC-7781', qty: 100, qc: 'pass' }, { item: 'Cooking Oil 5L', batch: 'OL-3320', qty: 135, qc: 'pass' }, { item: 'Dish Detergent', batch: 'DD-0042', qty: 100, qc: 'pass' }], by: 'admin', at: at(-20) }
     ];
     const tu = [{ id: 'tu1', name: 'Freezer 1', kind: 'freezer', min: null, max: -15, active: true }, { id: 'tu2', name: 'Chiller 1', kind: 'chiller', min: 0, max: 5, active: true }];
     const logs = [];
