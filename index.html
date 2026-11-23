@@ -5641,6 +5641,7 @@
     if (res.status === 401 && headers['Authorization']) { delete headers['Authorization']; res = await fetch(url, { headers, cache: 'no-store' }); }
     return res;
   }
+  let lastEtag = null;   // 最近一次读到的数据文件版本标记（用于轻量检查“有没有被别的设备改过”）
   let sharedSyncToken = '';   // 数据文件里管理员发布的最新同步 Token
   // 本机已有 Token 且和共享的不同 → 自动换上（没有 Token 的只读设备不会被塞入写入权限）
   function adoptSharedToken(tok) {
@@ -5664,6 +5665,7 @@
     const cfg = getGhConfig();
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}&t=${Date.now()}`;
     const res = await ghGetRepo(url, 'application/vnd.github+json');
+    if (path === repoPath()) { const et = res.headers.get('etag'); if (et) lastEtag = { path, etag: et }; }
     if (res.status === 404) return null;
     if (!res.ok) throw new Error('fetch failed: ' + res.status);
     const j = await res.json();
@@ -7167,6 +7169,25 @@
   // 未登录 GitHub API 每小时约 60 次请求上限，多设备同时轮询容易超限，
   // 因此自动刷新间隔放宽到 3 分钟；用户仍可随时点右上角 ⟳ 手动刷新。
   setInterval(() => loadDataAndRender(true), 180000);
+  // 有 Token 的设备：每 15 秒问一次 GitHub“文件有没有变”（带版本标记的条件请求，没变时只回一个空的 304，
+  // 不下载数据、也不占 API 额度）。只有真的变了才重新读取并刷新画面。页面在后台、或正开着窗口编辑时不查。
+  let pollBusy = false;
+  async function pollForChanges() {
+    if (pollBusy || document.visibilityState !== 'visible' || window.__DEMO) return;
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token || !lastEtag || lastEtag.path !== repoPath()) return;
+    if (document.querySelector('.modal-overlay.open')) return;
+    pollBusy = true;
+    try {
+      const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${lastEtag.path}?ref=${REPO_BRANCH}&t=${Date.now()}`;
+      const res = await fetch(url, { headers: { 'Accept': 'application/vnd.github+json', 'Authorization': `token ${cfg.token}`, 'If-None-Match': lastEtag.etag }, cache: 'no-store' });
+      if (res.status === 200 || res.status === 401) {
+        const et = res.headers.get('etag'); if (et) lastEtag = { path: lastEtag.path, etag: et };
+        await loadDataAndRender(true);
+      }
+    } catch (e) {} finally { pollBusy = false; }
+  }
+  setInterval(pollForChanges, 15000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') loadDataAndRender(true);
   });
