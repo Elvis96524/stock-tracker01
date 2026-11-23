@@ -2761,6 +2761,10 @@
       ghTokenLabel: 'Personal Access Token',
       saveGhSettingsBtn: '保存设置',
       ghSettingsSaved: '设置已保存',
+      tokShared: '新 Token 已同步给其他设备，它们会自动换上，不需要任何操作',
+      tokNotAdmin: '新 Token 只保存在本设备。要让其他设备自动换上，请先登录管理员，再保存一次',
+      tokShareFail: '新 Token 没能同步给其他设备：{msg}',
+      actSyncToken: '更新了共享的同步 Token（其他设备会自动换上）',
       ghSettingsIncomplete: '请填写 Token 或数据加密密码',
       ghConfigMissing: '请先在管理员设置中配置 GitHub 同步信息',
       dataKeyMissing: '请先在同步设置（⚙）中填写数据加密密码',
@@ -3725,6 +3729,10 @@
       ghTokenLabel: 'Personal Access Token',
       saveGhSettingsBtn: 'Save Settings',
       ghSettingsSaved: 'Settings saved',
+      tokShared: 'New token shared with the other devices — they will switch automatically, nothing to do',
+      tokNotAdmin: 'The new token is saved on this device only. To make other devices switch automatically, sign in as admin and save again',
+      tokShareFail: 'Could not share the new token with other devices: {msg}',
+      actSyncToken: 'Updated the shared sync token (other devices switch automatically)',
       ghSettingsIncomplete: 'Please enter a token or the data encryption passphrase',
       ghConfigMissing: 'Please configure GitHub sync settings in the admin panel first',
       dataKeyMissing: 'Please enter the data encryption passphrase in Sync Settings (⚙) first',
@@ -4689,6 +4697,10 @@
       ghTokenLabel: 'Personal Access Token',
       saveGhSettingsBtn: 'Simpan Tetapan',
       ghSettingsSaved: 'Tetapan disimpan',
+      tokShared: 'Token baharu dikongsi dengan peranti lain — mereka akan bertukar secara automatik, tiada tindakan diperlukan',
+      tokNotAdmin: 'Token baharu disimpan pada peranti ini sahaja. Untuk peranti lain bertukar secara automatik, log masuk sebagai admin dan simpan semula',
+      tokShareFail: 'Tidak dapat berkongsi token baharu dengan peranti lain: {msg}',
+      actSyncToken: 'Mengemas kini token segerak yang dikongsi (peranti lain bertukar secara automatik)',
       ghSettingsIncomplete: 'Sila masukkan token atau frasa laluan penyulitan data',
       ghConfigMissing: 'Sila konfigurasikan tetapan segerak GitHub dalam panel admin dahulu',
       dataKeyMissing: 'Sila masukkan frasa laluan penyulitan data dalam Tetapan Segerak (⚙) dahulu',
@@ -5619,12 +5631,39 @@
   // 走 GitHub Contents API，绕开 Pages/CDN 缓存。文件不存在时返回 null。
   // 读取文件并同时拿到版本号（sha）。先取版本号再取内容：中途若有人保存，写回时会被拒绝，而不是覆盖
   let writeSha = null;   // 最近一次“写入前读取”得到的 data 文件版本号
+  // 读取不一定要 Token：Token 过期 / 被撤销时 GitHub 会回 401，这时改用匿名读取（仓库是公开的），
+  // 这样旧 Token 失效的设备也能读到数据，并从里面拿到管理员发布的新 Token
+  async function ghGetRepo(url, accept) {
+    const cfg = getGhConfig();
+    const headers = { 'Accept': accept };
+    if (cfg && cfg.token) headers['Authorization'] = `token ${cfg.token}`;
+    let res = await fetch(url, { headers, cache: 'no-store' });
+    if (res.status === 401 && headers['Authorization']) { delete headers['Authorization']; res = await fetch(url, { headers, cache: 'no-store' }); }
+    return res;
+  }
+  let sharedSyncToken = '';   // 数据文件里管理员发布的最新同步 Token
+  // 本机已有 Token 且和共享的不同 → 自动换上（没有 Token 的只读设备不会被塞入写入权限）
+  function adoptSharedToken(tok) {
+    if (typeof tok !== 'string' || !tok || window.__DEMO) return false;
+    sharedSyncToken = tok;
+    const cfg = getGhConfig();
+    if (!cfg || !cfg.token || cfg.token === tok) return false;
+    try { localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(Object.assign({}, cfg, { token: tok }))); } catch (e) { return false; }
+    return true;
+  }
+  // 写入被 401 拒绝时：悄悄读一次数据文件，看看管理员是不是已经发布了新 Token
+  async function refreshTokenFromRepo() {
+    try {
+      const text = await fetchRepoText(repoPath()); if (!text) return false;
+      const raw = JSON.parse(text);
+      const parsed = raw && raw.srsEncrypted === 2 ? (session.master ? await openWithKey(raw, session.master) : null) : await openPayload(raw);
+      return !!parsed && adoptSharedToken(parsed.syncToken);
+    } catch (e) { return false; }
+  }
   async function fetchRepoTextSha(path) {
     const cfg = getGhConfig();
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}&t=${Date.now()}`;
-    const headers = { 'Accept': 'application/vnd.github+json' };
-    if (cfg && cfg.token) headers['Authorization'] = `token ${cfg.token}`;
-    const res = await fetch(url, { headers, cache: 'no-store' });
+    const res = await ghGetRepo(url, 'application/vnd.github+json');
     if (res.status === 404) return null;
     if (!res.ok) throw new Error('fetch failed: ' + res.status);
     const j = await res.json();
@@ -5635,9 +5674,7 @@
   async function fetchRepoText(path) {
     const cfg = getGhConfig();
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}&t=${Date.now()}`;
-    const headers = { 'Accept': 'application/vnd.github.raw+json' };
-    if (cfg && cfg.token) headers['Authorization'] = `token ${cfg.token}`;
-    const res = await fetch(url, { headers, cache: 'no-store' });
+    const res = await ghGetRepo(url, 'application/vnd.github.raw+json');
     if (res.status === 404) return null;
     if (!res.ok) throw new Error('fetch failed: ' + res.status);
     return res.text();
@@ -5685,6 +5722,7 @@
       parsed = await openPayload(raw);
     }
     if ((parsed.appVer || 0) > APP_VER) { const e = new Error(t('appOutdated')); e.code = 'OUTDATED'; throw e; }
+    adoptSharedToken(parsed.syncToken);
     const out = {
       adminKeyHash: parsed.adminKeyHash || '',
       records: Array.isArray(parsed.records) ? parsed.records : [],
@@ -5711,7 +5749,7 @@
   }
 
   // 通用：写入仓库文件（需要本机 Token）。先取得现有文件的 sha 再 PUT。
-  async function putRepoFile(path, fileContent, message, expectSha) {
+  async function putRepoFile(path, fileContent, message, expectSha, _retried) {
     const cfg = getGhConfig();
     if (!cfg || !cfg.token) {
       throw new Error(t('ghConfigMissing'));
@@ -5720,6 +5758,7 @@
     const getRes = expectSha ? null : await fetch(`${apiBase}?ref=${REPO_BRANCH}&t=${Date.now()}`, {
       headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' }
     });
+    if (getRes && getRes.status === 401 && !_retried && await refreshTokenFromRepo()) return putRepoFile(path, fileContent, message, expectSha, true);
     let sha;
     if (expectSha) {
       // 乐观锁：用“读数据时”的版本号写入；期间如果别人保存过，GitHub 会拒绝（409），不会覆盖别人的修改
@@ -5744,6 +5783,7 @@
         ...(sha ? { sha } : {})
       })
     });
+    if (putRes.status === 401 && !_retried && await refreshTokenFromRepo()) return putRepoFile(path, fileContent, message, expectSha, true);
     if (!putRes.ok) {
       const err = await putRes.json().catch(() => ({}));
       if (expectSha && (putRes.status === 409 || (putRes.status === 422 && /sha/i.test(err.message || '')))) {
@@ -5777,6 +5817,7 @@
     const newLD = opts.loadings || latestExtra.loadings || [];
     const newCP = opts.complaints || latestExtra.complaints || [];
     const done = () => {
+      if (opts.syncToken !== undefined) sharedSyncToken = opts.syncToken;
       latestExtra = { itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, customers: newCusts, returns: newRets, salesOrders: newSOs, deliveries: newDOs, tempUnits: newTU, tempLogs: newTL, loadings: newLD, complaints: newCP };
       tempUnits = newTU; tempLogs = newTL; loadings = newLD; complaints = newCP;
       purchaseOrders = newPOs; suppliers = newSups; customers = newCusts; returns = newRets; salesOrders = newSOs; deliveries = newDOs;
@@ -5805,6 +5846,7 @@
         salesOrders: newSOs,
         deliveries: newDOs,
         tempUnits: newTU, tempLogs: newTL, loadings: newLD, complaints: newCP,
+        syncToken: opts.syncToken !== undefined ? opts.syncToken : sharedSyncToken,
         users: a.usersPayload,
         archiveKey: a.archiveKey || '',
         archiveKeyPrev: a.archiveKeyPrev || ''
@@ -5823,7 +5865,7 @@
       throw err;
     }
     const fileContent = await encryptPayload(
-      { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [], itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, customers: newCusts, appVer: APP_VER, returns: newRets, salesOrders: newSOs, deliveries: newDOs, tempUnits: newTU, tempLogs: newTL, loadings: newLD, complaints: newCP },
+      { adminKeyHash: newAdminKeyHash, records: newRecords, packingLists: newPackingLists || [], itemMaster: newMaster, auditLog: newLog, locations: newLocs, receipts: newReceipts, purchaseOrders: newPOs, suppliers: newSups, customers: newCusts, appVer: APP_VER, returns: newRets, salesOrders: newSOs, deliveries: newDOs, tempUnits: newTU, tempLogs: newTL, loadings: newLD, complaints: newCP, syncToken: opts.syncToken !== undefined ? opts.syncToken : sharedSyncToken },
       dataKey
     );
     await putRepoFile(repoPath(), fileContent, 'SRS: update stock records', writeSha);
@@ -7099,10 +7141,24 @@
       statusEl.className = 'modal-status err';
       return;
     }
+    const prevTok = (getGhConfig() || {}).token || '';
     localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(cfg));
     statusEl.textContent = t('ghSettingsSaved');
     statusEl.className = 'modal-status ok';
     await loadDataAndRender(false); // 立即用新密码重新读取，状态栏会显示密码是否正确
+    // 换了新 Token：管理员保存时一并发布到共享数据里，其他设备下次读取（或写入被拒时）会自动换上
+    if (cfg.token && cfg.token !== prevTok && cfg.token !== sharedSyncToken && !window.__DEMO) {
+      if (!isAdmin) { statusEl.textContent = t('tokNotAdmin'); statusEl.className = 'modal-status'; return; }
+      try {
+        const latest = await fetchSharedData();
+        await pushSharedData(latest.records, latest.adminKeyHash, latest.packingLists, undefined, { syncToken: cfg.token, audit: [mkAudit('syncToken', {})] });
+        records = latest.records; adminKeyHash = latest.adminKeyHash; packingLists = latest.packingLists;
+        saveLocalCache();
+        statusEl.textContent = t('tokShared'); statusEl.className = 'modal-status ok';
+      } catch (e) {
+        statusEl.textContent = t('tokShareFail', { msg: e.message }); statusEl.className = 'modal-status err';
+      }
+    }
   });
 
   // ================= 刷新 / 自动同步 =================
@@ -11917,7 +11973,7 @@
     add: 'actAdd', import: 'actImport', edit: 'actEdit', delete: 'actDelete',
     plCreate: 'actPlCreate', plDelete: 'actPlDelete', plTake: 'actPlTake', plUndo: 'actPlUndo', plAddItems: 'actPlAddItems', plSetDept: 'actPlSetDept', plDropRest: 'actPlDropRest',
     clearAll: 'actClearAll', archive: 'actArchive', adjust: 'actAdjust', master: 'actMaster',
-    userAdd: 'actUserAdd', userPerm: 'actUserPerm', userRemove: 'actUserRemove', enable: 'actEnable',
+    syncToken: 'actSyncToken', userAdd: 'actUserAdd', userPerm: 'actUserPerm', userRemove: 'actUserRemove', enable: 'actEnable',
     locAdd: 'actLocAdd', locDel: 'actLocDel', transfer: 'actTransfer', grn: 'actGrn', grnDelete: 'actGrnDelete',
     poCreate: 'actPoCreate', poClose: 'actPoClose', poCancel: 'actPoCancel', qcRelease: 'actQc',
     doEdit: 'actDoEdit', cuSave: 'actCuSave', cuDel: 'actCuDel', supSave: 'actSupSave', supDel: 'actSupDel', rtn: 'actRtn', rtnDelete: 'actRtnDelete',
@@ -12792,7 +12848,7 @@
   const dmT = (zh, en, ms) => ({ zh, en, ms }[currentLang] || en);
   function dmApplyText() {
     const $ = id => document.getElementById(id);
-    $('demoBannerTxt').textContent = dmT('🧪 演示模式 — 这里的一切操作都不会影响正式数据（管理员密钥：demo，仅样例/空白）', '🧪 Demo mode — nothing here affects your real data (admin key: demo, sample/blank only)', '🧪 Mod demo — tiada yang menjejaskan data sebenar (kunci admin: demo, sampel/kosong sahaja)');
+    $('demoBannerTxt').textContent = dmT('🧪 演示模式 — 这里的一切操作都不会影响正式数据（管理员密钥：与正式相同，或 demo）', '🧪 Demo mode — nothing here affects your real data (admin key: same as real, or demo)', '🧪 Mod demo — tiada yang menjejaskan data sebenar (kunci admin: sama seperti sebenar, atau demo)');
     $('demoResetBtn').textContent = dmT('重置演示', 'Reset demo', 'Set semula');
     $('demoExitBtn').textContent = dmT('退出演示', 'Exit demo', 'Keluar demo');
     $('demoEntryBtn').textContent = dmT('🧪 演示模式（先体验，不影响正式数据）', '🧪 Demo mode (try it out, real data untouched)', '🧪 Mod demo (cuba dahulu, data sebenar tidak terjejas)');
@@ -12861,13 +12917,25 @@
     const so = [{ id: 'so1', no: 'SO-' + yr + '-0001', date: dmRel(-1), customer: 'MV BORNEO SPIRIT', platform: 'MV BORNEO SPIRIT', requested: dmRel(3), note: '', status: 'open', lines: [{ item: 'Rice 25kg', itemCode: 'RIC001', qty: 15, uom: 'bag' }, { item: 'Fresh Milk', itemCode: 'MLK001', qty: 30, uom: 'ltr' }], by: 'admin', at: at(-1) }];
     return { records: recs, packingLists: [], itemMaster: master, auditLog: [], locations: locs, receipts: grns, purchaseOrders: [po, po2], suppliers: sups, customers: custs, returns: [], salesOrders: so, deliveries: [do1], tempUnits: tu, tempLogs: logs, loadings: [], complaints: cp };
   }
+  // 演示里的管理员密钥：优先用正式的（这样正式密钥在演示里也能用），拿不到才退回 demo
+  async function dmAdminHash() {
+    const R = window.__demoRaw;
+    let h = '';
+    if (!window.__DEMO) {
+      h = adminKeyHash || '';
+      if (!h) { try { h = (await fetchSharedData()).adminKeyHash || ''; } catch (e) {} }
+      if (h) R.set('srsDemoRealHash', h);
+    } else h = R.get('srsDemoRealHash') || '';
+    return h || await sha256('demo');
+  }
   async function dmBuild(kind) {
     let base;
-    if (kind === 'sample') base = Object.assign({ adminKeyHash: await sha256('demo') }, dmSample());
-    else if (kind === 'blank') base = { adminKeyHash: await sha256('demo'), records: [], packingLists: [], itemMaster: [], auditLog: [], locations: [], receipts: [], purchaseOrders: [], suppliers: [], customers: [], returns: [], salesOrders: [], deliveries: [], tempUnits: [], tempLogs: [], loadings: [], complaints: [] };
+    if (kind === 'sample') base = Object.assign({ adminKeyHash: await dmAdminHash() }, dmSample());
+    else if (kind === 'blank') base = { adminKeyHash: await dmAdminHash(), records: [], packingLists: [], itemMaster: [], auditLog: [], locations: [], receipts: [], purchaseOrders: [], suppliers: [], customers: [], returns: [], salesOrders: [], deliveries: [], tempUnits: [], tempLogs: [], loadings: [], complaints: [] };
     else {
       const cur = await fetchSharedData();   // 只读：从正式仓库读一份
-      base = Object.assign({}, cur);
+      base = Object.assign({}, cur); delete base.syncToken;
+      if (!window.__DEMO && cur.adminKeyHash) window.__demoRaw.set('srsDemoRealHash', cur.adminKeyHash);
     }
     base.appVer = APP_VER;
     return encryptPayload(base, DEMO_PASS);
