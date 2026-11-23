@@ -5438,6 +5438,8 @@
     } catch (e) {}
   }
 
+  // 演示模式里，管理员密钥一律认 demo（不管用的是样例、空白还是复制的数据）
+  const demoKeyOk = v => !!window.__DEMO && v === 'demo';
   async function sha256(text) {
     const enc = new TextEncoder().encode(text);
     const buf = await crypto.subtle.digest('SHA-256', enc);
@@ -7061,7 +7063,7 @@
       return;
     }
 
-    if (hash !== adminKeyHash) {
+    if (hash !== adminKeyHash && !demoKeyOk(val)) {
       adminModalError.textContent = t('adminKeyWrong');
       return;
     }
@@ -12009,7 +12011,7 @@
       const why = ov.querySelector('#pgReason').value.trim();
       if (!why) return err(t('reasonRequired'));
       if (ov.querySelector('#pgType').value.trim() !== 'DELETE') return err(t('purgeTypeWrong'));
-      if ((await sha256(ov.querySelector('#pgKey').value)) !== adminKeyHash) return err(t('adminKeyWrong'));
+      if ((await sha256(ov.querySelector('#pgKey').value)) !== adminKeyHash && !demoKeyOk(ov.querySelector('#pgKey').value)) return err(t('adminKeyWrong'));
       const go = ov.querySelector('#pgGo'); go.disabled = true; err('');
       try {
         // 1) 先导出 Excel（这一步失败就不删）
@@ -12323,7 +12325,7 @@
     if (!fullAdmin()) return;
     const cutoff = archiveCutoff.value;
     if (!cutoff) return;
-    if (!archivePasswordInput.value || (await sha256(archivePasswordInput.value)) !== adminKeyHash) {
+    if (!archivePasswordInput.value || (await sha256(archivePasswordInput.value)) !== adminKeyHash && !demoKeyOk(archivePasswordInput.value)) {
       archiveError.textContent = t('adminKeyWrong');
       return;
     }
@@ -12432,7 +12434,7 @@
       return;
     }
     const hash = await sha256(val);
-    if (hash !== adminKeyHash) {
+    if (hash !== adminKeyHash && !demoKeyOk(val)) {
       clearAllError.textContent = t('adminKeyWrong');
       return;
     }
