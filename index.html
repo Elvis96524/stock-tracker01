@@ -1042,6 +1042,60 @@
   .dept-move select { max-width: 150px; padding: 4px 6px; }
   .dept-head { margin: 16px 0 6px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
   .dept-head span { font-weight: 500; font-size: 12px; color: var(--muted); }
+
+  /* ===== Packing List 紧凑表格（仿纸质单：No / Description / UOM / Qty / Given / Expiry）===== */
+  .plt-head, .pl-item-row.plt-row { display: grid; grid-template-columns: 34px minmax(150px,2fr) 54px 58px minmax(240px,3.4fr) 100px 84px; column-gap: 8px; align-items: center; }
+  .plt-head { position: sticky; top: 0; z-index: 4; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm) var(--radius-sm) 0 0; padding: 6px 8px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; }
+  .plt-wrap { border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .plt-head { border: 0; border-bottom: 1px solid var(--border); }
+  .pl-item-row.plt-row { padding: 4px 8px; margin: 0; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; font-size: 13px; }
+  .pl-item-row.plt-row:hover { background: var(--row-hover); }
+  .pl-item-row.plt-row.done { background: var(--in-bg); }
+  .pl-item-row.plt-row.staged { background: var(--in-bg); }
+  .plt-row .plt-no { color: var(--muted); font-size: 12px; text-align: right; }
+  .plt-row .plt-desc { min-width: 0; cursor: default; }
+  .plt-row .plt-desc.has-extra { cursor: pointer; }
+  .plt-row .pl-item-name { font-size: 13px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .plt-row .pl-item-meta { font-size: 11px; margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .plt-row.open .pl-item-name, .plt-row.open .pl-item-meta { white-space: normal; }
+  .plt-row .plt-uom { font-size: 12px; color: var(--muted); }
+  .plt-row .plt-qty { font-weight: 700; text-align: right; }
+  .plt-row .plt-exp { font-size: 12px; color: var(--muted); line-height: 1.25; }
+  .plt-row .plt-chk { display: flex; justify-content: center; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .plt-row .pl-admin-alloc { margin: 0; gap: 2px; }
+  .plt-row .pl-alloc-lines { gap: 3px; }
+  .plt-row .pl-alloc-line { gap: 6px; align-items: flex-start; }
+  .plt-row .pl-alloc-pick label, .plt-row .pl-alloc-qty label { display: none; }
+  .plt-row .pl-alloc-qty { flex: 0 0 74px; }
+  .plt-row .pl-alloc-qty input, .plt-row input.pl-stock-pick { padding: 4px 7px; font-size: 13px; border-radius: 6px; }
+  .pl-item-row.plt-row input.pl-stock-pick, .pl-item-row.plt-row .pl-alloc-qty input { height: 30px; min-height: 0; padding: 2px 7px; box-sizing: border-box; }
+  .pl-item-row.plt-row .scan-btn { height: 30px; min-height: 0; padding: 0 7px; margin: 0; }
+  .plt-row .scan-btn { padding: 3px 7px; }
+  #plAddPanel.collapsed { border: 0 !important; padding: 0 !important; }
+  #plAddPanel.collapsed #plAddToggle { padding: 7px 12px; }
+  .plt-row .pl-stock-hint { font-size: 11px; min-height: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .plt-row .pl-check input { width: 20px; height: 20px; }
+  .plt-row .pl-status-badge { font-size: 11px; padding: 1px 6px; }
+  .plt-row .pl-undo-btn { padding: 2px 8px; font-size: 11px; }
+  .plt-row .plt-given-done { font-size: 12px; line-height: 1.3; }
+  .plt-row .plt-extra { display: none; grid-column: 1 / -1; padding: 4px 0 4px 42px; }
+  .plt-row.open .plt-extra { display: block; }
+  .plt-row .plt-extra .dept-move { margin-top: 0; }
+  .plt-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .plt-tools input[type=search] { flex: 1 1 220px; min-width: 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 999px; font-size: 14px; background: var(--surface); color: var(--ink); }
+  .plt-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  #plAddToggle { width: 100%; text-align: left; margin-bottom: 10px; }
+  #plAddPanel.collapsed > :not(#plAddToggleRow) { display: none !important; }
+  .plt-wrap .dept-head { margin: 0; padding: 6px 10px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 13px; }
+  @media (max-width: 760px) {
+    .plt-head { display: none; }
+    .pl-item-row.plt-row { grid-template-columns: 24px minmax(0,1fr) 42px 46px 36px; grid-template-areas: "no desc uom qty chk" ". given given given given" ". exp exp exp exp" "extra extra extra extra extra"; padding: 6px 6px; row-gap: 2px; }
+    .plt-row .plt-no { grid-area: no; } .plt-row .plt-desc { grid-area: desc; } .plt-row .plt-uom { grid-area: uom; }
+    .plt-row .plt-qty { grid-area: qty; } .plt-row .plt-given { grid-area: given; } .plt-row .plt-exp { grid-area: exp; } .plt-row .plt-chk { grid-area: chk; }
+    .plt-row .plt-extra { grid-area: extra; padding-left: 30px; }
+    .plt-row .plt-exp:empty { display: none; }
+    .plt-row .pl-item-name { white-space: normal; }
+  }
   .dept-chip { display:inline-block; font-size: 11px; padding: 1px 7px; border-radius: 8px; background: rgba(100,116,139,.14); margin-right: 4px; }
   .pl-new-item-row input {
     border: 1px solid var(--border);
@@ -2271,7 +2325,8 @@
         <button class="admin-btn" id="exportDoPdfBtn" data-i18n="exportDoPdfBtn">📄 Export DO (PDF)</button>
         <button class="admin-btn" id="exportDoExcelBtn" data-i18n="exportDoExcelBtn">📊 Export DO (Excel)</button>
       </div>
-      <div id="plAddPanel" data-perm="packing" style="border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:14px;">
+      <div id="plAddPanel" data-perm="packing" class="collapsed" style="border:1px solid var(--border); border-radius:12px; padding:8px 12px; margin-bottom:10px;">
+        <div id="plAddToggleRow"><button type="button" class="admin-btn" id="plAddToggle" data-i18n="plAddToggle">＋ 添加物品 / 导入 Excel</button></div>
         <div style="font-weight:700; margin-bottom:2px;" data-i18n="plAddTitle">添加物品</div>
         <div class="pl-item-meta" style="margin-bottom:8px;" data-i18n="plAddHint">先选部门，再添加或导入这个部门的物品。</div>
         <select id="plAddDept" class="dept-sel" style="margin-bottom:10px; max-width:260px;"></select>
@@ -2285,6 +2340,7 @@
         <div class="modal-error" id="plAddError"></div>
         <button type="button" class="pl-done-btn" id="plAddSaveBtn" style="width:100%;"></button>
       </div>
+      <div class="plt-tools"><input type="search" id="plSearch" autocomplete="off"><span class="plt-count" id="plCount"></span></div>
       <div id="plDeptFilterBar" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;"></div>
       <div id="plStatFilterBar" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
       <div id="packingDetailItems"></div>
@@ -3116,6 +3172,7 @@
       plStatReadyNoDo: '📦 已备好·未发货',
       plStatShipped: '🚚 已发货',
       plStatEmpty: '没有符合这个条件的物品。',
+      plSearchPh: '🔍 搜索品名 / 编号 / 批次 / 库存货物', plColNo: '#', plColDesc: '品名', plColUom: '单位', plColQty: '数量', plColGiven: '实发（库存货物 + 数量）', plColExp: '有效期', plShowing: '显示 {n} / {m} 项', plAddToggle: '＋ 添加物品 / 导入 Excel', plMoreTip: '点击展开：改部门 / 更多',
       plListStatAll: '全部状态',
       plListStatUnprep: '有未备好的货',
       plListStatUnshipped: '有未发货的货（含未备好）',
@@ -4086,6 +4143,7 @@
       plStatReadyNoDo: '📦 Picked · not delivered',
       plStatShipped: '🚚 Delivered',
       plStatEmpty: 'No items match this filter.',
+      plSearchPh: '🔍 Search item / code / batch / stock item', plColNo: '#', plColDesc: 'Description', plColUom: 'UOM', plColQty: 'Qty', plColGiven: 'Given (stock item + qty)', plColExp: 'Expiry', plShowing: 'Showing {n} / {m}', plAddToggle: '＋ Add items / import Excel', plMoreTip: 'Tap to expand: change dept / more',
       plListStatAll: 'All statuses',
       plListStatUnprep: 'Has items not picked',
       plListStatUnshipped: 'Has items not delivered (incl. not picked)',
@@ -5056,6 +5114,7 @@
       plStatReadyNoDo: '📦 Sudah disediakan · belum dihantar',
       plStatShipped: '🚚 Dihantar',
       plStatEmpty: 'Tiada barang yang sepadan.',
+      plSearchPh: '🔍 Cari barang / kod / batch / stok', plColNo: '#', plColDesc: 'Perihal', plColUom: 'UOM', plColQty: 'Kuantiti', plColGiven: 'Diberi (stok + kuantiti)', plColExp: 'Tamat', plShowing: 'Papar {n} / {m}', plAddToggle: '＋ Tambah barang / import Excel', plMoreTip: 'Ketik untuk buka: tukar jabatan / lagi',
       plListStatAll: 'Semua status',
       plListStatUnprep: 'Ada barang belum disediakan',
       plListStatUnshipped: 'Ada barang belum dihantar (termasuk belum disediakan)',
@@ -8215,20 +8274,27 @@
     const preset = findStockGroupForPlItem(options, item);
     const d0 = plDraftOf(pl.id, item.id);
     row.innerHTML = `
-      <div class="pl-item-top">
-        <div>
-          <div class="pl-item-name">${escapeHtml(item.item)}</div>
-          <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}</div>
-        </div>
-      </div>
-      <div class="pl-admin-alloc">
-        <div class="pl-alloc-lines"></div>
-        <label class="pl-check"><input type="checkbox" class="pl-check-input"${d0 && d0.checked ? ' checked' : ''}> ${t('plCheckLabel')}</label>
-      </div>
+      <div class="plt-no">${pl.items.indexOf(item) + 1}</div>
+      <div class="plt-desc"><div class="pl-item-name" title="${escapeHtml(item.item)}">${escapeHtml(item.item)}</div><div class="pl-item-meta">${escapeHtml(item.itemCode || '')}${item.carryOf ? (item.itemCode ? ' · ' : '') + escapeHtml(t('plCarryTag')) : ''}</div></div>
+      <div class="plt-uom">${escapeHtml(item.uom || '—')}</div>
+      <div class="plt-qty">${item.qtyRequested}</div>
+      <div class="plt-given pl-admin-alloc"><div class="pl-alloc-lines"></div></div>
+      <div class="plt-exp"></div>
+      <div class="plt-chk"><label class="pl-check" title="${escapeHtml(t('plCheckLabel'))}"><input type="checkbox" class="pl-check-input"${d0 && d0.checked ? ' checked' : ''}></label></div>
     `;
     const linesEl = row.querySelector('.pl-alloc-lines');
     const chk = row.querySelector('.pl-check-input');
     const pickOf = (input) => options.find(o => o.label === input.value.trim()) || null;
+    const expEl = row.querySelector('.plt-exp');
+    const refreshExp = () => {
+      const ex = [];
+      linesEl.querySelectorAll('.pl-alloc-line').forEach(line => {
+        const pick = pickOf(line.querySelector('.pl-stock-pick'));
+        const q = parseFloat(line.querySelector('.pl-qty-taken-input').value) || 0;
+        if (pick && q > 0 && pick.group.batches.length) allocateFromBatches(pick.group.batches, q).forEach(p => { if (p.expiryDate && !ex.includes(p.expiryDate)) ex.push(p.expiryDate); });
+      });
+      expEl.textContent = ex.join(', ');
+    };
 
     const persist = () => {
       row.classList.toggle('staged', chk.checked);
@@ -8277,10 +8343,11 @@
         } else {
           hint.textContent = ''; hint.classList.remove('low');
         }
+        hint.title = hint.textContent;
         // 这一行（且是最后一行）已选好货物并填了数量 → 出现新的一行
         if (pick && qty > 0 && linesEl.lastElementChild === line) addLine(null, null);
       };
-      const onEdit = () => { update(); persist(); };
+      const onEdit = () => { update(); refreshExp(); persist(); };
       // 扫条码 → 在库存里找到这个货物并填进“从库存选择货物”（摄像头 📷，或扫码枪：在这格里扫后自动 Enter）
       const pickByBarcode = (code, log) => {
         const m = masterByBarcode(code);
@@ -8316,6 +8383,7 @@
     }
     chk.addEventListener('change', persist);
     row.classList.toggle('staged', chk.checked);
+    refreshExp();
 
     plRowCollectors.push({
       item, row, chk,
@@ -8337,8 +8405,9 @@
 
   // 底部“完成并保存”：把所有已勾选的项目一次过写入并扣库存
   document.getElementById('plCheckAllBtn').addEventListener('click', () => {
-    const all = plRowCollectors.every(c => c.chk.checked);
-    plRowCollectors.forEach(c => { c.chk.checked = !all; c.chk.dispatchEvent(new Event('change')); });
+    const vis = plRowCollectors.filter(c => c.row.style.display !== 'none');   // 只作用于当前显示（搜索后）的行
+    const all = vis.every(c => c.chk.checked);
+    vis.forEach(c => { c.chk.checked = !all; c.chk.dispatchEvent(new Event('change')); });
   });
   document.getElementById('plSaveAllBtn').addEventListener('click', async () => {
     const pl = packingLists.find(x => x.id === currentPackingListId);
@@ -8369,6 +8438,39 @@
     else btn.disabled = false;
   });
 
+  function plExtra(row) {   // 行内“展开”区：改部门 / 不再补送（点击品名展开）
+    let ex = row.querySelector('.plt-extra');
+    if (!ex) { ex = document.createElement('div'); ex.className = 'plt-extra'; row.appendChild(ex); }
+    return ex;
+  }
+  let plSearchQ = '';
+  // 搜索：按行隐藏（不重新渲染，所以输入时不会丢焦点或已填的内容）；同时看不到的行不会被“全部勾选”选中
+  function applyPlSearch() {
+    const itemsEl = document.getElementById('packingDetailItems');
+    const q = plSearchQ.trim().toLowerCase();
+    const words = q ? q.split(/\s+/) : [];
+    const rows = [...itemsEl.querySelectorAll('.plt-row')];
+    let shown = 0;
+    rows.forEach(r => {
+      // 行里正在输入的“库存货物”文字也算（扫码/选好后就能按它搜）
+      const typed = [...r.querySelectorAll('.pl-stock-pick')].map(x => x.value).join(' ').toLowerCase();
+      const hay = (r.dataset.q || '') + ' ' + typed;
+      const ok = words.every(w => hay.includes(w));
+      r.style.display = ok ? '' : 'none';
+      if (ok) shown++;
+    });
+    // 部门标题：下面没有可见行就隐藏
+    itemsEl.querySelectorAll('.dept-head').forEach(h => {
+      let n = h.nextElementSibling, any = false;
+      while (n && !n.classList.contains('dept-head')) { if (n.classList.contains('plt-row') && n.style.display !== 'none') { any = true; break; } n = n.nextElementSibling; }
+      h.style.display = any ? '' : 'none';
+    });
+    const c = document.getElementById('plCount');
+    if (c) c.textContent = rows.length ? t('plShowing', { n: shown, m: rows.length }) : '';
+  }
+  document.getElementById('plSearch').addEventListener('input', (ev) => { plSearchQ = ev.target.value; applyPlSearch(); });
+  document.getElementById('plAddToggle').addEventListener('click', () => document.getElementById('plAddPanel').classList.toggle('collapsed'));
+
   function renderPackingDetail() {
     const pl = packingLists.find(p => p.id === currentPackingListId);
     const headerEl = document.getElementById('packingDetailHeader');
@@ -8395,6 +8497,10 @@
     if (delPlBtn) delPlBtn.style.display = lockedDo ? 'none' : '';  // 已有 DO 的清单不能删除
 
     itemsEl.innerHTML = '';
+    const se = document.getElementById('plSearch');
+    se.placeholder = t('plSearchPh');
+    if (se.value !== plSearchQ) se.value = plSearchQ;
+    if (!pl.items.length) document.getElementById('plAddPanel').classList.remove('collapsed');
     plPickCache = null;
     plPickCache = getStockPickOptions();
     const sharedList = document.createElement('datalist');
@@ -8425,6 +8531,12 @@
     PL_DEPTS.concat(['']).forEach(d => pl.items.filter(i => deptOf(i) === d && passF(i)).forEach(i => orderedItems.push(i)));
     let lastDept = null;
     if (pl.items.length && !orderedItems.length) itemsEl.insertAdjacentHTML('beforeend', `<div class="empty">${escapeHtml(t('plStatEmpty'))}</div>`);
+    const tbl = document.createElement('div');
+    tbl.className = 'plt-wrap';
+    if (orderedItems.length) {
+      tbl.innerHTML = `<div class="plt-head"><div style="text-align:right">${escapeHtml(t('plColNo'))}</div><div>${escapeHtml(t('plColDesc'))}</div><div>${escapeHtml(t('plColUom'))}</div><div style="text-align:right">${escapeHtml(t('plColQty'))}</div><div>${escapeHtml(t('plColGiven'))}</div><div>${escapeHtml(t('plColExp'))}</div><div style="text-align:center">✓</div></div>`;
+      itemsEl.appendChild(tbl);
+    }
     orderedItems.forEach(item => {
       if (anyDept && deptOf(item) !== lastDept) {
         lastDept = deptOf(item);
@@ -8432,29 +8544,24 @@
         const h = document.createElement('div');
         h.className = 'dept-head';
         h.innerHTML = `<div>${escapeHtml(deptName(lastDept))}</div><span>${dp.done}/${dp.total}${canPackDept(lastDept) ? '' : ' · ' + escapeHtml(t('plDeptViewOnly'))}</span>`;
-        itemsEl.appendChild(h);
+        tbl.appendChild(h);
       }
       const row = document.createElement('div');
-      row.className = 'pl-item-row' + (item.done ? ' done' : '');
+      row.className = 'pl-item-row plt-row' + (item.done ? ' done' : '');
+      const rowNo = pl.items.indexOf(item) + 1;
       const rowDo = plRowDo(pl, item);
       if (item.done) {
         const isIncomplete = item.status === 'incomplete' || item.qtyTaken !== item.qtyRequested;
+        const allocTxt = (item.allocations || []).map(a => `<div>📦 ${escapeHtml((a.itemCode ? a.itemCode + ' · ' : '') + a.item)} × <b>${a.qty}</b> ${escapeHtml(a.uom || '')}${(a.batches && a.batches.some(b => b.batch || b.loc)) ? ' <span class="pl-item-meta" style="white-space:normal">' + escapeHtml(a.batches.map(b => (b.loc ? '📍' + b.loc + ' ' : '') + (b.batch || '—') + ' ×' + b.qty).join(', ')) + '</span>' : ''}</div>`).join('');
+        const expTxt = [...new Set((item.allocations || []).flatMap(a => (a.batches || []).map(b => b.expiryDate).filter(Boolean)))].join(', ');
         row.innerHTML = `
-          <div class="pl-item-top">
-            <div>
-              <div class="pl-item-name">${escapeHtml(item.item)}</div>
-              <div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}${item.carryOf ? ' · ' + t('plCarryTag') : ''}</div>
-              ${item.qtyOrig ? `<div class="pl-item-meta">↪ ${escapeHtml(t('plPartialNote', { orig: item.qtyOrig, rest: Math.round((item.qtyOrig - item.qtyTaken) * 10000) / 10000 }))}</div>` : ''}
-              ${(item.allocations || []).map(a => `<div class="pl-item-meta">📦 ${escapeHtml((a.itemCode ? a.itemCode + ' · ' : '') + a.item)} × ${a.qty} ${escapeHtml(a.uom || '')}${(a.batches && a.batches.some(b => b.batch || b.expiryDate || b.loc)) ? ' — ' + escapeHtml(a.batches.map(b => (b.loc ? '📍' + b.loc + ' ' : '') + (b.batch || '—') + (b.expiryDate ? ' (' + b.expiryDate + ')' : '') + ' ×' + b.qty).join(', ')) : ''}</div>`).join('')}
-            </div>
-            <div style="text-align:right;">
-              ${isIncomplete
-                ? `<span class="pl-status-badge incomplete">⚠ ${t('plIncompleteLabel')}</span>`
-                : `<span class="pl-status-badge completed">✓ ${t('plCompleteLabel')}</span>`}
-              <div class="pl-done-check">${t('plDoneLabel', { qty: item.qtyTaken })}</div>
-              ${rowDo ? `<div class="pl-item-meta">🔒 ${escapeHtml(t('plDeliveredTag', { no: rowDo.no }))}</div>` : (canPackDept(deptOf(item)) ? `<button class="pl-undo-btn">${t('undoBtn')}</button>` : '')}
-            </div>
-          </div>
+          <div class="plt-no">${rowNo}</div>
+          <div class="plt-desc"><div class="pl-item-name" title="${escapeHtml(item.item)}">${escapeHtml(item.item)}</div><div class="pl-item-meta">${escapeHtml(item.itemCode || '')}${item.carryOf ? (item.itemCode ? ' · ' : '') + escapeHtml(t('plCarryTag')) : ''}${item.qtyOrig ? ' · ↪ ' + escapeHtml(t('plPartialNote', { orig: item.qtyOrig, rest: Math.round((item.qtyOrig - item.qtyTaken) * 10000) / 10000 })) : ''}${rowDo ? ' · 🔒 ' + escapeHtml(t('plDeliveredTag', { no: rowDo.no })) : ''}</div></div>
+          <div class="plt-uom">${escapeHtml(item.uom || '—')}</div>
+          <div class="plt-qty">${item.qtyRequested}</div>
+          <div class="plt-given plt-given-done">${allocTxt}<span class="pl-done-check">${escapeHtml(t('plDoneLabel', { qty: item.qtyTaken }))}</span></div>
+          <div class="plt-exp">${escapeHtml(expTxt)}</div>
+          <div class="plt-chk">${isIncomplete ? `<span class="pl-status-badge incomplete" title="${escapeHtml(t('plIncompleteLabel'))}">⚠</span>` : `<span class="pl-status-badge completed" title="${escapeHtml(t('plCompleteLabel'))}">✓</span>`}${(!rowDo && canPackDept(deptOf(item))) ? `<button class="pl-undo-btn">${t('undoBtn')}</button>` : ''}</div>
         `;
         const undoBtn = row.querySelector('.pl-undo-btn');
         if (undoBtn) undoBtn.addEventListener('click', async () => {
@@ -8497,7 +8604,7 @@
           renderAdminAllocRow(row, pl, item);
         } else {
           // 没有 Packing List 权限：只能查看，不能备货（也不会出现保存栏）
-          row.innerHTML = `<div class="pl-item-top"><div><div class="pl-item-name">${escapeHtml(item.item)}</div><div class="pl-item-meta">${escapeHtml(item.itemCode || '')} ${item.itemCode ? '·' : ''} ${t('qtyLabel')}: ${item.qtyRequested} · ${t('uomLabel')}: ${escapeHtml(item.uom || '—')}${item.carryOf ? ' · ' + t('plCarryTag') : ''}</div></div></div>`;
+          row.innerHTML = `<div class="plt-no">${rowNo}</div><div class="plt-desc"><div class="pl-item-name" title="${escapeHtml(item.item)}">${escapeHtml(item.item)}</div><div class="pl-item-meta">${escapeHtml(item.itemCode || '')}${item.carryOf ? (item.itemCode ? ' · ' : '') + escapeHtml(t('plCarryTag')) : ''}</div></div><div class="plt-uom">${escapeHtml(item.uom || '—')}</div><div class="plt-qty">${item.qtyRequested}</div><div class="plt-given"></div><div class="plt-exp"></div><div class="plt-chk"></div>`;
         }
         if (item.carryOf && canPackDept(deptOf(item))) {   // 余量行：可以选择不再补送
           const dropBtn = document.createElement('button');
@@ -8514,11 +8621,8 @@
             }, { a: 'plDropRest', d: { item: item.item, pl: pl.title } });
             if (ok) renderCurrentView(); else dropBtn.disabled = false;
           });
-          row.appendChild(dropBtn);
-          const tag = document.createElement('div');
-          tag.className = 'pl-item-meta';
-          tag.textContent = t('plCarryTag');
-          row.insertBefore(tag, row.firstChild);
+          dropBtn.style.margin = '0 10px 0 0';
+          plExtra(row).appendChild(dropBtn);
         }
       }
       if (!rowDo && canPackDept(deptOf(item))) {   // 直接在 PL 里改这一行的部门
@@ -8536,10 +8640,18 @@
           }, { a: 'plSetDept', d: { item: item.item, pl: pl.title, dept: nd ? DEPT_NAME[nd].replace(/^\S+\s/, '') : '—' } });
           renderCurrentView();
         });
-        row.appendChild(mv);
+        plExtra(row).appendChild(mv);
       }
-      itemsEl.appendChild(row);
+      const dsc = row.querySelector('.plt-desc');
+      if (row.querySelector('.plt-extra') && dsc) {
+        dsc.classList.add('has-extra');
+        dsc.title = t('plMoreTip');
+        dsc.addEventListener('click', () => row.classList.toggle('open'));
+      }
+      row.dataset.q = [item.item, item.itemCode, item.uom, deptOf(item) ? deptName(deptOf(item)) : '', (item.allocations || []).map(a => a.item + ' ' + (a.itemCode || '') + ' ' + (a.batches || []).map(b => (b.batch || '') + ' ' + (b.loc || '')).join(' ')).join(' ')].join(' ').toLowerCase();
+      tbl.appendChild(row);
     });
+    applyPlSearch();
     plPickCache = null;
     refreshPlSaveBar();
   }
